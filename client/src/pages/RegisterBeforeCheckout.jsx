@@ -21,11 +21,11 @@ const RegisterBeforeCheckout = () => {
     didUserApproveSMS: false,
     didUserApproveWebcam: false,
   })
-
-  const [otp, setOtp] = useState('') // OTP input field
-  const [isOtpPopupOpen, setIsOtpPopupOpen] = useState(false) // OTP popup state
-  const [isOtpVerified, setIsOtpVerified] = useState(false) // OTP verification state
-
+  const [otp, setOtp] = useState(""); // OTP input field
+  const [isOtpPopupOpen, setIsOtpPopupOpen] = useState(false); // OTP popup state
+  const [isOtpVerified, setIsOtpVerified] = useState(false); // OTP verification state
+  const [generatedOtp, setGeneratedOtp] = useState(""); // Store received OTP for comparison
+  
   const navigate = useNavigate()
 
   // ✅ Handle Input Change
@@ -37,25 +37,50 @@ const RegisterBeforeCheckout = () => {
     }))
   }
   // ✅ Open OTP Popup (Checkbox or Text Click)
-  const openOtpPopup = async () => {
-    setFormData((prev) => ({ ...prev, didUserApproveSMS: true }))
-    setIsOtpPopupOpen(true)
-
-    try {
-      const response = await axios.post('http://localhost:5000/api/send-otp', {
-        phone: formData.phone,
-      })
-
-      if (response.data.success) {
-        toast.success('OTP sent successfully!')
-      } else {
-        toast.error('Failed to send OTP. Try again!')
-      }
-    } catch (error) {
-      toast.error(error.response?.data?.error || 'Error sending OTP.')
-    }
+// ✅ Open OTP Popup and Send OTP
+const openOtpPopup = async () => {
+  if (!formData.phone || formData.phone.trim() === "") {
+    toast.error("Please enter a valid phone number!");
+    return;
   }
 
+  setIsOtpPopupOpen(true);
+
+  try {
+    const response = await axios.post("http://localhost:5000/api/send-otp", {
+      phone: formData.phone,
+    });
+
+    if (response.data.success) {
+      toast.success("OTP sent successfully!");
+      setGeneratedOtp(response.data.otp); // ⚠️ Store OTP securely (Remove this in production!)
+    } else {
+      toast.error("Failed to send OTP. Try again!");
+    }
+  } catch (error) {
+    toast.error(error.response?.data?.error || "Error sending OTP.");
+  }
+};
+
+// ✅ Verify OTP Dynamically
+const verifyOtp = async () => {
+  try {
+    const response = await axios.post("http://localhost:5000/api/verify-otp", {
+      phone: formData.phone,
+      otp,
+    });
+
+    if (response.data.success) {
+      toast.success("OTP Verified Successfully!");
+      setIsOtpVerified(true);
+      setIsOtpPopupOpen(false);
+    } else {
+      toast.error("Invalid OTP. Try again.");
+    }
+  } catch (error) {
+    toast.error(error.response?.data?.error || "OTP Verification Failed.");
+  }
+};
   // ✅ Handle SMS Checkbox & Open OTP Popup
   const handleSmsCheckboxChange = async (e) => {
     const isChecked = e.target.checked
@@ -79,16 +104,7 @@ const RegisterBeforeCheckout = () => {
     }
   }
 
-  // ✅ Handle OTP Verification
-  const verifyOtp = async () => {
-    if (otp === '123456') {
-      toast.success('OTP Verified Successfully!')
-      setIsOtpVerified(true)
-      setIsOtpPopupOpen(false)
-    } else {
-      toast.error('Invalid OTP. Try again.')
-    }
-  }
+
 
    // ✅ Page load hone pe check karein ke user pehle register ho chuka hai ya nahi
    useEffect(() => {

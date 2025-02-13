@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 require("dotenv").config();  // Ensure environment variables are loaded
 const { updatePaymentStatus } = require("../controller/paymentController");
+const { createZoomMeeting } = require('../controller/zoomController');
 // ✅ Use Stripe Secret Key from environment variable
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
@@ -205,37 +206,44 @@ router.get("/payment-details/:paymentIntentId", async (req, res) => {
 });
 
 
-router.post("/webhook", express.raw({ type: "application/json" }), async (req, res) => {
-    const sig = req.headers["stripe-signature"];
+// ✅ Stripe Webhook for Handling Successful Subscriptions
+router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
     let event;
-
     try {
-        event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+        event = stripe.webhooks.constructEvent(req.body, req.headers['stripe-signature'], process.env.STRIPE_WEBHOOK_SECRET);
     } catch (err) {
-        console.error("❌ Webhook Signature Verification Failed:", err.message);
-        return res.status(400).json({ error: `Webhook Signature Error: ${err.message}` });
+        console.error('❌ Stripe Webhook Error:', err.message);
+        return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
-    const eventType = event.type;
-    const eventData = event.data.object;
+    if (event.type === 'checkout.session.completed') {
+        const session = event.data.object;
+        const userId = session.client_reference_id;
+        const planName = session.metadata.planName;
 
-    switch (eventType) {
-        case "payment_intent.succeeded":
-            console.log(`✅ Payment Success: ${eventData.id} - $${eventData.amount / 100}`);
-            await updatePaymentStatus(eventData.id, "succeeded");
-            break;
+        console.log(`✅ Subscription Successful: ${userId} subscribed to ${planName}`);
 
-        case "payment_intent.payment_failed":
-            console.error(`❌ Payment Failed: ${eventData.id} - Reason: ${eventData.last_payment_error?.message || "Unknown"}`);
-            await updatePaymentStatus(eventData.id, "failed");
-            break;
+        try {
+            // ✅ Get User from Database
+            const user = await User.findById(userId);
+            if (!user) return console.error(`❌ User not found: ${userId}`);
 
-        default:
-            console.log(`ℹ️ Unhandled Event: ${eventType}`);
+            // ✅ Create Zoom Meeting
+            const meetingData = await createMeetingForUser(user.email, planName);
+
+            // ✅ Save Zoom Meeting in User Database
+            user.zoomMeetings.push(meetingData);
+            await user.save();
+
+            console.log(`✅ Zoom Meeting Created for ${planName}: ${meetingData.joinUrl}`);
+        } catch (error) {
+            console.error("❌ Error Handling Subscription:", error);
+        }
     }
 
-    res.json({ success: true, received: true });
+    res.json({ received: true });
 });
+
 
 
 
