@@ -283,7 +283,7 @@ const RegisterBeforeCheckout = () => {
         setShowConfirmation(true);
   
         setTimeout(() => {
-          navigate("/checkout");
+          window.location.href = "/checkout";
         }, 3000);
       }
     } catch (error) {
