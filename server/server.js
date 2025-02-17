@@ -23,7 +23,7 @@ connectDB();
 
 const app = express();
 // ✅ Allow raw body for Stripe webhook ONLY
-app.use(bodyParser.json()); 
+
 const allowedOrigins = [
   'http://localhost:8080', // Local Development URL
   'https://frontend-production-90a4.up.railway.app' // Production URL
@@ -52,9 +52,6 @@ const client = new twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUT
 
 // ✅ Parse JSON for all other routes
 app.use(express.json()); 
-app.use(bodyParser.urlencoded({ extended: true })); 
-app.use(bodyParser.json()); 
-
 
 let otpStore = {}; // Temporary OTP storage (use Redis for production)
 
