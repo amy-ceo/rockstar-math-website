@@ -270,32 +270,29 @@ router.post('/create-checkout-session', async (req, res) => {
 
 // ✅ Stripe Webhook for Handling Successful Subscriptions
 // ✅ Stripe Webhook for Handling Successful Payments
-router.post("/webhook", (req, res) => {
-    const sig = req.headers["stripe-signature"];
+router.post(
+    "/webhook",
+    express.raw({ type: "application/json" }), // Ensure raw body is available for signature verification
+    (req, res) => {
+        const sig = req.headers["stripe-signature"];
+        const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-    let event;
-    try {
-        event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
-    } catch (err) {
-        console.error("⚠️  Webhook signature verification failed.", err.message);
-        return res.status(400).send(`Webhook Error: ${err.message}`);
-    }
+        let event;
+        try {
+            event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+        } catch (err) {
+            console.error("⚠️ Webhook signature verification failed.", err.message);
+            return res.status(400).send(`Webhook Error: ${err.message}`);
+        }
 
-    // Handle the event
-    switch (event.type) {
-        case "checkout.session.completed":
+        // Handle successful payment
+        if (event.type === "checkout.session.completed") {
             const session = event.data.object;
             console.log("💰 Payment Successful:", session);
+            // Save to DB or perform relevant actions
+        }
 
-            // Yahan aap database mein payment status update kar sakte hain
-            // Example:
-            // await OrderModel.findOneAndUpdate({ stripeSessionId: session.id }, { status: "paid" });
-
-            break;
-        default:
-            console.log(`Unhandled event type ${event.type}`);
+        res.json({ received: true });
     }
-
-    res.json({ received: true });
-});
+);
 module.exports = router;
