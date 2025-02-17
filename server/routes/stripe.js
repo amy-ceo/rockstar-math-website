@@ -283,7 +283,8 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
             process.env.STRIPE_WEBHOOK_SECRET
         );
 
-        console.log("🔹 Stripe Webhook Event Received:", JSON.stringify(event, null, 2));
+        console.log("🔹 Stripe Webhook Event Received:");
+        console.log(JSON.stringify(event, null, 2));
 
     } catch (err) {
         console.error('❌ Stripe Webhook Error:', err.message);
@@ -296,7 +297,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
         const productName = session.metadata?.planName || "Unknown Product";
         const purchaseDate = new Date().toISOString();
 
-        console.log(`✅ Payment Successful: ${userId} purchased ${productName}`);
+        console.log(`✅ Payment Successful for User: ${userId}, Product: ${productName}`);
 
         if (!userId) {
             console.error("❌ Missing userId in session!");
@@ -337,5 +338,6 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
         res.json({ received: true });
     }
 });
+
 
 module.exports = router;
