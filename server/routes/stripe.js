@@ -4,7 +4,7 @@ require("dotenv").config();  // Ensure environment variables are loaded
 const { updatePaymentStatus } = require("../controller/paymentController");
 const { createZoomMeeting } = require('../controller/zoomController');
 const Register = require('../models/registerModel') // ✅ Using Register Model
-const stripe = require("stripe")("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");
+const stripe = require("stripe")("sk_test_51QKwhUE4sPC5ms3xk3hyLDiMUFiqZ19gr88RN3k48VfVVIEpjnqUWHz662iRwZ8dBAXOmJSaCuAuzVyCGPcmePrq00FHlWaoS2");
 
 const ZOOM_LINKS = [
   "https://us06web.zoom.us/meeting/register/mZHoQiy9SqqHx69f4dejgg#/registration",
@@ -16,14 +16,20 @@ const ZOOM_LINKS = [
 
 router.get("/test-products", async (req, res) => {
     try {
-      const allProducts = await stripe.products.list({ active: true });
-      console.log("Fetched Products from Stripe:", allProducts.data);
-      res.status(200).json(allProducts.data);
+        console.log("🔹 Fetching Products from Stripe Test Mode...");
+        const allProducts = await stripe.products.list({
+            active: true,
+            expand: ["data.default_price"], // ✅ Expand price details
+        });
+
+        console.log("✅ Products with Prices:", allProducts.data);
+        
+        res.status(200).json(allProducts.data);
     } catch (error) {
-      console.error("Error fetching products:", error);
-      res.status(500).json({ message: "Failed to fetch products" });
+        console.error("❌ Error fetching products from Stripe:", error);
+        res.status(500).json({ message: "Failed to fetch products" });
     }
-  });
+});
 
 
   router.get("/get-plans", async (req, res) => {
