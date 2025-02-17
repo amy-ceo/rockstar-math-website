@@ -272,13 +272,11 @@ router.post('/create-checkout-session', async (req, res) => {
 router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
     let event;
     try {
-        // ✅ Ensure Webhook Secret is Present
         if (!process.env.STRIPE_WEBHOOK_SECRET) {
             console.error("❌ Missing STRIPE_WEBHOOK_SECRET in .env file!");
             return res.status(500).json({ error: "Webhook secret is missing." });
         }
 
-        // ✅ Construct the event using the secret
         event = stripe.webhooks.constructEvent(
             req.body,
             req.headers['stripe-signature'],
@@ -292,14 +290,13 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
         return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
-    // ✅ Handle Webhook Events
     if (event.type === 'checkout.session.completed') {
         const session = event.data.object;
         const userId = session.client_reference_id || session.metadata?.userId;
         const productName = session.metadata?.planName || "Unknown Product";
         const purchaseDate = new Date().toISOString();
 
-        console.log(`✅ Payment Successful for User: ${userId}, Product: ${productName}`);
+        console.log(`✅ Payment Successful: ${userId} purchased ${productName}`);
 
         if (!userId) {
             console.error("❌ Missing userId in session!");
@@ -307,7 +304,6 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
         }
 
         try {
-            // ✅ Fetch User from MongoDB
             const user = await Register.findById(userId);
             console.log("📌 User Fetched from DB:", user);
 
@@ -316,12 +312,10 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
                 return res.status(404).json({ error: "User not found" });
             }
 
-            // ✅ Ensure `purchasedClasses` Array Exists
             if (!user.purchasedClasses) {
                 user.purchasedClasses = [];
             }
 
-            // ✅ Add Purchased Class to User
             const purchasedProduct = {
                 name: productName,
                 description: `Access to ${productName} subscription`,
@@ -331,9 +325,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
             user.purchasedClasses.push(purchasedProduct);
             await user.save();
 
-            // ✅ Confirm Data is Saved
-            const updatedUser = await Register.findById(userId);
-            console.log("✅ Updated User After Saving:", updatedUser);
+            console.log("✅ Updated User After Saving:", await Register.findById(userId));
 
             res.status(200).json({ success: true, message: "Purchase stored successfully" });
 
