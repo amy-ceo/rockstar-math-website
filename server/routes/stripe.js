@@ -297,7 +297,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
         const productName = session.metadata?.planName || "Unknown Product";
         const purchaseDate = new Date().toISOString();
 
-        console.log(`✅ Payment Successful: ${userId} purchased ${productName}`);
+        console.log(`✅ Payment Successful for User: ${userId}, Product: ${productName}`);
 
         if (!userId) {
             console.error("❌ Missing userId in session!");
@@ -328,16 +328,18 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
 
             console.log("✅ Updated User After Saving:", await Register.findById(userId));
 
-            // ✅ Send Payment Confirmation Email
-     
-             const message: `
-                <h2>Hello ${userName},</h2>
-                <p>Your payment for <strong>${productName}</strong> has been successfully completed.</p>
-                <p>You now have access to your purchased class.</p>
-                <p>Thank you for choosing Rockstar Math! 🎉</p>
-              `,
-        await sendMail(mailOptions);
-        console.log(`📧 Email sent to ${userEmail}`);
+            // ✅ Send Email Using Existing `sendEmail` Utility
+            await sendEmail(
+                user.billingEmail, 
+                "Payment Successful - Rockstar Math",
+                `Your payment for ${productName} has been successfully completed.`,
+                `<h2>Hello ${user.username},</h2>
+                 <p>Your payment for <strong>${productName}</strong> has been successfully completed.</p>
+                 <p>You now have access to your purchased class.</p>
+                 <p>Thank you for choosing Rockstar Math! 🎉</p>`
+            );
+
+            console.log(`📧 Email sent to ${user.billingEmail}`);
 
             res.status(200).json({ success: true, message: "Purchase stored successfully" });
 
@@ -349,5 +351,4 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
         res.json({ received: true });
     }
 });
-
 module.exports = router;
