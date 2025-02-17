@@ -265,35 +265,46 @@ router.post('/create-checkout-session', async (req, res) => {
 // ✅ Stripe Webhook for Handling Successful Payments
 router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
     let event;
+
     try {
-        event = stripe.webhooks.constructEvent(req.body, req.headers['stripe-signature'], process.env.STRIPE_WEBHOOK_SECRET);
-        console.log("🔹 Stripe Webhook Event Received:", JSON.stringify(event, null, 2)); 
+        // ✅ Ensure Webhook Secret is Present
+        if (!process.env.STRIPE_WEBHOOK_SECRET) {
+            console.error("❌ Missing STRIPE_WEBHOOK_SECRET in .env file!");
+            return res.status(500).json({ error: "Webhook secret is missing." });
+        }
+
+        // ✅ Construct the event using the secret
+        event = stripe.webhooks.constructEvent(
+            req.body,
+            req.headers['stripe-signature'],
+            process.env.STRIPE_WEBHOOK_SECRET
+        );
+
+        console.log("🔹 Stripe Webhook Event Received:", JSON.stringify(event, null, 2));
+
     } catch (err) {
         console.error('❌ Stripe Webhook Error:', err.message);
         return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
+    // ✅ Handle Webhook Events
     if (event.type === 'checkout.session.completed') {
         const session = event.data.object;
-        const userId = session.client_reference_id || session.metadata?.userId;  // ✅ Fix: Backup User ID
-        const productName = session.metadata?.planName;
-        const amount = session.amount_total / 100; 
-        const purchaseDate = new Date().toISOString(); 
+        const userId = session.client_reference_id || session.metadata?.userId;
+        const productName = session.metadata?.planName || "Unknown Product";
+        const purchaseDate = new Date().toISOString();
 
-        console.log(`✅ Payment Successful: ${userId} purchased ${productName} for $${amount}`);
+        console.log(`✅ Payment Successful: ${userId} purchased ${productName}`);
 
-        // ✅ Validate Data
         if (!userId) {
             console.error("❌ Missing userId in session!");
             return res.status(400).json({ error: "Missing user ID from Stripe session." });
         }
-        if (!productName) {
-            console.error("❌ Missing planName in metadata!");
-            return res.status(400).json({ error: "Missing plan name in session metadata." });
-        }
 
         try {
             const user = await Register.findById(userId);
+            console.log("📌 User Fetched from DB:", user);
+
             if (!user) {
                 console.error(`❌ User not found: ${userId}`);
                 return res.status(404).json({ error: "User not found" });
@@ -309,12 +320,13 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
                 purchaseDate: purchaseDate
             };
 
+            // ✅ Save Purchase
             user.purchasedClasses.push(purchasedProduct);
-
             await user.save();
-            console.log(`✅ Purchase stored for user: ${user.username}`);
 
-            res.json({ success: true, message: "Purchase stored successfully" });
+            console.log("✅ Updated User After Saving:", await Register.findById(userId));
+
+            res.status(200).json({ success: true, message: "Purchase stored successfully" });
 
         } catch (error) {
             console.error("❌ Error Processing Subscription:", error);
