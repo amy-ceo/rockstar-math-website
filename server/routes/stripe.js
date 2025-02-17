@@ -329,7 +329,15 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
             console.log("✅ Updated User After Saving:", await Register.findById(userId));
 
             // ✅ Send Payment Confirmation Email
-            await sendEmail(user.billingEmail, user.username, productName);
+     
+             const message: `
+                <h2>Hello ${userName},</h2>
+                <p>Your payment for <strong>${productName}</strong> has been successfully completed.</p>
+                <p>You now have access to your purchased class.</p>
+                <p>Thank you for choosing Rockstar Math! 🎉</p>
+              `,
+        await sendMail(mailOptions);
+        console.log(`📧 Email sent to ${userEmail}`);
 
             res.status(200).json({ success: true, message: "Purchase stored successfully" });
 
