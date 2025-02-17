@@ -1,5 +1,6 @@
 require("dotenv").config();
 console.log("Stripe Secret Key:", process.env.STRIPE_SECRET_KEY ? "Loaded ✅" : "Not Loaded ❌");
+
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -42,9 +43,11 @@ app.use(
   })
 );
 
-app.use(bodyParser.json());
+
+app.use(bodyParser.json()); // For parsing JSON requests
+app.use(bodyParser.urlencoded({ extended: true })); // For parsing URL-encoded data
 const client = new twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-app.use("/api/stripe/webhook", express.raw({ type: "application/json" })); 
+app.use("/api/stripe/webhook", bodyParser.raw({ type: "application/json" }));
 app.use(express.json()); // Other routes can still use JSON
 
 let otpStore = {}; // Temporary OTP storage (use Redis for production)
