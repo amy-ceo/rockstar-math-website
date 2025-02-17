@@ -330,7 +330,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
 
             // ✅ Send Email Using Existing `sendEmail` Utility
             await sendEmail(
-                user.billingEmail, 
+                "bhussnain966@gmail.com", 
                 "Payment Successful - Rockstar Math",
                 `Your payment for ${productName} has been successfully completed.`,
                 `<h2>Hello ${user.username},</h2>
