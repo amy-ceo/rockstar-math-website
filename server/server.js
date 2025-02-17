@@ -23,7 +23,7 @@ connectDB();
 const app = express();
 const allowedOrigins = [
   'http://localhost:8080', // Local Development URL
-  'https://frontend-production-90a4.up.railway.app/' // Production URL
+  'https://frontend-production-90a4.up.railway.app' // Production URL
 ];
 
 // ✅ CORS Middleware
