@@ -99,14 +99,14 @@ app.post("/api/verify-otp", (req, res) => {
 
 app.post(
     "/api/stripe/webhook",
-    express.raw({ type: "application/json" }),
+    express.raw({ type: "application/json" }), 
     (req, res) => {
         const sig = req.headers["stripe-signature"];
         const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
         let event;
         try {
-            // 🚨 Ensure req.body is passed as a Buffer
+            // 🚨 Ensure req.body is passed as a Buffer (raw body)
             event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
         } catch (err) {
             console.error("❌ Webhook signature verification failed:", err.message);
@@ -118,16 +118,15 @@ app.post(
         if (event.type === "checkout.session.completed") {
             const session = event.data.object;
             console.log("💰 Payment Successful:", session);
-            // Handle successful payment (update database, send email, etc.)
+            // Handle successful payment (e.g., update DB)
         }
 
         res.json({ received: true });
     }
 );
 
-// ✅ JSON parser for other API routes
+// ✅ Apply JSON parsing only for other routes
 app.use(express.json());
-app.use(bodyParser.urlencoded({ extended: true }));
 
 
   
