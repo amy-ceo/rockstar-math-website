@@ -48,17 +48,10 @@ app.use(
 
 
 const client = new twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-app.use((req, res, next) => {
-    if (req.originalUrl === "/webhook") {
-        next(); // Skip JSON body parser for webhooks
-    } else {
-        express.json()(req, res, next); // Use JSON for other routes
-    }
-});
-
 // ✅ Parse JSON for all other routes
-app.use(express.json()); 
-app.use(bodyParser.raw({ type: "application/json" }));
+// ⚡ Apply JSON parser only for other routes
+app.use(express.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 let otpStore = {}; // Temporary OTP storage (use Redis for production)
 
 // ✅ Send OTP API
@@ -104,6 +97,36 @@ app.post("/api/verify-otp", (req, res) => {
       return res.status(400).json({ error: "Invalid OTP or OTP expired." });
     }
   });
+
+app.post(
+    "/api/stripe/webhook",
+    express.raw({ type: "application/json" }), // 🚨 Use raw body
+    (req, res) => {
+        const sig = req.headers["stripe-signature"];
+        const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+        let event;
+        try {
+            // 🚨 Use `req.body` as is (raw Buffer)
+            event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+        } catch (err) {
+            console.error("❌ Webhook signature verification failed:", err.message);
+            return res.status(400).send(`Webhook Error: ${err.message}`);
+        }
+
+        console.log("✅ Webhook verified:", event.type);
+
+        if (event.type === "checkout.session.completed") {
+            const session = event.data.object;
+            console.log("💰 Payment Successful:", session);
+            // Handle successful payment (update database, send email, etc.)
+        }
+
+        res.json({ received: true });
+    }
+);
+
+
   
 // Routes
 app.use('/api/auth', authRoutes);
