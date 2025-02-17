@@ -22,6 +22,8 @@ const paypalRoutes = require("./routes/paypal.js")
 connectDB();
 
 const app = express();
+// ✅ Allow raw body for Stripe webhook ONLY
+app.post("/api/stripe/webhook", express.raw({ type: "application/json" }));
 const allowedOrigins = [
   'http://localhost:8080', // Local Development URL
   'https://frontend-production-90a4.up.railway.app' // Production URL
@@ -46,8 +48,7 @@ app.use(
 
 
 const client = new twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-// ✅ Allow raw body for Stripe webhook ONLY
-app.post("/api/stripe/webhook", express.raw({ type: "application/json" }));
+
 
 // ✅ Parse JSON for all other routes
 app.use(express.json()); 
