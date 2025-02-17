@@ -52,7 +52,7 @@ const client = new twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUT
 
 // ✅ Parse JSON for all other routes
 app.use(express.json()); 
-
+app.use(bodyParser.raw({ type: "application/json" }));
 let otpStore = {}; // Temporary OTP storage (use Redis for production)
 
 // ✅ Send OTP API
