@@ -53,7 +53,7 @@ const createPaymentIntent = async () => {
 
       console.log("🔹 Sending Payment Request:", { amount: total, currency, userId, orderId });
 
-      const response = await fetch("https://rockstarmathfinal-production.up.railway.app//api/stripe/create-payment-intent", {
+      const response = await fetch("https://rockstarmathfinal-production.up.railway.app/api/stripe/create-payment-intent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ amount: total, currency, userId, orderId }),
@@ -88,7 +88,7 @@ const startCheckout = async () => {
 
       console.log("🔹 Sending Payment Request:", { userId: user._id, cartItems });
 
-      const response = await fetch("https://rockstarmathfinal-production.up.railway.app//api/create-checkout-session", {
+      const response = await fetch("https://rockstarmathfinal-production.up.railway.app/api/create-checkout-session", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -136,7 +136,7 @@ const handlePaymentSuccess = async () => {
       purchasedClasses: formattedClasses
     });
 
-    const response = await fetch("https://rockstarmathfinal-production.up.railway.app//api/add-purchased-class", {
+    const response = await fetch("https://rockstarmathfinal-production.up.railway.app/api/add-purchased-class", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -226,7 +226,7 @@ return (
         
             console.log("🔹 Creating PayPal Order...");
         
-            const response = await fetch("https://rockstarmathfinal-production.up.railway.app//api/paypal/create-order", { // ✅ Fix applied: Correct route
+            const response = await fetch("https://rockstarmathfinal-production.up.railway.app/api/paypal/create-order", { // ✅ Fix applied: Correct route
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ 
@@ -265,7 +265,7 @@ return (
 
             // ✅ Send Payment Data to Backend
             try {
-              const response = await fetch("https://rockstarmathfinal-production.up.railway.app//api/paypal/capture-order", {
+              const response = await fetch("https://rockstarmathfinal-production.up.railway.app/api/paypal/capture-order", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
