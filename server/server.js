@@ -48,7 +48,13 @@ app.use(
 
 
 const client = new twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-
+app.use((req, res, next) => {
+    if (req.originalUrl === "/webhook") {
+        next(); // Skip JSON body parser for webhooks
+    } else {
+        express.json()(req, res, next); // Use JSON for other routes
+    }
+});
 
 // ✅ Parse JSON for all other routes
 app.use(express.json()); 
