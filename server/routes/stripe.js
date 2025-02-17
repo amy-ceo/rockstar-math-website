@@ -285,7 +285,7 @@ router.post('/webhook', express.raw({type: 'application/json'}), (request, respo
 
   // Handle the event
   switch (event.type) {
-    case 'payment_intent.succeeded':
+    case 'checkout.session.completed':
       const paymentIntent = event.data.object;
       console.log('PaymentIntent was successful!');
       break;
