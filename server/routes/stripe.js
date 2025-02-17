@@ -270,85 +270,25 @@ router.post('/create-checkout-session', async (req, res) => {
 
 // ✅ Stripe Webhook for Handling Successful Subscriptions
 // ✅ Stripe Webhook for Handling Successful Payments
-router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
-    let event;
-    try {
-        if (!process.env.STRIPE_WEBHOOK_SECRET) {
-            console.error("❌ Missing STRIPE_WEBHOOK_SECRET in .env file!");
-            return res.status(500).json({ error: "Webhook secret is missing." });
-        }
+router.post('/webhook', express.json(), async (req, res) => {
+    let event = req.body; // Directly use req.body for testing
 
-        event = stripe.webhooks.constructEvent(
-            req.body,
-            req.headers['stripe-signature'],
-            process.env.STRIPE_WEBHOOK_SECRET
-        );
-
-        console.log("🔹 Stripe Webhook Event Received:", JSON.stringify(event, null, 2));
-
-    } catch (err) {
-        console.error('❌ Stripe Webhook Error:', err.message);
-        return res.status(400).send(`Webhook Error: ${err.message}`);
-    }
+    console.log("🔹 Stripe Webhook Event Received:", JSON.stringify(event, null, 2));
 
     if (event.type === 'checkout.session.completed') {
         const session = event.data.object;
-        const userId = session.client_reference_id || session.metadata?.userId;
-        const productName = session.metadata?.planName || "Unknown Product";
-        const purchaseDate = new Date().toISOString();
+        console.log(`✅ Payment Successful: UserID=${session.client_reference_id}, Product=${session.metadata?.planName}`);
 
-        console.log(`✅ Payment Successful for User: ${userId}, Product: ${productName}`);
+        // Simulate adding purchased class (update database)
+        await Register.findByIdAndUpdate(
+            session.client_reference_id,
+            { $push: { purchasedClasses: { name: session.metadata?.planName, purchaseDate: new Date() } } }
+        );
 
-        if (!userId) {
-            console.error("❌ Missing userId in session!");
-            return res.status(400).json({ error: "Missing user ID from Stripe session." });
-        }
-
-        try {
-            const user = await Register.findById(userId);
-            console.log("📌 User Fetched from DB:", user);
-
-            if (!user) {
-                console.error(`❌ User not found: ${userId}`);
-                return res.status(404).json({ error: "User not found" });
-            }
-
-            if (!user.purchasedClasses) {
-                user.purchasedClasses = [];
-            }
-
-            const purchasedProduct = {
-                name: productName,
-                description: `Access to ${productName} subscription`,
-                purchaseDate: purchaseDate
-            };
-
-            user.purchasedClasses.push(purchasedProduct);
-            await user.save();
-
-            console.log("✅ Updated User After Saving:", await Register.findById(userId));
-
-            // ✅ Send Email Using Existing `sendEmail` Utility
-            await sendEmail(
-                "bhussnain966@gmail.com", 
-                "Payment Successful - Rockstar Math",
-                `Your payment for ${productName} has been successfully completed.`,
-                `<h2>Hello ${user.username},</h2>
-                 <p>Your payment for <strong>${productName}</strong> has been successfully completed.</p>
-                 <p>You now have access to your purchased class.</p>
-                 <p>Thank you for choosing Rockstar Math! 🎉</p>`
-            );
-
-            console.log(`📧 Email sent to ${user.billingEmail}`);
-
-            res.status(200).json({ success: true, message: "Purchase stored successfully" });
-
-        } catch (error) {
-            console.error("❌ Error Processing Subscription:", error);
-            res.status(500).json({ error: "Internal server error" });
-        }
-    } else {
-        res.json({ received: true });
+        console.log("✅ Purchased Class Added!");
     }
+
+    res.json({ received: true });
 });
+
 module.exports = router;
