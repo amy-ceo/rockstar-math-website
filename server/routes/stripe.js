@@ -3,6 +3,7 @@ const router = express.Router();
 const sendEmail = require('../utils/emailSender')
 require("dotenv").config();  // Ensure environment variables are loaded
 const { updatePaymentStatus } = require("../controller/paymentController");
+const bodyParser = require("body-parser"); // Ensure body-parser is imported
 const { createZoomMeeting } = require('../controller/zoomController');
 const Register = require('../models/registerModel') // ✅ Using Register Model
 const stripe = require("stripe")("sk_test_51QKwhUE4sPC5ms3xk3hyLDiMUFiqZ19gr88RN3k48VfVVIEpjnqUWHz662iRwZ8dBAXOmJSaCuAuzVyCGPcmePrq00FHlWaoS2");
@@ -270,67 +271,78 @@ router.post('/create-checkout-session', async (req, res) => {
 
 // ✅ Stripe Webhook for Handling Successful Subscriptions
 // ✅ Stripe Webhook for Handling Successful Payments
-router.post(
-  "/webhook",
-  express.raw({ type: "application/json" }), // ✅ Fix: Use express.raw instead of bodyParser.raw
-  async (req, res) => {
+router.post("/webhook", bodyParser.raw({ type: "application/json" }), async (req, res) => {
     let event;
-
     try {
-      event = stripe.webhooks.constructEvent(
-        req.body,
-        req.headers["stripe-signature"],
-        process.env.STRIPE_WEBHOOK_SECRET
-      );
-      console.log("🔹 Stripe Webhook Event Received:", event);
-    } catch (err) {
-      console.error("❌ Stripe Webhook Error:", err.message);
-      return res.status(400).send(`Webhook Error: ${err.message}`);
-    }
+        const sig = req.headers["stripe-signature"];
+        event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
 
-    if (event.type === "checkout.session.completed") {
-      const session = event.data.object;
-      const userId = session.client_reference_id || session.metadata?.userId;
-      const productName = session.metadata?.planName || "Subscription";
-      const amountPaid = session.amount_total / 100;
-      const purchaseDate = new Date().toISOString();
+        console.log("🔹 Stripe Webhook Event Received:", JSON.stringify(event, null, 2));
 
-      console.log(`✅ Payment Successful: User ${userId} purchased ${productName} for $${amountPaid}`);
+        if (event.type === "checkout.session.completed") {
+            const session = event.data.object;
+            const userId = session.client_reference_id || session.metadata?.userId;
+            const productName = session.metadata?.planName;
+            const amount = session.amount_total / 100;
+            const purchaseDate = new Date().toISOString();
 
-      try {
-        const user = await Register.findById(userId);
-        if (!user) {
-          console.error(`❌ User not found: ${userId}`);
-          return res.status(404).json({ error: "User not found" });
+            console.log(`✅ Payment Successful: ${userId} purchased ${productName} for $${amount}`);
+
+            if (!userId) {
+                console.error("❌ Missing userId in session!");
+                return res.status(400).json({ error: "Missing user ID from Stripe session." });
+            }
+            if (!productName) {
+                console.error("❌ Missing planName in metadata!");
+                return res.status(400).json({ error: "Missing plan name in session metadata." });
+            }
+
+            // ✅ Find User and Store Purchase
+            const Register = require("../models/registerModel"); // Ensure model is imported
+            try {
+                const user = await Register.findById(userId);
+                if (!user) {
+                    console.error(`❌ User not found: ${userId}`);
+                    return res.status(404).json({ error: "User not found" });
+                }
+
+                if (!user.purchasedClasses) {
+                    user.purchasedClasses = [];
+                }
+
+                const purchasedProduct = {
+                    name: productName,
+                    description: `Access to ${productName} subscription`,
+                    purchaseDate: purchaseDate,
+                };
+
+                user.purchasedClasses.push(purchasedProduct);
+                await user.save();
+
+                console.log(`✅ Purchase stored for user: ${user.username}`);
+
+                // ✅ Send Email Notification
+                await sendEmail(
+                    user.billingEmail,
+                    "Payment Successful - Rockstar Math",
+                    `Congratulations! You have successfully purchased ${productName}.`,
+                    `<h2>Payment Successful</h2><p>Thank you for purchasing ${productName}. You now have access to your subscription.</p>`
+                );
+
+                res.json({ success: true, message: "Purchase stored successfully" });
+
+            } catch (error) {
+                console.error("❌ Error Processing Subscription:", error);
+                res.status(500).json({ error: "Internal server error" });
+            }
+        } else {
+            res.json({ received: true });
         }
-
-        const purchasedProduct = {
-          name: productName,
-          description: `Access to ${productName} subscription`,
-          purchaseDate: purchaseDate
-        };
-
-        user.purchasedClasses.push(purchasedProduct);
-        await user.save();
-
-        console.log(`✅ Purchase stored for user: ${user.username}`);
-
-        await sendEmail(
-          user.billingEmail,
-          "Payment Successful - Rockstar Math",
-          `Hi ${user.username},\n\nYour payment of $${amountPaid} for ${productName} was successful.\n\nThank you for your purchase!`
-        );
-
-        console.log("📧 Payment confirmation email sent to:", user.billingEmail);
-
-      } catch (error) {
-        console.error("❌ Error Processing Subscription:", error);
-        return res.status(500).json({ error: "Internal server error" });
-      }
+    } catch (err) {
+        console.error("❌ Stripe Webhook Error:", err.message);
+        return res.status(400).send(`Webhook Error: ${err.message}`);
     }
+});
 
-    res.json({ received: true });
-  }
-);
 
 module.exports = router;
