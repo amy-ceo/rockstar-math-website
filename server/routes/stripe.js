@@ -273,26 +273,25 @@ router.post('/create-checkout-session', async (req, res) => {
 // ✅ Stripe Webhook for Handling Successful Payments
 router.post(
     "/webhook",
-    express.raw({ type: "application/json" }), // ✅ Ensure raw body for signature verification
+    express.raw({ type: "application/json" }), // ✅ Ensure raw body
     async (req, res) => {
         let event;
+        const sig = req.headers["stripe-signature"];
+
+        if (!sig) {
+            console.error("❌ Missing Stripe Signature Header!");
+            return res.status(400).json({ error: "Missing Stripe signature." });
+        }
 
         try {
-            const sig = req.headers["stripe-signature"];
-            if (!sig) {
-                console.error("❌ Missing Stripe Signature Header!");
-                return res.status(400).json({ error: "Missing Stripe signature." });
-            }
-
             event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
             console.log("🔹 Stripe Webhook Event Received:", JSON.stringify(event, null, 2));
-
         } catch (err) {
             console.error("❌ Stripe Webhook Error:", err.message);
             return res.status(400).send(`Webhook Error: ${err.message}`);
         }
 
-        // ✅ Process Checkout Session Completed Event
+        // ✅ Handle Checkout Session Completed Event
         if (event.type === "checkout.session.completed") {
             const session = event.data.object;
             const userId = session.client_reference_id || session.metadata?.userId;
@@ -337,20 +336,21 @@ router.post(
                     `<h2>Payment Successful</h2><p>Thank you for purchasing ${productName}. You now have access to your subscription.</p>`
                 );
 
-                res.json({ success: true, message: "Purchase stored successfully" });
+                return res.json({ success: true, message: "Purchase stored successfully" });
 
             } catch (error) {
                 console.error("❌ Error Processing Subscription:", error);
                 return res.status(500).json({ error: "Internal server error" });
             }
         } else {
-            console.log(`ℹ️ Received Unhandled Event: ${event.type}`);
+            console.log(`ℹ️ Unhandled Event Type: ${event.type}`);
         }
 
         // ✅ Always respond to Stripe to avoid re-sending events
         res.status(200).json({ received: true });
     }
 );
+
 
 
 module.exports = router;
