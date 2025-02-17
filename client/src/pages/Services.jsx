@@ -21,7 +21,7 @@ const Services = () => {
   useEffect(() => {
     const fetchServices = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/api/stripe/get-products");
+        const response = await axios.get("https://rockstarmathfinal-production.up.railway.app//api/stripe/get-products");
         setServices(response.data);
       } catch (error) {
         console.error("❌ Error fetching products:", error);
