@@ -270,25 +270,52 @@ router.post('/create-checkout-session', async (req, res) => {
 
 // ✅ Stripe Webhook for Handling Successful Subscriptions
 // ✅ Stripe Webhook for Handling Successful Payments
-router.post('/webhook', express.json(), async (req, res) => {
-    let event = req.body; // Directly use req.body for testing
+router.post("/webhook", express.raw({ type: "application/json" }), async (req, res) => {
+    const sig = req.headers["stripe-signature"];
 
-    console.log("🔹 Stripe Webhook Event Received:", JSON.stringify(event, null, 2));
+    try {
+        const event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+        console.log("🔹 Stripe Webhook Event Received:", JSON.stringify(event, null, 2));
 
-    if (event.type === 'checkout.session.completed') {
-        const session = event.data.object;
-        console.log(`✅ Payment Successful: UserID=${session.client_reference_id}, Product=${session.metadata?.planName}`);
+        if (event.type === "checkout.session.completed") {
+            const session = event.data.object;
+            const userId = session.client_reference_id;
+            const productName = session.metadata?.planName;
 
-        // Simulate adding purchased class (update database)
-        await Register.findByIdAndUpdate(
-            session.client_reference_id,
-            { $push: { purchasedClasses: { name: session.metadata?.planName, purchaseDate: new Date() } } }
-        );
+            console.log(`✅ Payment Successful: UserID=${userId}, Product=${productName}`);
 
-        console.log("✅ Purchased Class Added!");
+            // ✅ Ensure user exists before updating database
+            const user = await Register.findById(userId);
+            if (!user) {
+                console.error("❌ User not found in database.");
+                return res.status(404).json({ error: "User not found" });
+            }
+
+            // ✅ Add the purchased class
+            user.purchasedClasses.push({
+                name: productName,
+                purchaseDate: new Date(),
+            });
+
+            await user.save();
+            console.log("✅ Purchased Class Updated in Database!");
+
+            // ✅ Send Email Confirmation
+            await sendEmail(
+                user.billingEmail,
+                "Payment Successful - Rockstar Math",
+                `Thank you for purchasing ${productName}! Your class has been added to your account.`,
+                `<h2>Payment Successful</h2><p>Thank you for purchasing <strong>${productName}</strong>! Your class has been successfully added to your account.</p>`
+            );
+
+            console.log("📧 Payment Confirmation Email Sent!");
+        }
+
+        res.json({ received: true });
+    } catch (err) {
+        console.error("❌ Stripe Webhook Error:", err.message);
+        return res.status(400).send(`Webhook Error: ${err.message}`);
     }
-
-    res.json({ received: true });
 });
 
 module.exports = router;
