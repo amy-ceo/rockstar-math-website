@@ -44,12 +44,15 @@ app.use(
 );
 
 
-app.use(bodyParser.json()); // For parsing JSON requests
-app.use(bodyParser.urlencoded({ extended: true })); // For parsing URL-encoded data
+
 const client = new twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-app.post("/api/stripe/webhook", express.raw({ type: "application/json" })); // Ensure raw body for Stripe
-app.use(express.json()); // Other routes should use JSON parsing
-app.use(express.urlencoded({ extended: true })); // Allow form data if needed
+// ✅ Allow raw body for Stripe webhook ONLY
+app.post("/api/stripe/webhook", express.raw({ type: "application/json" }));
+
+// ✅ Parse JSON for all other routes
+app.use(express.json()); 
+app.use(bodyParser.urlencoded({ extended: true })); 
+app.use(bodyParser.json()); 
 
 
 let otpStore = {}; // Temporary OTP storage (use Redis for production)
