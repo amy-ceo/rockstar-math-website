@@ -7,7 +7,7 @@ const bodyParser = require("body-parser"); // Ensure body-parser is imported
 const { createZoomMeeting } = require('../controller/zoomController');
 const Register = require('../models/registerModel') // ✅ Using Register Model
 const stripe = require("stripe")("sk_test_51QKwhUE4sPC5ms3xk3hyLDiMUFiqZ19gr88RN3k48VfVVIEpjnqUWHz662iRwZ8dBAXOmJSaCuAuzVyCGPcmePrq00FHlWaoS2");
-
+const endpointSecret = 'whsec_be9u12S7olmtZZ4kKrB1z7YNG66PqE5g';
 const ZOOM_LINKS = [
   "https://us06web.zoom.us/meeting/register/mZHoQiy9SqqHx69f4dejgg#/registration",
   "https://us06web.zoom.us/meeting/register/kejThKqpTpetwaMNI33bAQ#/registration",
@@ -271,24 +271,31 @@ router.post('/create-checkout-session', async (req, res) => {
 
 // ✅ Stripe Webhook for Handling Successful Subscriptions
 // ✅ Stripe Webhook for Handling Successful Payments
-router.post('/webhook', express.json({type: 'application/json'}), (request, response) => {
-  const event = request.body;
+router.post('/webhook', express.raw({type: 'application/json'}), (request, response) => {
+  const sig = request.headers['stripe-signature'];
+
+  let event;
+
+  try {
+    event = stripe.webhooks.constructEvent(request.body, sig, endpointSecret);
+  }
+  catch (err) {
+    response.status(400).send(`Webhook Error: ${err.message}`);
+  }
 
   // Handle the event
   switch (event.type) {
     case 'payment_intent.succeeded':
       const paymentIntent = event.data.object;
-      // Then define and call a method to handle the successful payment intent.
-      // handlePaymentIntentSucceeded(paymentIntent);
+      console.log('PaymentIntent was successful!');
       break;
     case 'payment_method.attached':
       const paymentMethod = event.data.object;
-      // Then define and call a method to handle the successful attachment of a PaymentMethod.
-      // handlePaymentMethodAttached(paymentMethod);
+      console.log('PaymentMethod was attached to a Customer!');
       break;
     // ... handle other event types
     default:
-      // console.log(Unhandled event type ${event.type});
+      console.log(`Unhandled event type ${event.type}`);
   }
 
   // Return a response to acknowledge receipt of the event
