@@ -56,7 +56,7 @@ const Dashboard = () => {
   // }, [users]);
 console.log(users);
 
-  useEffect(() => {
+ useEffect(() => {
     const fetchPurchasedClasses = async () => {
         try {
             console.log("🔍 Fetching Purchased Classes...");
@@ -64,7 +64,6 @@ console.log(users);
             
             console.log("✅ Purchased Classes Fetched:", response.data);
             
-            // ✅ Ensure correct data mapping
             if (response.data && response.data.purchasedClasses) {
                 setPurchasedClasses(response.data.purchasedClasses);
             } else {
