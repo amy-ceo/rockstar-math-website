@@ -284,7 +284,7 @@ router.post(
         }
 
         try {
-            event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+            event = stripe.webhooks.constructEvent(req.body, sig, "whsec_78a0c4f341c605349d33fb24d2630bb64fb2b86c7d262474a2c0f8eecec7cab2");
             console.log("🔹 Stripe Webhook Event Received:", JSON.stringify(event, null, 2));
         } catch (err) {
             console.error("❌ Stripe Webhook Signature Error:", err.message);
