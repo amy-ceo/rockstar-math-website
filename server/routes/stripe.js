@@ -271,14 +271,28 @@ router.post('/create-checkout-session', async (req, res) => {
 
 // ✅ Stripe Webhook for Handling Successful Subscriptions
 // ✅ Stripe Webhook for Handling Successful Payments
-router.post("/webhook", bodyParser.raw({ type: "application/json" }), async (req, res) => {
-    let event;
-    try {
-        const sig = req.headers["stripe-signature"];
-        event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+router.post(
+    "/webhook",
+    express.raw({ type: "application/json" }), // ✅ Ensure raw body for signature verification
+    async (req, res) => {
+        let event;
 
-        console.log("🔹 Stripe Webhook Event Received:", JSON.stringify(event, null, 2));
+        try {
+            const sig = req.headers["stripe-signature"];
+            if (!sig) {
+                console.error("❌ Missing Stripe Signature Header!");
+                return res.status(400).json({ error: "Missing Stripe signature." });
+            }
 
+            event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+            console.log("🔹 Stripe Webhook Event Received:", JSON.stringify(event, null, 2));
+
+        } catch (err) {
+            console.error("❌ Stripe Webhook Error:", err.message);
+            return res.status(400).send(`Webhook Error: ${err.message}`);
+        }
+
+        // ✅ Process Checkout Session Completed Event
         if (event.type === "checkout.session.completed") {
             const session = event.data.object;
             const userId = session.client_reference_id || session.metadata?.userId;
@@ -288,17 +302,11 @@ router.post("/webhook", bodyParser.raw({ type: "application/json" }), async (req
 
             console.log(`✅ Payment Successful: ${userId} purchased ${productName} for $${amount}`);
 
-            if (!userId) {
-                console.error("❌ Missing userId in session!");
-                return res.status(400).json({ error: "Missing user ID from Stripe session." });
-            }
-            if (!productName) {
-                console.error("❌ Missing planName in metadata!");
-                return res.status(400).json({ error: "Missing plan name in session metadata." });
+            if (!userId || !productName) {
+                console.error("❌ Missing userId or planName in session!");
+                return res.status(400).json({ error: "Missing user ID or plan name." });
             }
 
-            // ✅ Find User and Store Purchase
-            const Register = require("../models/registerModel"); // Ensure model is imported
             try {
                 const user = await Register.findById(userId);
                 if (!user) {
@@ -333,16 +341,16 @@ router.post("/webhook", bodyParser.raw({ type: "application/json" }), async (req
 
             } catch (error) {
                 console.error("❌ Error Processing Subscription:", error);
-                res.status(500).json({ error: "Internal server error" });
+                return res.status(500).json({ error: "Internal server error" });
             }
         } else {
-            res.json({ received: true });
+            console.log(`ℹ️ Received Unhandled Event: ${event.type}`);
         }
-    } catch (err) {
-        console.error("❌ Stripe Webhook Error:", err.message);
-        return res.status(400).send(`Webhook Error: ${err.message}`);
+
+        // ✅ Always respond to Stripe to avoid re-sending events
+        res.status(200).json({ received: true });
     }
-});
+);
 
 
 module.exports = router;
