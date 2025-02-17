@@ -1,6 +1,6 @@
 const Register = require('../models/registerModel') // ✅ Using Register Model
 const jwt = require('jsonwebtoken')
-const bcrypt = require('bcrypt')
+const bcrypt = require('bcryptjs')
 const sendEmail = require('../utils/emailSender')
 const crypto = require('crypto')
 

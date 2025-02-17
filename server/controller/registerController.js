@@ -1,4 +1,4 @@
-const bcrypt = require('bcrypt')
+const bcrypt = require('bcryptjs')
 const Register = require('../models/registerModel')
 const jwt = require('jsonwebtoken')
 const crypto = require('crypto')
