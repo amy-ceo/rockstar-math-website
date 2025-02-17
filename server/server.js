@@ -99,28 +99,22 @@ app.post("/api/verify-otp", (req, res) => {
 
 app.post(
     "/api/stripe/webhook",
-    express.raw({ type: "application/json" }), 
+    express.raw({ type: "application/json" }),
     (req, res) => {
+        console.log("🔍 RAW BODY:", req.body); // Debug request body
+
         const sig = req.headers["stripe-signature"];
-        const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+        const endpointSecret = "whsec_0WfKaaK99FaR33MCNxNZiVlAP9tt5ue7";
 
         let event;
         try {
-            // 🚨 Ensure req.body is passed as a Buffer (raw body)
-            event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+            event = stripe.webhooks.constructEvent(req.body, sig, "whsec_0WfKaaK99FaR33MCNxNZiVlAP9tt5ue7");
         } catch (err) {
             console.error("❌ Webhook signature verification failed:", err.message);
             return res.status(400).send(`Webhook Error: ${err.message}`);
         }
 
         console.log("✅ Webhook verified:", event.type);
-
-        if (event.type === "checkout.session.completed") {
-            const session = event.data.object;
-            console.log("💰 Payment Successful:", session);
-            // Handle successful payment (e.g., update DB)
-        }
-
         res.json({ received: true });
     }
 );
