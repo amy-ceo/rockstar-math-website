@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const sendEmail = require('../utils/emailSender')
 require("dotenv").config();  // Ensure environment variables are loaded
 const { updatePaymentStatus } = require("../controller/paymentController");
 const { createZoomMeeting } = require('../controller/zoomController');
@@ -283,8 +284,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
             process.env.STRIPE_WEBHOOK_SECRET
         );
 
-        console.log("🔹 Stripe Webhook Event Received:");
-        console.log(JSON.stringify(event, null, 2));
+        console.log("🔹 Stripe Webhook Event Received:", JSON.stringify(event, null, 2));
 
     } catch (err) {
         console.error('❌ Stripe Webhook Error:', err.message);
@@ -297,7 +297,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
         const productName = session.metadata?.planName || "Unknown Product";
         const purchaseDate = new Date().toISOString();
 
-        console.log(`✅ Payment Successful for User: ${userId}, Product: ${productName}`);
+        console.log(`✅ Payment Successful: ${userId} purchased ${productName}`);
 
         if (!userId) {
             console.error("❌ Missing userId in session!");
@@ -328,6 +328,9 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
 
             console.log("✅ Updated User After Saving:", await Register.findById(userId));
 
+            // ✅ Send Payment Confirmation Email
+            await sendEmail(user.billingEmail, user.username, productName);
+
             res.status(200).json({ success: true, message: "Purchase stored successfully" });
 
         } catch (error) {
@@ -338,6 +341,5 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
         res.json({ received: true });
     }
 });
-
 
 module.exports = router;
