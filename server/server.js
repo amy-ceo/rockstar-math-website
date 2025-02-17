@@ -47,8 +47,10 @@ app.use(
 app.use(bodyParser.json()); // For parsing JSON requests
 app.use(bodyParser.urlencoded({ extended: true })); // For parsing URL-encoded data
 const client = new twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-app.use("/api/stripe/webhook", bodyParser.raw({ type: "application/json" }));
-app.use(express.json()); // Other routes can still use JSON
+app.post("/api/stripe/webhook", express.raw({ type: "application/json" })); // Ensure raw body for Stripe
+app.use(express.json()); // Other routes should use JSON parsing
+app.use(express.urlencoded({ extended: true })); // Allow form data if needed
+
 
 let otpStore = {}; // Temporary OTP storage (use Redis for production)
 
