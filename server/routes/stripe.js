@@ -273,8 +273,7 @@ router.post('/create-checkout-session', async (req, res) => {
 // ✅ Stripe Webhook for Handling Successful Payments
 router.post("/webhook", express.raw({ type: "application/json" }), (req, res) => {
     const sig = req.headers["stripe-signature"];
-    const endpointSecret = ''whsec_be9u12S7olmtZZ4kKrB1z7YNG66PqE5g'; // ✅ Load from .env
-
+    const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET; // ✅ Secure way!
     if (!sig) {
         console.error("❌ Missing Stripe Signature Header!");
         return res.status(400).json({ error: "Missing Stripe signature." });
