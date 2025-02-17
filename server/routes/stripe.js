@@ -271,7 +271,6 @@ router.post('/create-checkout-session', async (req, res) => {
 // ✅ Stripe Webhook for Handling Successful Payments
 router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
     let event;
-
     try {
         // ✅ Ensure Webhook Secret is Present
         if (!process.env.STRIPE_WEBHOOK_SECRET) {
@@ -300,7 +299,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
         const productName = session.metadata?.planName || "Unknown Product";
         const purchaseDate = new Date().toISOString();
 
-        console.log(`✅ Payment Successful: ${userId} purchased ${productName}`);
+        console.log(`✅ Payment Successful for User: ${userId}, Product: ${productName}`);
 
         if (!userId) {
             console.error("❌ Missing userId in session!");
@@ -308,6 +307,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
         }
 
         try {
+            // ✅ Fetch User from MongoDB
             const user = await Register.findById(userId);
             console.log("📌 User Fetched from DB:", user);
 
@@ -316,21 +316,24 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
                 return res.status(404).json({ error: "User not found" });
             }
 
+            // ✅ Ensure `purchasedClasses` Array Exists
             if (!user.purchasedClasses) {
                 user.purchasedClasses = [];
             }
 
+            // ✅ Add Purchased Class to User
             const purchasedProduct = {
                 name: productName,
                 description: `Access to ${productName} subscription`,
                 purchaseDate: purchaseDate
             };
 
-            // ✅ Save Purchase
             user.purchasedClasses.push(purchasedProduct);
             await user.save();
 
-            console.log("✅ Updated User After Saving:", await Register.findById(userId));
+            // ✅ Confirm Data is Saved
+            const updatedUser = await Register.findById(userId);
+            console.log("✅ Updated User After Saving:", updatedUser);
 
             res.status(200).json({ success: true, message: "Purchase stored successfully" });
 
@@ -342,12 +345,6 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
         res.json({ received: true });
     }
 });
-
-
-
-
-
-
 
 
 
