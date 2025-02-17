@@ -270,52 +270,75 @@ router.post('/create-checkout-session', async (req, res) => {
 
 // ✅ Stripe Webhook for Handling Successful Subscriptions
 // ✅ Stripe Webhook for Handling Successful Payments
-router.post("/webhook", express.raw({ type: "application/json" }), async (req, res) => {
-    const sig = req.headers["stripe-signature"];
+router.post(
+  "/webhook",
+  bodyParser.raw({ type: "application/json" }), // ✅ Ensure raw body
+  async (req, res) => {
+    let event;
 
     try {
-        const event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
-        console.log("🔹 Stripe Webhook Event Received:", JSON.stringify(event, null, 2));
+      // ✅ Construct event with raw body
+      event = stripe.webhooks.constructEvent(
+        req.body,
+        req.headers["stripe-signature"],
+        process.env.STRIPE_WEBHOOK_SECRET
+      );
 
-        if (event.type === "checkout.session.completed") {
-            const session = event.data.object;
-            const userId = session.client_reference_id;
-            const productName = session.metadata?.planName;
+      console.log("🔹 Stripe Webhook Event Received:", event);
 
-            console.log(`✅ Payment Successful: UserID=${userId}, Product=${productName}`);
+    } catch (err) {
+      console.error("❌ Stripe Webhook Error:", err.message);
+      return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
 
-            // ✅ Ensure user exists before updating database
-            const user = await Register.findById(userId);
-            if (!user) {
-                console.error("❌ User not found in database.");
-                return res.status(404).json({ error: "User not found" });
-            }
+    // ✅ Handle Checkout Session Completed
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object;
+      const userId = session.client_reference_id || session.metadata?.userId;
+      const productName = session.metadata?.planName || "Subscription";
+      const amountPaid = session.amount_total / 100; // Convert from cents to dollars
+      const purchaseDate = new Date().toISOString();
 
-            // ✅ Add the purchased class
-            user.purchasedClasses.push({
-                name: productName,
-                purchaseDate: new Date(),
-            });
+      console.log(`✅ Payment Successful: User ${userId} purchased ${productName} for $${amountPaid}`);
 
-            await user.save();
-            console.log("✅ Purchased Class Updated in Database!");
-
-            // ✅ Send Email Confirmation
-            await sendEmail(
-                user.billingEmail,
-                "Payment Successful - Rockstar Math",
-                `Thank you for purchasing ${productName}! Your class has been added to your account.`,
-                `<h2>Payment Successful</h2><p>Thank you for purchasing <strong>${productName}</strong>! Your class has been successfully added to your account.</p>`
-            );
-
-            console.log("📧 Payment Confirmation Email Sent!");
+      try {
+        // ✅ Fetch User from DB
+        const user = await Register.findById(userId);
+        if (!user) {
+          console.error(`❌ User not found: ${userId}`);
+          return res.status(404).json({ error: "User not found" });
         }
 
-        res.json({ received: true });
-    } catch (err) {
-        console.error("❌ Stripe Webhook Error:", err.message);
-        return res.status(400).send(`Webhook Error: ${err.message}`);
+        // ✅ Create Purchased Class Object
+        const purchasedProduct = {
+          name: productName,
+          description: `Access to ${productName} subscription`,
+          purchaseDate: purchaseDate
+        };
+
+        // ✅ Add Purchased Class to User's Account
+        user.purchasedClasses.push(purchasedProduct);
+        await user.save();
+
+        console.log(`✅ Purchase stored for user: ${user.username}`);
+
+        // ✅ Send Confirmation Email
+        await sendEmail(
+          user.billingEmail,
+          "Payment Successful - Rockstar Math",
+          `Hi ${user.username},\n\nYour payment of $${amountPaid} for ${productName} was successful.\n\nThank you for your purchase!`
+        );
+
+        console.log("📧 Payment confirmation email sent to:", user.billingEmail);
+
+      } catch (error) {
+        console.error("❌ Error Processing Subscription:", error);
+        return res.status(500).json({ error: "Internal server error" });
+      }
     }
-});
+
+    res.json({ received: true });
+  }
+);
 
 module.exports = router;
