@@ -111,43 +111,7 @@ exports.login = async (req, res) => {
 };
 
 
-// ✅ Save Purchased Class for User
-exports.addPurchasedClass = async (req, res) => {
-  try {
-    const { userId, classData } = req.body
 
-    if (!userId || !classData) {
-      return res.status(400).json({ message: 'User ID and class data are required' })
-    }
-
-    const user = await User.findById(userId)
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' })
-    }
-
-    user.purchasedClasses.push(classData)
-    await user.save()
-
-    res
-      .status(200)
-      .json({ message: 'Class added to user account', purchasedClasses: user.purchasedClasses })
-  } catch (error) {
-    res.status(500).json({ message: 'Error adding class', error: error.message })
-  }
-}
-
-// ✅ Get User Purchased Classes
-exports.getPurchasedClasses = async (req, res) => {
-  try {
-    const user = await User.findById(req.params.userId)
-    if (!user) return res.status(404).json({ message: 'User not found' })
-
-    res.json({ purchasedClasses: user.purchasedClasses || [] })
-  } catch (error) {
-    console.error('Error fetching purchased classes:', error)
-    res.status(500).json({ message: 'Server error' })
-  }
-}
 exports.forgotPassword = async (req, res) => {
   const { email } = req.body;
 
