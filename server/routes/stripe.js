@@ -7,7 +7,7 @@ const bodyParser = require("body-parser"); // Ensure body-parser is imported
 const { createZoomMeeting } = require('../controller/zoomController');
 const Register = require('../models/registerModel') // ✅ Using Register Model
 const stripe = require("stripe")("sk_test_51QKwhUE4sPC5ms3xk3hyLDiMUFiqZ19gr88RN3k48VfVVIEpjnqUWHz662iRwZ8dBAXOmJSaCuAuzVyCGPcmePrq00FHlWaoS2");
-const endpointSecret = 'whsec_be9u12S7olmtZZ4kKrB1z7YNG66PqE5g';
+
 const ZOOM_LINKS = [
   "https://us06web.zoom.us/meeting/register/mZHoQiy9SqqHx69f4dejgg#/registration",
   "https://us06web.zoom.us/meeting/register/kejThKqpTpetwaMNI33bAQ#/registration",
@@ -271,35 +271,39 @@ router.post('/create-checkout-session', async (req, res) => {
 
 // ✅ Stripe Webhook for Handling Successful Subscriptions
 // ✅ Stripe Webhook for Handling Successful Payments
-router.post('/webhook', express.raw({type: 'application/json'}), (request, response) => {
-  const sig = request.headers['stripe-signature'];
+router.post("/webhook", express.raw({ type: "application/json" }), (req, res) => {
+    const sig = req.headers["stripe-signature"];
+    const endpointSecret = ''whsec_be9u12S7olmtZZ4kKrB1z7YNG66PqE5g'; // ✅ Load from .env
 
-  let event;
+    if (!sig) {
+        console.error("❌ Missing Stripe Signature Header!");
+        return res.status(400).json({ error: "Missing Stripe signature." });
+    }
 
-  try {
-    event = stripe.webhooks.constructEvent(request.body, sig, endpointSecret);
-  }
-  catch (err) {
-    response.status(400).send(`Webhook Error: ${err.message}`);
-  }
+    let event;
+    try {
+        // ✅ Fix: Ensure `req.body` is properly passed as a string
+        event = stripe.webhooks.constructEvent(req.body.toString(), sig, endpointSecret);
+        console.log(`✅ Stripe Webhook Verified: ${event.type}`);
+    } catch (err) {
+        console.error(`❌ Webhook signature verification failed: ${err.message}`);
+        return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
 
-  // Handle the event
-  switch (event.type) {
-    case 'checkout.session.completed':
-      const paymentIntent = event.data.object;
-      console.log('PaymentIntent was successful!');
-      break;
-    case 'payment_method.attached':
-      const paymentMethod = event.data.object;
-      console.log('PaymentMethod was attached to a Customer!');
-      break;
-    // ... handle other event types
-    default:
-      console.log(`Unhandled event type ${event.type}`);
-  }
+    // ✅ Handle Stripe Event Types Safely
+    switch (event.type) {
+        case "checkout.session.completed":
+            const session = event.data.object;
+            console.log(`✅ Payment Successful! Session ID: ${session.id}`);
+            break;
+        case "payment_method.attached":
+            const paymentMethod = event.data.object;
+            console.log(`✅ Payment Method Attached to Customer!`);
+            break;
+        default:
+            console.log(`ℹ️ Unhandled event type: ${event.type}`);
+    }
 
-  // Return a response to acknowledge receipt of the event
-  response.json({received: true});
+    res.status(200).json({ received: true });
 });
-
 module.exports = router;
