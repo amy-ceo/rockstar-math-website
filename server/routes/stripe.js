@@ -271,85 +271,32 @@ router.post('/create-checkout-session', async (req, res) => {
 
 // ✅ Stripe Webhook for Handling Successful Subscriptions
 // ✅ Stripe Webhook for Handling Successful Payments
-router.post(
-    "/webhook",
-    express.raw({ type: "application/json" }), // ✅ Ensure raw body for signature verification
-    async (req, res) => {
-        let event;
-        const sig = req.headers["stripe-signature"];
+app.post("/webhook", bodyParser.raw({ type: "application/json" }), (req, res) => {
+    const sig = req.headers["stripe-signature"];
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET; // ✅ Use environment variable
 
-        if (!sig) {
-            console.error("❌ Missing Stripe Signature Header!");
-            return res.status(400).json({ error: "Missing Stripe signature." });
-        }
-
-        try {
-            event = stripe.webhooks.constructEvent(req.body, sig, "whsec_78a0c4f341c605349d33fb24d2630bb64fb2b86c7d262474a2c0f8eecec7cab2");
-            console.log("🔹 Stripe Webhook Event Received:", JSON.stringify(event, null, 2));
-        } catch (err) {
-            console.error("❌ Stripe Webhook Signature Error:", err.message);
-            return res.status(400).send(`Webhook Signature Error: ${err.message}`);
-        }
-
-        // ✅ Handle Checkout Session Completed Event
-        if (event.type === "checkout.session.completed") {
-            const session = event.data.object;
-            const userId = session.client_reference_id || session.metadata?.userId;
-            const productName = session.metadata?.planName;
-            const amount = session.amount_total / 100;
-            const purchaseDate = new Date().toISOString();
-
-            console.log(`✅ Payment Successful: ${userId} purchased ${productName} for $${amount}`);
-
-            if (!userId || !productName) {
-                console.error("❌ Missing userId or planName in session!");
-                return res.status(400).json({ error: "Missing user ID or plan name." });
-            }
-
-            try {
-                const user = await Register.findById(userId);
-                if (!user) {
-                    console.error(`❌ User not found: ${userId}`);
-                    return res.status(404).json({ error: "User not found" });
-                }
-
-                if (!user.purchasedClasses) {
-                    user.purchasedClasses = [];
-                }
-
-                const purchasedProduct = {
-                    name: productName,
-                    description: `Access to ${productName} subscription`,
-                    purchaseDate: purchaseDate,
-                };
-
-                user.purchasedClasses.push(purchasedProduct);
-                await user.save();
-
-                console.log(`✅ Purchase stored for user: ${user.username}`);
-
-                // ✅ Send Email Notification
-                await sendEmail(
-                    user.billingEmail,
-                    "Payment Successful - Rockstar Math",
-                    `Congratulations! You have successfully purchased ${productName}.`,
-                    `<h2>Payment Successful</h2><p>Thank you for purchasing ${productName}. You now have access to your subscription.</p>`
-                );
-
-                return res.json({ success: true, message: "Purchase stored successfully" });
-
-            } catch (error) {
-                console.error("❌ Error Processing Subscription:", error);
-                return res.status(500).json({ error: "Internal server error" });
-            }
-        } else {
-            console.log(`ℹ️ Unhandled Event Type: ${event.type}`);
-        }
-
-        // ✅ Always respond to Stripe to avoid re-sending events
-        res.status(200).json({ received: true });
+    if (!sig) {
+        console.error("❌ Missing Stripe Signature Header!");
+        return res.status(400).json({ error: "Missing Stripe signature." });
     }
-);
+
+    let event;
+    try {
+        // ✅ Fix: Pass raw body as string to Stripe verification
+        event = stripe.webhooks.constructEvent(req.body.toString(), sig, webhookSecret);
+        console.log("✅ Stripe Webhook Verified:", event.type);
+    } catch (err) {
+        console.error("❌ Webhook Verification Failed:", err.message);
+        return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    // ✅ Handle Payment Event
+    if (event.type === "checkout.session.completed") {
+        console.log("✅ Payment Successful:", event.data.object);
+    }
+
+    res.status(200).json({ received: true });
+});
 
 
 module.exports = router;
