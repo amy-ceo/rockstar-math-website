@@ -44,6 +44,8 @@ app.use(
 
 app.use(bodyParser.json());
 const client = new twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+app.use("/api/stripe/webhook", express.raw({ type: "application/json" })); 
+app.use(express.json()); // Other routes can still use JSON
 
 let otpStore = {}; // Temporary OTP storage (use Redis for production)
 
