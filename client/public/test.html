@@ -1,0 +1,89 @@
+Here is an example of the code for the calendar functionality that I was talking about:
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Calendar</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+        }
+        .day {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+            position: relative;
+            cursor: pointer;
+        }
+        .day:hover .tooltip {
+            display: block;
+        }
+        .tooltip {
+            display: none;
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: black;
+            color: white;
+            padding: 5px;
+            border-radius: 5px;
+            white-space: nowrap;
+        }
+        .legend {
+            margin-top: 20px;
+        }
+        .legend div {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        .legend span {
+            width: 20px;
+            height: 20px;
+            display: inline-block;
+            margin-right: 10px;
+        }
+        .group-tutoring { background-color: blue; }
+        .private-tutoring { background-color: green; }
+        .live-class { background-color: red; }
+    </style>
+</head>
+<body>
+
+<h2>Interactive Calendar</h2>
+
+<div class="calendar">
+    <div class="day">
+        Monday
+        <div class="tooltip">Group Tutoring - 4 PM | Private Tutoring - 6 PM</div>
+    </div>
+    <div class="day">
+        Tuesday
+        <div class="tooltip">Live Class - 5 PM</div>
+    </div>
+    <div class="day">
+        Wednesday
+        <div class="tooltip">Group Tutoring - 3 PM | AP Bootcamp - 7 PM</div>
+    </div>
+    <div class="day">
+        Thursday
+        <div class="tooltip">Private Tutoring - 5 PM</div>
+    </div>
+</div>
+
+<h3>Legend</h3>
+<div class="legend">
+    <div><span class="group-tutoring"></span> Group Tutoring</div>
+    <div><span class="private-tutoring"></span> Private Tutoring</div>
+    <div><span class="live-class"></span> Live Class</div>
+</div>
+
+</body>
+</html>
