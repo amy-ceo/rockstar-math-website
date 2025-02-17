@@ -271,7 +271,7 @@ router.post('/create-checkout-session', async (req, res) => {
 
 // ✅ Stripe Webhook for Handling Successful Subscriptions
 // ✅ Stripe Webhook for Handling Successful Payments
-app.post("/webhook", bodyParser.raw({ type: "application/json" }), (req, res) => {
+router.post("/webhook", bodyParser.raw({ type: "application/json" }), (req, res) => {
     const sig = req.headers["stripe-signature"];
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET; // ✅ Use environment variable
 
