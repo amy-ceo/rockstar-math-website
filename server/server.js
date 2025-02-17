@@ -23,7 +23,7 @@ connectDB();
 
 const app = express();
 // ✅ Allow raw body for Stripe webhook ONLY
-
+const endpointSecret = "whsec_0WfKaaK99FaR33MCNxNZiVlAP9tt5ue7"
 const allowedOrigins = [
   'http://localhost:8080', // Local Development URL
   'https://frontend-production-90a4.up.railway.app' // Production URL
@@ -99,27 +99,52 @@ app.post("/api/verify-otp", (req, res) => {
 
 app.post(
     "/api/stripe/webhook",
-    express.raw({ type: "application/json" }),
+    express.raw({ type: "application/json" }), 
     (req, res) => {
-        console.log("🔍 RAW BODY:", req.body); // Debug request body
+        console.log("🔍 RAW BODY:", req.body.toString()); // ✅ Debug request body
 
-        const sig = req.headers["stripe-signature"];
-        const endpointSecret = "whsec_0WfKaaK99FaR33MCNxNZiVlAP9tt5ue7";
+        let event = req.body;
 
-        let event;
-        try {
-            event = stripe.webhooks.constructEvent(req.body, sig, "whsec_0WfKaaK99FaR33MCNxNZiVlAP9tt5ue7");
-        } catch (err) {
-            console.error("❌ Webhook signature verification failed:", err.message);
-            return res.status(400).send(`Webhook Error: ${err.message}`);
+        if (endpointSecret) {
+            const signature = req.headers["stripe-signature"];
+            try {
+                // ✅ Construct event using raw body & signature
+                event = stripe.webhooks.constructEvent(req.body, signature, endpointSecret);
+            } catch (err) {
+                console.error("❌ Webhook signature verification failed:", err.message);
+                return res.sendStatus(400);
+            }
         }
 
         console.log("✅ Webhook verified:", event.type);
-        res.json({ received: true });
+
+        // ✅ Handle different event types
+        switch (event.type) {
+            case "checkout.session.completed":
+                const session = event.data.object;
+                console.log(`💰 Payment Successful: ${session.id}`);
+                // You can now fulfill the order or update the database
+                break;
+
+            case "payment_intent.succeeded":
+                const paymentIntent = event.data.object;
+                console.log(`✅ PaymentIntent for ${paymentIntent.amount} was successful!`);
+                break;
+
+            case "payment_method.attached":
+                const paymentMethod = event.data.object;
+                console.log("💳 Payment method attached:", paymentMethod.id);
+                break;
+
+            default:
+                console.log(`⚠️ Unhandled event type: ${event.type}`);
+        }
+
+        res.sendStatus(200); // ✅ Acknowledge receipt of the event
     }
 );
 
-// ✅ Apply JSON parsing only for other routes
+// ✅ JSON parser for other API routes
 app.use(express.json());
 
 
