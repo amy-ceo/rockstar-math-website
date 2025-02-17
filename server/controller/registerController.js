@@ -9,53 +9,48 @@ const generateToken = (id) => {
 
 exports.registerUser = async (req, res) => {
   try {
-    let { username, password, numStudents, students, ...restData } = req.body
+    let { username, password, numStudents, students, ...restData } = req.body;
 
-    console.log('🔍 Incoming Registration Data:', req.body)
+    console.log("🔍 Incoming Registration Data:", req.body);
 
-    // ✅ Check if username is already taken
+    // ✅ Convert username to lowercase
+    username = username.toLowerCase();
+
+    // ✅ Check if username already exists
     const existingUser = await Register.findOne({ username });
     if (existingUser) {
-      return res.status(400).json({ message: "Username already exists" });
+      return res.status(400).json({ success: false, error: "Username already exists" });
     }
 
-    // ✅ Hash password before saving to DB
+    // ✅ Hash Password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
+    console.log("🔹 Hashed Password:", hashedPassword);
+
     // ✅ Validate Students Data
     if (numStudents > 1) {
       if (!Array.isArray(students) || students.length !== numStudents) {
-        return res.status(400).json({ success: false, error: 'Invalid student details!' })
+        return res.status(400).json({ success: false, error: "Invalid student details!" });
       }
 
       for (let i = 0; i < students.length; i++) {
-        if (
-          !students[i].name ||
-          !students[i].grade ||
-          !students[i].mathLevel ||
-          students[i].age === ''
-        ) {
-          return res
-            .status(400)
-            .json({ success: false, error: `Student ${i + 1} details are incomplete!` })
+        if (!students[i].name || !students[i].grade || !students[i].mathLevel || students[i].age === "") {
+          return res.status(400).json({
+            success: false,
+            error: `Student ${i + 1} details are incomplete!`,
+          });
         }
       }
     } else {
       if (!restData.studentNames || !restData.studentGrades || !restData.studentMathLevels) {
-        return res.status(400).json({ success: false, error: 'Student details are required!' })
+        return res.status(400).json({ success: false, error: "Student details are required!" });
       }
     }
 
-    // ✅ Hash the Password Before Storing
-    function hashPassword(password) {
-      return crypto.createHash('sha256').update(password).digest('hex')
-    }
-
-  
-    console.log('🔹 Hashed Password:', hashedPassword)
+    // ✅ Create New User Object
     const newUser = new Register({
-      username: req.body.username.toLowerCase(),
-      password: hashedPassword, // ✅ Store hashed password only once
+      username,
+      password: hashedPassword, // ✅ Securely storing hashed password
       numStudents,
       students:
         numStudents > 1
@@ -69,31 +64,33 @@ exports.registerUser = async (req, res) => {
               },
             ],
       ...restData,
-    })
+    });
 
-    await newUser.save()
+    // ✅ Save User in Database
+    await newUser.save();
 
     // ✅ Generate JWT Token
-    const token = generateToken(newUser._id)
+    const token = generateToken(newUser._id);
 
-    console.log('✅ Registration Successful:', newUser)
+    console.log("✅ Registration Successful:", newUser);
 
+    // ✅ Response to Frontend
     res.status(201).json({
       success: true,
-      message: 'Registration successful!',
+      message: "Registration successful!",
       user: {
         _id: newUser._id,
         username: newUser.username,
         billingEmail: newUser.billingEmail,
         phone: newUser.phone,
       },
-      token, // ✅ Send token to frontend
-    })
+      token, // ✅ Sending token to frontend
+    });
   } catch (error) {
-    console.error('❌ Registration Error:', error)
-    res.status(500).json({ success: false, error: 'Registration failed. Please try again!' })
+    console.error("❌ Registration Error:", error);
+    res.status(500).json({ success: false, error: "Registration failed. Please try again!" });
   }
-}
+};
 
 exports.addPurchasedClass = async (req, res) => {
   try {
