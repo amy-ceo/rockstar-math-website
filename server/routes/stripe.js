@@ -25,7 +25,6 @@ router.get("/test-products", async (req, res) => {
         });
 
         console.log("✅ Products with Prices:", allProducts.data);
-        
         res.status(200).json(allProducts.data);
     } catch (error) {
         console.error("❌ Error fetching products from Stripe:", error);
