@@ -99,26 +99,5 @@ Colors Used (Hex Codes)
 Fonts Used 
 ● Primary Font: 'Public Sans', sans-serif 
 ● Supporting Fonts: swiper-icons, sans-serif, ui-monospace, system-ui 
-8. Error & Hotfix Log 
-Issue 
-Page load 
-delay 
-Description 
-Some assets take longer to load 
-Status 
-Pending Fix 
-Form validation Some inputs do not validate correctly In Progress 
-Mobile layout 
-Minor layout shift on small screens 
-Fixed 
-9. Contact & Support 
-For any additional bugs, fixes, or questions, please contact us at: 
-�
-�
- anchorwebdesigns@gmail.com  
-�
-�
- +1 (847) 497-0649 
-Thank you for using Anchor Web Design Studio! 
 �
 �
