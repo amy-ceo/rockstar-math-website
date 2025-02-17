@@ -3,12 +3,13 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "homepage": ".",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "react-scripts build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "start": "npx serve -s dist -l 8080"
+    "start": "npx serve -s dist -l $PORT"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.0",
