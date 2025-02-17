@@ -272,57 +272,49 @@ router.post('/create-checkout-session', async (req, res) => {
 // ✅ Stripe Webhook for Handling Successful Payments
 router.post(
   "/webhook",
-  bodyParser.raw({ type: "application/json" }), // ✅ Ensure raw body
+  express.raw({ type: "application/json" }), // ✅ Fix: Use express.raw instead of bodyParser.raw
   async (req, res) => {
     let event;
 
     try {
-      // ✅ Construct event with raw body
       event = stripe.webhooks.constructEvent(
         req.body,
         req.headers["stripe-signature"],
         process.env.STRIPE_WEBHOOK_SECRET
       );
-
       console.log("🔹 Stripe Webhook Event Received:", event);
-
     } catch (err) {
       console.error("❌ Stripe Webhook Error:", err.message);
       return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
-    // ✅ Handle Checkout Session Completed
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
       const userId = session.client_reference_id || session.metadata?.userId;
       const productName = session.metadata?.planName || "Subscription";
-      const amountPaid = session.amount_total / 100; // Convert from cents to dollars
+      const amountPaid = session.amount_total / 100;
       const purchaseDate = new Date().toISOString();
 
       console.log(`✅ Payment Successful: User ${userId} purchased ${productName} for $${amountPaid}`);
 
       try {
-        // ✅ Fetch User from DB
         const user = await Register.findById(userId);
         if (!user) {
           console.error(`❌ User not found: ${userId}`);
           return res.status(404).json({ error: "User not found" });
         }
 
-        // ✅ Create Purchased Class Object
         const purchasedProduct = {
           name: productName,
           description: `Access to ${productName} subscription`,
           purchaseDate: purchaseDate
         };
 
-        // ✅ Add Purchased Class to User's Account
         user.purchasedClasses.push(purchasedProduct);
         await user.save();
 
         console.log(`✅ Purchase stored for user: ${user.username}`);
 
-        // ✅ Send Confirmation Email
         await sendEmail(
           user.billingEmail,
           "Payment Successful - Rockstar Math",
