@@ -90,7 +90,7 @@ app.post("/api/verify-otp", (req, res) => {
   
     if (otpStore[phone] && otpStore[phone] == otp) {
       delete otpStore[phone]; // ✅ Remove OTP after successful verification
-      return res.json({ success: true, message: "OTP Verified Successfully!" });
+      return res.json({ success: true, message: "OTP Verified Successfully" });
     } else {
       return res.status(400).json({ error: "Invalid OTP or OTP expired." });
     }
