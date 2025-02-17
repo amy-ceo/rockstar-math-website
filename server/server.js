@@ -50,8 +50,7 @@ app.use(
 const client = new twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 // ✅ Parse JSON for all other routes
 // ⚡ Apply JSON parser only for other routes
-app.use(express.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+
 let otpStore = {}; // Temporary OTP storage (use Redis for production)
 
 // ✅ Send OTP API
@@ -100,14 +99,14 @@ app.post("/api/verify-otp", (req, res) => {
 
 app.post(
     "/api/stripe/webhook",
-    express.raw({ type: "application/json" }), // 🚨 Use raw body
+    express.raw({ type: "application/json" }),
     (req, res) => {
         const sig = req.headers["stripe-signature"];
         const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
         let event;
         try {
-            // 🚨 Use `req.body` as is (raw Buffer)
+            // 🚨 Ensure req.body is passed as a Buffer
             event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
         } catch (err) {
             console.error("❌ Webhook signature verification failed:", err.message);
@@ -125,6 +124,10 @@ app.post(
         res.json({ received: true });
     }
 );
+
+// ✅ JSON parser for other API routes
+app.use(express.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
 
   
