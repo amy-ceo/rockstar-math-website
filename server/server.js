@@ -23,7 +23,7 @@ connectDB();
 
 const app = express();
 // ✅ Allow raw body for Stripe webhook ONLY
-app.post("/api/stripe/webhook", express.raw({ type: "application/json" }));
+app.use(bodyParser.json()); 
 const allowedOrigins = [
   'http://localhost:8080', // Local Development URL
   'https://frontend-production-90a4.up.railway.app' // Production URL
