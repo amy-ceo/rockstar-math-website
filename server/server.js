@@ -23,8 +23,8 @@ connectDB();
 
 const app = express();
 // ✅ Allow raw body for Stripe webhook ONLY
-const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
-console.log(endpointSecret)
+// const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+// console.log(endpointSecret)
 const allowedOrigins = [
   'http://localhost:8080', // Local Development URL
   'https://frontend-production-90a4.up.railway.app' // Production URL

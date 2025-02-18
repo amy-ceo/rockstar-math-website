@@ -111,9 +111,7 @@ exports.addPurchasedClass = async (req, res) => {
       // ✅ Ensure purchasedClasses is always an array
       const newClasses = Array.isArray(purchasedClasses) ? purchasedClasses : [purchasedClasses];
 
-      // ✅ Ensure purchasedClasses is always an array
-      const newClasses = Array.isArray(purchasedClasses) ? purchasedClasses : [purchasedClasses];
-
+   
       // ✅ Add classes to the purchasedClasses array
       user.purchasedClasses = [...user.purchasedClasses, ...newClasses];
       await user.save();

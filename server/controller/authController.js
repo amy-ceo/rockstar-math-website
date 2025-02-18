@@ -111,68 +111,7 @@ exports.login = async (req, res) => {
 };
 
 
-// <<<<<<< HEAD
-// ✅ Save Purchased Class for User
 
-// exports.addPurchasedClass = async (req, res) => {
-//   try {
-//     const { userId, classData } = req.body;
-
-//     // ✅ Input Validation
-//     if (!userId || !classData || !classData.name || !classData.description) {
-//       return res.status(400).json({ message: "User ID and valid class data are required" });
-//     }
-
-//     console.log("🔹 Adding Purchased Class for User:", userId, "Class:", classData);
-
-//     // ✅ Find User in Database
-//     const user = await Register.findById(userId);
-//     if (!user) {
-//       console.error("❌ User not found:", userId);
-//       return res.status(404).json({ message: "User not found" });
-//     }
-
-//     // ✅ Push New Class to `purchasedClasses` (Ensure it exists)
-//     if (!user.purchasedClasses) {
-//       user.purchasedClasses = [];
-//     }
-
-//     user.purchasedClasses.push({
-//       name: classData.name,
-//       description: classData.description,
-//       purchaseDate: new Date().toISOString(), // ✅ Automatically set current date
-//     });
-
-//     await user.save();
-
-//     console.log("✅ Class Added Successfully:", user.purchasedClasses);
-
-//     res.status(200).json({
-//       message: "Class added to user account",
-//       purchasedClasses: user.purchasedClasses,
-//     });
-//   } catch (error) {
-//     console.error("❌ Error adding class:", error.message);
-//     res.status(500).json({ message: "Error adding class", error: error.message });
-//   }
-// };
-
-
-// // ✅ Get User Purchased Classes
-// exports.getPurchasedClasses = async (req, res) => {
-//   try {
-//     const user = await Register.findById(req.params.userId)
-//     if (!user) return res.status(404).json({ message: 'User not found' })
-
-//     res.json({ purchasedClasses: user.purchasedClasses || [] })
-//   } catch (error) {
-//     console.error('Error fetching purchased classes:', error)
-//     res.status(500).json({ message: 'Server error' })
-//   }
-// }
-=======
-
->>>>>>> 8b2d483ae2020985b6fb2f2b384fdea021658088
 exports.forgotPassword = async (req, res) => {
   const { email } = req.body;
 
