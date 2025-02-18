@@ -99,7 +99,7 @@ app.post("/api/verify-otp", (req, res) => {
   });
 
 // ✅ Middleware to manually extract raw body
-/ ✅ Middleware to manually extract raw body before webhook processing
+// ✅ Middleware to manually extract raw body before webhook processing
 app.use((req, res, next) => {
     if (req.originalUrl === "/webhook") {
         let rawBody = "";
@@ -140,6 +140,7 @@ app.post("/webhook", (req, res) => {
 
     res.sendStatus(200); // ✅ Acknowledge receipt of event
 });
+
 
 
 // ✅ JSON parser for other routes
