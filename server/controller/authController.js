@@ -111,6 +111,7 @@ exports.login = async (req, res) => {
 };
 
 
+// <<<<<<< HEAD
 // ✅ Save Purchased Class for User
 
 // exports.addPurchasedClass = async (req, res) => {
@@ -169,6 +170,9 @@ exports.login = async (req, res) => {
 //     res.status(500).json({ message: 'Server error' })
 //   }
 // }
+=======
+
+>>>>>>> 8b2d483ae2020985b6fb2f2b384fdea021658088
 exports.forgotPassword = async (req, res) => {
   const { email } = req.body;
 

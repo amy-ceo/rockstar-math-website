@@ -1,5 +1,6 @@
 require("dotenv").config();
 console.log("Stripe Secret Key:", process.env.STRIPE_SECRET_KEY ? "Loaded ✅" : "Not Loaded ❌");
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -19,9 +20,11 @@ const paymentRoutes = require("./routes/paymentRoutes"); // ✅ Import Payment R
 const ordersRoute = require("./routes/order.js"); // ✅ Import Orders Route
 const paypalRoutes = require("./routes/paypalRoutes.js")
 connectDB();
+
+const app = express();
+// ✅ Allow raw body for Stripe webhook ONLY
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 console.log(endpointSecret)
-const app = express();
 const allowedOrigins = [
   'http://localhost:8080', // Local Development URL
   'https://frontend-production-90a4.up.railway.app' // Production URL
@@ -43,8 +46,11 @@ app.use(
   })
 );
 
-app.use(bodyParser.json());
+
+
 const client = new twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+// ✅ Parse JSON for all other routes
+// ⚡ Apply JSON parser only for other routes
 
 let otpStore = {}; // Temporary OTP storage (use Redis for production)
 
@@ -86,57 +92,11 @@ app.post("/api/verify-otp", (req, res) => {
   
     if (otpStore[phone] && otpStore[phone] == otp) {
       delete otpStore[phone]; // ✅ Remove OTP after successful verification
-      return res.json({ success: true, message: "OTP Verified Successfully!" });
+      return res.json({ success: true, message: "OTP Verified Successfully" });
     } else {
       return res.status(400).json({ error: "Invalid OTP or OTP expired." });
     }
   });
-
-  app.use((req, res, next) => {
-    if (req.originalUrl === "/webhook") {
-        let rawBody = "";
-        req.on("data", (chunk) => {
-            rawBody += chunk;
-        });
-        req.on("end", () => {
-            req.rawBody = rawBody; // ✅ Save raw body
-            next();
-        });
-    } else {
-        express.json()(req, res, next);
-    }
-});
-
-// ✅ Webhook Route
-app.post("/api/stripe/webhook", (req, res) => {
-    console.log("🔍 Extracted RAW BODY:", req.rawBody); // ✅ Debugging raw body
-
-    const sig = req.headers["stripe-signature"];
-    let event;
-
-    try {
-        // ✅ Pass manually extracted rawBody instead of req.body
-        event = stripe.webhooks.constructEvent(req.rawBody, sig, endpointSecret);
-    } catch (err) {
-        console.error("❌ Webhook signature verification failed:", err.message);
-        return res.status(400).send(`Webhook Error: ${err.message}`);
-    }
-
-    console.log("✅ Webhook verified:", event.type);
-
-    // ✅ Handle checkout.session.completed event
-    if (event.type === "checkout.session.completed") {
-        const session = event.data.object;
-        console.log(`💰 Checkout Successful! PaymentIntent ID: ${session.payment_intent}`);
-    }
-
-    res.sendStatus(200); // ✅ Acknowledge receipt of event
-});
-
-
-
-// ✅ JSON parser for other routes
-app.use(express.json());
   
 // Routes
 app.use('/api/auth', authRoutes);

@@ -28,7 +28,7 @@ const Dashboard = () => {
   //     setLoading(true);
   //     try {
   //       // ✅ Fetch Purchased Classes
-  //       const classResponse = await fetch(`https://rockstarmathfinal-production.up.railway.app/api/${users._id}/purchased-classes`);
+  //       const classResponse = await fetch(`http://localhost:5000/api/${users._id}/purchased-classes`);
   //       const classData = await classResponse.json();
 
   //       if (classResponse.ok && classData.purchasedClasses) {
@@ -36,7 +36,7 @@ const Dashboard = () => {
   //       }
 
   //       // ✅ Fetch Zoom Meeting if user has a subscription
-  //       const zoomResponse = await fetch(`https://rockstarmathfinal-production.up.railway.app/api/${users._id}/zoom-meeting`);
+  //       const zoomResponse = await fetch(`http://localhost:5000/api/${users._id}/zoom-meeting`);
   //       const zoomData = await zoomResponse.json();
 
   //       if (zoomResponse.ok && zoomData.meeting) {
@@ -56,7 +56,7 @@ const Dashboard = () => {
   // }, [users]);
 console.log(users);
 
-  useEffect(() => {
+ useEffect(() => {
     const fetchPurchasedClasses = async () => {
         try {
             console.log("🔍 Fetching Purchased Classes...");
@@ -64,7 +64,6 @@ console.log(users);
             
             console.log("✅ Purchased Classes Fetched:", response.data);
             
-            // ✅ Ensure correct data mapping
             if (response.data && response.data.purchasedClasses) {
                 setPurchasedClasses(response.data.purchasedClasses);
             } else {

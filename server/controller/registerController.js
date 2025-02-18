@@ -99,7 +99,7 @@ exports.addPurchasedClass = async (req, res) => {
   try {
       const { userId, purchasedClasses } = req.body;
 
-      if (!userId || !purchasedClasses || (Array.isArray(purchasedClasses) && purchasedClasses.length === 0)) {
+      if (!userId || !purchasedClasses || (Array.isArray(purchasedClasses) && (Array.isArray(purchasedClasses) && purchasedClasses.length === 0))) {
           return res.status(400).json({ message: "Invalid request. Missing data." });
       }
 
@@ -111,9 +111,14 @@ exports.addPurchasedClass = async (req, res) => {
       // ✅ Ensure purchasedClasses is always an array
       const newClasses = Array.isArray(purchasedClasses) ? purchasedClasses : [purchasedClasses];
 
+      // ✅ Ensure purchasedClasses is always an array
+      const newClasses = Array.isArray(purchasedClasses) ? purchasedClasses : [purchasedClasses];
+
       // ✅ Add classes to the purchasedClasses array
       user.purchasedClasses = [...user.purchasedClasses, ...newClasses];
       await user.save();
+
+      console.log("✅ Updated Purchased Classes:", user.purchasedClasses);
 
       console.log("✅ Updated Purchased Classes:", user.purchasedClasses);
 
@@ -124,6 +129,7 @@ exports.addPurchasedClass = async (req, res) => {
   }
 };
 
+
 exports.getPurchasedClasses = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -133,7 +139,7 @@ exports.getPurchasedClasses = async (req, res) => {
     // ✅ Check if User Exists
     const user = await Register.findById(userId);
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: 'User not found' });;
     }
 
     // ✅ Ensure purchasedClasses is always an array
@@ -146,7 +152,11 @@ exports.getPurchasedClasses = async (req, res) => {
       purchasedClasses
     });
   } catch (error) {
-    console.error('❌ Error Fetching Purchased Classes:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    console.error('❌ Error Fetching Purchased Classes:', error);;
+    res.status(500).json({ message: 'Server error', error: error.message });;
   }
 };
+// <<<<<<< HEAD
+// =======
+
+// >>>>>>> 8b2d483ae2020985b6fb2f2b384fdea021658088

@@ -1,10 +1,12 @@
 const express = require("express");
 const router = express.Router();
+const sendEmail = require('../utils/emailSender')
 require("dotenv").config();  // Ensure environment variables are loaded
-const { updatePaymentStatus } = require("../controller/paypalController");
+const { updatePaymentStatus } = require("../controller/paymentController");
+const bodyParser = require("body-parser"); // Ensure body-parser is imported
 const { createZoomMeeting } = require('../controller/zoomController');
 const Register = require('../models/registerModel') // ✅ Using Register Model
-const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+const stripe = require("stripe")("sk_test_51QKwhUE4sPC5ms3xk3hyLDiMUFiqZ19gr88RN3k48VfVVIEpjnqUWHz662iRwZ8dBAXOmJSaCuAuzVyCGPcmePrq00FHlWaoS2");
 
 const ZOOM_LINKS = [
   "https://us06web.zoom.us/meeting/register/mZHoQiy9SqqHx69f4dejgg#/registration",
@@ -23,7 +25,6 @@ router.get("/test-products", async (req, res) => {
         });
 
         console.log("✅ Products with Prices:", allProducts.data);
-        
         res.status(200).json(allProducts.data);
     } catch (error) {
         console.error("❌ Error fetching products from Stripe:", error);
@@ -276,89 +277,31 @@ router.post('/create-checkout-session', async (req, res) => {
 
 // ✅ Stripe Webhook for Handling Successful Subscriptions
 // ✅ Stripe Webhook for Handling Successful Payments
-router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
-    let event;
-    try {
-        // ✅ Ensure Webhook Secret is Present
-        if (!process.env.STRIPE_WEBHOOK_SECRET) {
-            console.error("❌ Missing STRIPE_WEBHOOK_SECRET in .env file!");
-            return res.status(500).json({ error: "Webhook secret is missing." });
-        }
+// router.post(
+//     "/webhook",
+//     express.raw({ type: "application/json" }), // Ensure raw body is used
+//     (req, res) => {
+//         const sig = req.headers["stripe-signature"];
+//         const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-        // ✅ Construct the event using the secret
-        event = stripe.webhooks.constructEvent(
-            req.body,
-            req.headers['stripe-signature'],
-            process.env.STRIPE_WEBHOOK_SECRET
-        );
+//         let event;
+//         try {
+//             event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+//         } catch (err) {
+//             console.error("❌ Webhook signature verification failed:", err.message);
+//             return res.status(400).send(`Webhook Error: ${err.message}`);
+//         }
 
-        console.log("🔹 Stripe Webhook Event Received:", JSON.stringify(event, null, 2));
+//         // ✅ Successfully verified
+//         console.log("✅ Webhook verified:", event.type);
 
-    } catch (err) {
-        console.error('❌ Stripe Webhook Error:', err.message);
-        return res.status(400).send(`Webhook Error: ${err.message}`);
-    }
+//         if (event.type === "checkout.session.completed") {
+//             const session = event.data.object;
+//             console.log("💰 Payment Successful:", session);
+//             // Handle successful payment (update database, send email, etc.)
+//         }
 
-    // ✅ Handle Webhook Events
-    if (event.type === 'checkout.session.completed') {
-        const session = event.data.object;
-        const userId = session.client_reference_id || session.metadata?.userId;
-        const productName = session.metadata?.planName || "Unknown Product";
-        const purchaseDate = new Date().toISOString();
-
-        console.log(`✅ Payment Successful for User: ${userId}, Product: ${productName}`);
-
-        if (!userId) {
-            console.error("❌ Missing userId in session!");
-            return res.status(400).json({ error: "Missing user ID from Stripe session." });
-        }
-
-        try {
-            // ✅ Fetch User from MongoDB
-            const user = await Register.findById(userId);
-            console.log("📌 User Fetched from DB:", user);
-
-            if (!user) {
-                console.error(`❌ User not found: ${userId}`);
-                return res.status(404).json({ error: "User not found" });
-            }
-
-            // ✅ Ensure `purchasedClasses` Array Exists
-            if (!user.purchasedClasses) {
-                user.purchasedClasses = [];
-            }
-
-            // ✅ Add Purchased Class to User
-            const purchasedProduct = {
-                name: productName,
-                description: `Access to ${productName} subscription`,
-                purchaseDate: purchaseDate
-            };
-
-            user.purchasedClasses.push(purchasedProduct);
-            await user.save();
-
-            // ✅ Confirm Data is Saved
-            const updatedUser = await Register.findById(userId);
-            console.log("✅ Updated User After Saving:", updatedUser);
-
-            res.status(200).json({ success: true, message: "Purchase stored successfully" });
-
-        } catch (error) {
-            console.error("❌ Error Processing Subscription:", error);
-            res.status(500).json({ error: "Internal server error" });
-        }
-    } else {
-        res.json({ received: true });
-    }
-});
-
-
-
-
-
-
-
-
-
+//         res.json({ received: true });
+//     }
+// );
 module.exports = router;
