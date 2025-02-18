@@ -1,6 +1,5 @@
 require("dotenv").config();
 console.log("Stripe Secret Key:", process.env.STRIPE_SECRET_KEY ? "Loaded ✅" : "Not Loaded ❌");
-const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -22,35 +21,41 @@ const paypalRoutes = require("./routes/paypalRoutes.js")
 connectDB();
 
 const app = express();
-// ✅ Allow raw body for Stripe webhook ONLY
-// const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
-// console.log(endpointSecret)
 const allowedOrigins = [
-  'http://localhost:8080', // Local Development URL
-  'https://frontend-production-90a4.up.railway.app' // Production URL
+  "http://localhost:8080", // Local Development
+  "https://frontend-production-90a4.up.railway.app", // Production URL
 ];
 
-// ✅ CORS Middleware
 app.use(
   cors({
     origin: function (origin, callback) {
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
+        console.error(`❌ CORS Blocked: ${origin}`);
         callback(new Error("Not allowed by CORS"));
       }
     },
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    credentials: true,
+    credentials: true, // ✅ Needed for authentication cookies
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
+// ✅ Remove Manual Header Setting (Fixes conflict)
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", allowedOrigins.includes(req.headers.origin) ? req.headers.origin : "*");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.header("Access-Control-Allow-Credentials", "true"); // ✅ Ensure credentials are allowed
+  next();
+});
+
+// ✅ Handle Preflight Requests Properly
+app.options("*", cors());
 
 
 const client = new twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-// ✅ Parse JSON for all other routes
-// ⚡ Apply JSON parser only for other routes
 
 let otpStore = {}; // Temporary OTP storage (use Redis for production)
 
@@ -92,7 +97,7 @@ app.post("/api/verify-otp", (req, res) => {
   
     if (otpStore[phone] && otpStore[phone] == otp) {
       delete otpStore[phone]; // ✅ Remove OTP after successful verification
-      return res.json({ success: true, message: "OTP Verified Successfully" });
+      return res.json({ success: true, message: "OTP Verified Successfully!" });
     } else {
       return res.status(400).json({ error: "Invalid OTP or OTP expired." });
     }
@@ -105,8 +110,8 @@ app.use('/api/contact', contactRoutes);
 app.use("/api/stripe", stripeRoutes); // Set up route
 app.use("/api", registerRoutes);
 // app.use("/api/otp", otpRoutes);
+
 app.use("/api/paypal", paypalRoutes);
-// app.use("/api/paypal", paypalRoutes);
 app.use("/api/consultation", consultationRoutes);
 app.use("/api", waitlist);
 app.use("/api", zoomRoutes);

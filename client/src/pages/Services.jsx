@@ -1,119 +1,100 @@
-import React, { useEffect, useState, Suspense, lazy, useCallback } from 'react'
-import { useAuth } from '../context/AuthContext'
-import { useCart } from '../context/CartContext'
-import { toast, Toaster } from 'react-hot-toast' // ✅ FIXED IMPORT
-import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
+import React, { useEffect, useState, Suspense, lazy, useCallback } from "react";
+import { useAuth } from "../context/AuthContext";
+import { useCart } from "../context/CartContext";
+import { toast, Toaster } from "react-hot-toast"; // ✅ FIXED IMPORT
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 // ✅ Lazy Load Components
-const ServiceCard = lazy(() => import('../components/ServiceCard'))
+const ServiceCard = lazy(() => import("../components/ServiceCard"));
 
 const Services = () => {
-  const { users } = useAuth()
-  const navigate = useNavigate()
-  const { addToCart } = useCart()
+  const { users } = useAuth();
+  const navigate = useNavigate();
+  const { addToCart } = useCart();
 
   // ✅ State to store fetched services
-  const [services, setServices] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [services, setServices] = useState([]);
+  const [loading, setLoading] = useState(true);
 
+  // ✅ Fetch products from the backend
   useEffect(() => {
     const fetchServices = async () => {
       try {
-        console.log('🔹 Fetching Products from Backend...')
-        const response = await axios.get('https://rockstarmathfinal-production.up.railway.app/api/stripe/test-products')
-
-        console.log('✅ Received Data in Frontend:', response.data) // 👀 Debugging
-        setServices(response.data)
+        const response = await axios.get("https://rockstarmathfinal-production.up.railway.app/api/stripe/get-products");
+        setServices(response.data);
       } catch (error) {
-        console.error('❌ Error fetching products:', error)
+        console.error("❌ Error fetching products:", error);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchServices()
-  }, [])
-
-  // ✅ Fetch products from the backend
-  // useEffect(() => {
-  //   const fetchServices = async () => {
-  //     try {
-  //       const response = await axios.get("http://localhost:5000/api/stripe/test-products");
-  //       setServices(response.data);
-  //     } catch (error) {
-  //       console.error("❌ Error fetching products:", error);
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
-
-  //   fetchServices();
-  // }, []);
+    fetchServices();
+  }, []);
 
   // ✅ Handle Add to Cart (Fixed Double Toast)
-  const handleAddToCart = useCallback(
-    (service) => {
-      console.log('🔹 handleAddToCart Clicked for Service:', service.name)
+  const handleAddToCart = useCallback((service) => {
+    console.log("🔹 handleAddToCart Clicked for Service:", service.name);
 
-      let price = null
-      let currency = 'USD'
+    let price = null;
+    let currency = "USD";
 
-      // ✅ Extract Price from Service Object
-      if (service.price) {
-        price = Number(service.price).toFixed(2)
-        currency = service.currency ? service.currency.toUpperCase() : 'USD'
-      }
+    // ✅ Extract Price from Service Object
+    if (service.price) {
+      price = Number(service.price).toFixed(2);
+      currency = service.currency ? service.currency.toUpperCase() : "USD";
+    }
 
-      if (!price && service.default_price && service.default_price.unit_amount) {
-        price = (service.default_price.unit_amount / 100).toFixed(2)
-        currency = service.default_price.currency.toUpperCase()
-      }
+    if (!price && service.default_price && service.default_price.unit_amount) {
+      price = (service.default_price.unit_amount / 100).toFixed(2);
+      currency = service.default_price.currency.toUpperCase();
+    }
 
-      // ❌ Prevent Adding if Price is Missing
-      if (!price || isNaN(price)) {
-        console.error('❌ Cannot add service to cart, missing price!', service)
-        toast.dismiss()
-        toast.error(`⚠️ Cannot add ${service.name} to cart, missing price!`)
-        return
-      }
+    // ❌ Prevent Adding if Price is Missing
+    if (!price || isNaN(price)) {
+      console.error("❌ Cannot add service to cart, missing price!", service);
+      toast.dismiss();
+      toast.error(`⚠️ Cannot add ${service.name} to cart, missing price!`);
+      return;
+    }
 
-      // ✅ Create a clean cart item
-      const newItem = {
-        id: service.id,
-        name: service.name,
-        description: service.description || '',
-        images: service.images || [],
-        price,
-        currency,
-      }
+    // ✅ Create a clean cart item
+    const newItem = {
+      id: service.id,
+      name: service.name,
+      description: service.description || "",
+      images: service.images || [],
+      price,
+      currency,
+    };
 
-      addToCart(newItem) // ✅ Add to Cart
+    addToCart(newItem); // ✅ Add to Cart
 
-      toast.dismiss() // ✅ Clear any previous toast
-      toast.success(`${service.name} added to cart!`, { id: 'cart-toast' })
-    },
-    [addToCart],
-  )
+    toast.dismiss(); // ✅ Clear any previous toast
+    toast.success(`${service.name} added to cart!`, { id: "cart-toast" });
+  }, [addToCart]);
 
   // ✅ Group Services into Categories
   const categorizedServices = {
-    'Seasonal - AP Calc Review': services.filter((service) =>
-      /(\bAP Calc Review 20 hours\b)/i.test(service.name),
+    "Seasonal - AP Calc Review": services.filter((service) =>
+      /(\bAP Calc Review 20 hours\b)/i.test(service.name)
     ),
-    '30 Minute Sessions - *Recommended For Algebra 1 Students And Below*': services.filter(
-      (service) => /(\b8 x 30 minutes\b|\b5 x 30 minutes\b|\b3 x 30 minutes\b)/i.test(service.name),
+    "30 Minute Sessions - *Recommended For Algebra 1 Students And Below*": services.filter(
+      (service) =>
+        /(\b8 x 30 minutes\b|\b5 x 30 minutes\b|\b3 x 30 minutes\b)/i.test(service.name)
     ),
-    '60 Minute Sessions - Standard': services.filter((service) =>
-      /(\b8 x 60 minutes\b|\b5 x 60 minutes\b|\b3 x 60 minutes\b)/i.test(service.name),
+    "60 Minute Sessions - Standard": services.filter((service) =>
+      /(\b8 x 60 minutes\b|\b5 x 60 minutes\b|\b3 x 60 minutes\b)/i.test(service.name)
     ),
-    '90 Minute Sessions - *Recommended For Calc 1 Students And Higher*': services.filter(
-      (service) => /(\b8 x 90 minutes\b|\b5 x 90 minutes\b|\b3 x 90 minutes\b)/i.test(service.name),
+    "90 Minute Sessions - *Recommended For Calc 1 Students And Higher*": services.filter(
+      (service) =>
+        /(\b8 x 90 minutes\b|\b5 x 90 minutes\b|\b3 x 90 minutes\b)/i.test(service.name)
     ),
-    'Seasonal - AP Calc 13 Sessions': services.filter((service) =>
-      /(\b13 x 30 minutes\b|\b13 x 60 minutes\b|\b13 x 90 minutes\b)/i.test(service.name),
+    "Seasonal - AP Calc 13 Sessions": services.filter((service) =>
+      /(\b13 x 30 minutes\b|\b13 x 60 minutes\b|\b13 x 90 minutes\b)/i.test(service.name)
     ),
-  }
+  };
 
   return (
     <>
@@ -126,61 +107,9 @@ const Services = () => {
       {/* ✅ Services List */}
       <div className="container mx-auto p-6 py-20">
         <Toaster position="top-right" /> {/* ✅ Toast Notifications */}
-        <div className="max-w-6xl mx-auto py-10 px-6">
-          <h2 className="text-2xl font-bold text-gray-800 text-center mb-6">Available Services</h2>
 
-          {loading ? (
-            <p className="text-center text-gray-500 text-lg">Loading...</p>
-          ) : services.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {services.map((service) => (
-                <div
-                  key={service.id}
-                  className="bg-white shadow-md rounded-lg p-6 transition-transform transform hover:scale-105"
-                >
-                  {/* Product Image (If Available) */}
-                  {service.images && service.images.length > 0 ? (
-                    <img
-                      src={service.images[0]}
-                      alt={service.name}
-                      className="w-full h-40 object-cover rounded-md mb-4"
-                    />
-                  ) : (
-                    <div className="w-full h-40 bg-gray-200 flex items-center justify-center text-gray-500 rounded-md mb-4">
-                      No Image
-                    </div>
-                  )}
-
-                  <h3 className="text-lg font-semibold text-gray-900">{service.name}</h3>
-                  <p className="text-gray-600 mt-2">
-                    {service.description || 'No description available'}
-                  </p>
-
-                  {/* Pricing */}
-                  <div className="text-lg font-bold text-indigo-600 mt-4">
-                    {service.default_price && typeof service.default_price === 'object'
-                      ? `$${(service.default_price.unit_amount / 100).toFixed(
-                          2,
-                        )} ${service.default_price.currency.toUpperCase()}`
-                      : 'Price Not Available'}
-                  </div>
-
-                  {/* Add to Cart Button */}
-                  <button
-                    className="mt-4 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-300"
-                    onClick={() => handleAddToCart(service)}
-                  >
-                    Add to Cart
-                  </button>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-center text-gray-500 text-lg">No products found.</p>
-          )}
-        </div>
         {/* ✅ Display Services by Category */}
-        {/* <Suspense fallback={<div className="text-center py-10 text-gray-500">Loading Services...</div>}>
+        <Suspense fallback={<div className="text-center py-10 text-gray-500">Loading Services...</div>}>
           {loading ? (
             <p className="text-center py-10 text-gray-500">Fetching services...</p>
           ) : (
@@ -203,10 +132,10 @@ const Services = () => {
                 )
             )
           )}
-        </Suspense> */}
+        </Suspense>
       </div>
     </>
-  )
-}
+  );
+};
 
-export default Services
+export default Services;
