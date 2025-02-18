@@ -17,9 +17,10 @@ const zoomRoutes = require("./routes/zoomRoutes");
 const userRoutes = require("./routes/userRoutes")
 const paymentRoutes = require("./routes/paymentRoutes"); // ✅ Import Payment Routes
 const ordersRoute = require("./routes/order.js"); // ✅ Import Orders Route
-const paypalRoutes = require("./routes/paypal.js")
+const paypalRoutes = require("./routes/paypalRoutes.js")
 connectDB();
-
+const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+console.log(endpointSecret)
 const app = express();
 const allowedOrigins = [
   'http://localhost:8080', // Local Development URL
@@ -90,6 +91,52 @@ app.post("/api/verify-otp", (req, res) => {
       return res.status(400).json({ error: "Invalid OTP or OTP expired." });
     }
   });
+
+  app.use((req, res, next) => {
+    if (req.originalUrl === "/webhook") {
+        let rawBody = "";
+        req.on("data", (chunk) => {
+            rawBody += chunk;
+        });
+        req.on("end", () => {
+            req.rawBody = rawBody; // ✅ Save raw body
+            next();
+        });
+    } else {
+        express.json()(req, res, next);
+    }
+});
+
+// ✅ Webhook Route
+app.post("/api/stripe/webhook", (req, res) => {
+    console.log("🔍 Extracted RAW BODY:", req.rawBody); // ✅ Debugging raw body
+
+    const sig = req.headers["stripe-signature"];
+    let event;
+
+    try {
+        // ✅ Pass manually extracted rawBody instead of req.body
+        event = stripe.webhooks.constructEvent(req.rawBody, sig, endpointSecret);
+    } catch (err) {
+        console.error("❌ Webhook signature verification failed:", err.message);
+        return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    console.log("✅ Webhook verified:", event.type);
+
+    // ✅ Handle checkout.session.completed event
+    if (event.type === "checkout.session.completed") {
+        const session = event.data.object;
+        console.log(`💰 Checkout Successful! PaymentIntent ID: ${session.payment_intent}`);
+    }
+
+    res.sendStatus(200); // ✅ Acknowledge receipt of event
+});
+
+
+
+// ✅ JSON parser for other routes
+app.use(express.json());
   
 // Routes
 app.use('/api/auth', authRoutes);
@@ -98,12 +145,14 @@ app.use('/api/contact', contactRoutes);
 app.use("/api/stripe", stripeRoutes); // Set up route
 app.use("/api", registerRoutes);
 // app.use("/api/otp", otpRoutes);
+app.use("/api/paypal", paypalRoutes);
+// app.use("/api/paypal", paypalRoutes);
 app.use("/api/consultation", consultationRoutes);
 app.use("/api", waitlist);
-app.use("/api/paypal", require("./routes/paypal")); // PayPal API
 app.use("/api", zoomRoutes);
 app.use('/api/users', userRoutes); // ✅ Now users API will work properly
 app.use("/api/orders", ordersRoute); // ✅ Set orders route
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+

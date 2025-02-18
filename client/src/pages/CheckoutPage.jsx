@@ -6,12 +6,13 @@ import { Elements } from "@stripe/react-stripe-js";
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import toast, { Toaster } from 'react-hot-toast'
 import "react-toastify/dist/ReactToastify.css";
+import PayPalButton from "../components/PayPalButton";
 
 // Lazy Load Components
 const PaymentForm = lazy(() => import("../components/PaymentForm"));
 
 // ✅ Load Stripe Public Key
-const stripePromise = loadStripe("pk_live_51QKwhUE4sPC5ms3x7cYIFoYqx3lULz1hFA9EoRobabZVPwdDm8KbDNlHOZMizb2YftdwRSyxRfyi93ovv5Rev7i300CpaQEtU2");
+const stripePromise = loadStripe("pk_test_51QKwhUE4sPC5ms3xgJZhmKyxW9B8Jg9NQHlCoxMzIjWqyIvRNmW8o3tNS4Hrg3guNIEe4hrn5i9dKpvZmXpeVkyp000FmIT2yn");
 
 const CheckoutPage = () => {
   const [cartItems, setCartItems] = useState([]);
@@ -213,91 +214,22 @@ return (
               <div className="mt-6">
   <h2 className="text-lg font-semibold text-gray-900 mb-3">Or Pay with PayPal</h2>
   <PayPalScriptProvider options={{ "client-id": "AaZbEygWpyKJsxxTXfZ5gSpgfm2rzf_mCanmJb80kbNg1wvj6e0ktu3jzxxjKYjBOLSkFTeMSqDLAv4L" }}>
-    <div className="relative z-20">
-      <PayPalButtons
-        style={{ layout: "vertical", color: "blue", shape: "pill", label: "paypal" }}
-        createOrder={async () => {
-          try {
-            const user = JSON.parse(localStorage.getItem("user"));
-            if (!user || !user._id) {
-              toast.error("User not logged in!");
-              throw new Error("User ID missing in localStorage");
-            }
-        
-            console.log("🔹 Creating PayPal Order...");
-        
-            const response = await fetch("https://rockstarmathfinal-production.up.railway.app/api/paypal/create-order", { // ✅ Fix applied: Correct route
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ 
-                userId: user._id, 
-                amount: totalAmount,  
-                cartItems 
-              }),
-            });
-        
-            const data = await response.json();
-        
-            if (!response.ok || !data.orderId) {
-              console.error("❌ PayPal Order Creation Failed:", data.error);
-              throw new Error(data.error || "Failed to create PayPal order");
-            }
-        
-            console.log("✅ PayPal Order Created:", data.orderId);
-            return data.orderId;
-        
-          } catch (error) {
-            console.error("❌ Error creating PayPal order:", error);
-            toast.error(error.message || "Error creating PayPal order.");
-          }
-        }}
-        onApprove={(data, actions) => {
-          return actions.order.capture().then(async (details) => {
-            toast.success("Payment Successful! Sending confirmation email...");
-
-            const user = JSON.parse(localStorage.getItem("user"));
-            if (!user || !user.email) {
-              toast.error("User email not found!");
-              return;
-            }
-
-            console.log("✅ PayPal Payment Captured:", details);
-
-            // ✅ Send Payment Data to Backend
-            try {
-              const response = await fetch("https://rockstarmathfinal-production.up.railway.app/api/paypal/capture-order", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  orderId: details.id, // ✅ Fix applied: Ensure orderId is sent
-                  userId: user._id, // ✅ Fix applied: Use `_id` instead of `id`
-                  userEmail: user.email,
-                  cartItems,
-                }),
-              });
-
-              const responseData = await response.json();
-
-              if (!response.ok) {
-                console.error("❌ Payment Not Saved:", responseData.error);
-                throw new Error("Payment not saved in database");
-              }
-
-              console.log("✅ Payment Saved Successfully:", responseData);
-              toast.success("Payment & Email Sent Successfully! Redirecting...");
-
-              setTimeout(() => {
-                navigate("/dashboard");
-              }, 2000);
-            } catch (error) {
-              console.error("❌ Error saving PayPal payment:", error);
-              toast.error("Error saving payment details.");
-            }
-          });
-        }}
-      />
-    </div>
-  </PayPalScriptProvider>
+                  <div className="relative z-20">
+                    <PayPalButtons
+                      style={{ layout: "vertical", color: "blue", shape: "pill", label: "paypal" }}
+                      createOrder={(data, actions) => {
+                        return actions.order.create({
+                          purchase_units: [{ amount: { value: total.toFixed(2) } }],
+                        });
+                      }}
+                      onApprove={(data, actions) => {
+                        return actions.order.capture().then(() => {
+                          handlePaymentSuccess();
+                        });
+                      }}
+                    />
+                  </div>
+                </PayPalScriptProvider>
 </div>
 
             </>

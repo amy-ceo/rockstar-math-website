@@ -112,42 +112,63 @@ exports.login = async (req, res) => {
 
 
 // ✅ Save Purchased Class for User
-exports.addPurchasedClass = async (req, res) => {
-  try {
-    const { userId, classData } = req.body
 
-    if (!userId || !classData) {
-      return res.status(400).json({ message: 'User ID and class data are required' })
-    }
+// exports.addPurchasedClass = async (req, res) => {
+//   try {
+//     const { userId, classData } = req.body;
 
-    const user = await User.findById(userId)
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' })
-    }
+//     // ✅ Input Validation
+//     if (!userId || !classData || !classData.name || !classData.description) {
+//       return res.status(400).json({ message: "User ID and valid class data are required" });
+//     }
 
-    user.purchasedClasses.push(classData)
-    await user.save()
+//     console.log("🔹 Adding Purchased Class for User:", userId, "Class:", classData);
 
-    res
-      .status(200)
-      .json({ message: 'Class added to user account', purchasedClasses: user.purchasedClasses })
-  } catch (error) {
-    res.status(500).json({ message: 'Error adding class', error: error.message })
-  }
-}
+//     // ✅ Find User in Database
+//     const user = await Register.findById(userId);
+//     if (!user) {
+//       console.error("❌ User not found:", userId);
+//       return res.status(404).json({ message: "User not found" });
+//     }
 
-// ✅ Get User Purchased Classes
-exports.getPurchasedClasses = async (req, res) => {
-  try {
-    const user = await User.findById(req.params.userId)
-    if (!user) return res.status(404).json({ message: 'User not found' })
+//     // ✅ Push New Class to `purchasedClasses` (Ensure it exists)
+//     if (!user.purchasedClasses) {
+//       user.purchasedClasses = [];
+//     }
 
-    res.json({ purchasedClasses: user.purchasedClasses || [] })
-  } catch (error) {
-    console.error('Error fetching purchased classes:', error)
-    res.status(500).json({ message: 'Server error' })
-  }
-}
+//     user.purchasedClasses.push({
+//       name: classData.name,
+//       description: classData.description,
+//       purchaseDate: new Date().toISOString(), // ✅ Automatically set current date
+//     });
+
+//     await user.save();
+
+//     console.log("✅ Class Added Successfully:", user.purchasedClasses);
+
+//     res.status(200).json({
+//       message: "Class added to user account",
+//       purchasedClasses: user.purchasedClasses,
+//     });
+//   } catch (error) {
+//     console.error("❌ Error adding class:", error.message);
+//     res.status(500).json({ message: "Error adding class", error: error.message });
+//   }
+// };
+
+
+// // ✅ Get User Purchased Classes
+// exports.getPurchasedClasses = async (req, res) => {
+//   try {
+//     const user = await Register.findById(req.params.userId)
+//     if (!user) return res.status(404).json({ message: 'User not found' })
+
+//     res.json({ purchasedClasses: user.purchasedClasses || [] })
+//   } catch (error) {
+//     console.error('Error fetching purchased classes:', error)
+//     res.status(500).json({ message: 'Server error' })
+//   }
+// }
 exports.forgotPassword = async (req, res) => {
   const { email } = req.body;
 

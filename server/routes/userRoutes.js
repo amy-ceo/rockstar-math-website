@@ -1,6 +1,5 @@
 const express = require("express");
 const User = require("../models/User");
-const { addPurchasedClass, getPurchasedClasses } = require("../controller/authController");
 const router = express.Router();
 
 router.get("/check-user/:email", async (req, res) => {
@@ -13,8 +12,6 @@ router.get("/check-user/:email", async (req, res) => {
 });
 
 // ✅ Save Purchased Class
-router.post("/purchase", addPurchasedClass);
-// ✅ Get User's Purchased Classes
-router.get("/:userId/purchased-classes", getPurchasedClasses);
+
 
 module.exports = router;

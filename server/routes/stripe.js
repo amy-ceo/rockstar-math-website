@@ -1,10 +1,10 @@
 const express = require("express");
 const router = express.Router();
 require("dotenv").config();  // Ensure environment variables are loaded
-const { updatePaymentStatus } = require("../controller/paymentController");
+const { updatePaymentStatus } = require("../controller/paypalController");
 const { createZoomMeeting } = require('../controller/zoomController');
 const Register = require('../models/registerModel') // ✅ Using Register Model
-const stripe = require("stripe")("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");
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 const ZOOM_LINKS = [
   "https://us06web.zoom.us/meeting/register/mZHoQiy9SqqHx69f4dejgg#/registration",
@@ -16,14 +16,21 @@ const ZOOM_LINKS = [
 
 router.get("/test-products", async (req, res) => {
     try {
-      const allProducts = await stripe.products.list({ active: true });
-      console.log("Fetched Products from Stripe:", allProducts.data);
-      res.status(200).json(allProducts.data);
+        console.log("🔹 Fetching Products from Stripe Test Mode...");
+        const allProducts = await stripe.products.list({
+            active: true,
+            expand: ["data.default_price"], // ✅ Expand price details
+        });
+
+        console.log("✅ Products with Prices:", allProducts.data);
+        
+        res.status(200).json(allProducts.data);
     } catch (error) {
-      console.error("Error fetching products:", error);
-      res.status(500).json({ message: "Failed to fetch products" });
+        console.error("❌ Error fetching products from Stripe:", error);
+        res.status(500).json({ message: "Failed to fetch products" });
     }
-  });
+});
+
 
 
   router.get("/get-plans", async (req, res) => {
@@ -224,33 +231,38 @@ router.get("/payment-details/:paymentIntentId", async (req, res) => {
 
 router.post('/create-checkout-session', async (req, res) => {
     try {
-        const { userId, cartItems } = req.body; // ✅ Frontend se userId aur cartItems lein
-        
-        if (!userId || !cartItems || cartItems.length === 0) {
-            return res.status(400).json({ error: "Invalid request, missing data" });
+        const { userId, cartItems } = req.body;
+
+        if (!userId || !Array.isArray(cartItems) || cartItems.length === 0) {
+            return res.status(400).json({ error: "Invalid request, missing userId or cartItems." });
         }
+
+        console.log("🔹 Creating Checkout Session for User:", userId);
+        console.log("🛒 Cart Items:", cartItems);
+
+        const lineItems = cartItems.map(item => ({
+            price_data: {
+                currency: item.currency || "usd",
+                product_data: { name: item.name || "Unnamed Product" },
+                unit_amount: Math.round(item.price * 100),
+            },
+            quantity: 1
+        }));
 
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ["card"],
-            line_items: cartItems.map(item => ({
-                price_data: {
-                    currency: "usd",
-                    product_data: { name: item.name },
-                    unit_amount: item.price * 100,
-                },
-                quantity: 1
-            })),
+            line_items: lineItems,
             mode: "payment",
-            success_url: "http://localhost:3000/payment-success",
-            cancel_url: "http://localhost:3000/payment-cancel",
-            client_reference_id: userId,  // ✅ Fix applied: Ensure user ID is sent
+            success_url: "http://localhost:8080/payment-success",
+            cancel_url: "http://localhost:8080/payment-cancel",
+            client_reference_id: userId,
             metadata: {
-                userId: userId, // ✅ Backup ke liye metadata me bhi store karein
+                userId: userId,
                 planName: cartItems.length > 0 ? cartItems[0].name : "Unknown Plan"
             }
         });
 
-        console.log("✅ Stripe Checkout Session Created:", session);
+        console.log("✅ Checkout Session Created:", session.id);
         res.json({ sessionId: session.id });
 
     } catch (error) {
@@ -261,48 +273,62 @@ router.post('/create-checkout-session', async (req, res) => {
 
 
 
+
 // ✅ Stripe Webhook for Handling Successful Subscriptions
 // ✅ Stripe Webhook for Handling Successful Payments
 router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
     let event;
     try {
-        event = stripe.webhooks.constructEvent(req.body, req.headers['stripe-signature'], process.env.STRIPE_WEBHOOK_SECRET);
-        console.log("🔹 Stripe Webhook Event Received:", JSON.stringify(event, null, 2)); 
+        // ✅ Ensure Webhook Secret is Present
+        if (!process.env.STRIPE_WEBHOOK_SECRET) {
+            console.error("❌ Missing STRIPE_WEBHOOK_SECRET in .env file!");
+            return res.status(500).json({ error: "Webhook secret is missing." });
+        }
+
+        // ✅ Construct the event using the secret
+        event = stripe.webhooks.constructEvent(
+            req.body,
+            req.headers['stripe-signature'],
+            process.env.STRIPE_WEBHOOK_SECRET
+        );
+
+        console.log("🔹 Stripe Webhook Event Received:", JSON.stringify(event, null, 2));
+
     } catch (err) {
         console.error('❌ Stripe Webhook Error:', err.message);
         return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
+    // ✅ Handle Webhook Events
     if (event.type === 'checkout.session.completed') {
         const session = event.data.object;
-        const userId = session.client_reference_id || session.metadata?.userId;  // ✅ Fix: Backup User ID
-        const productName = session.metadata?.planName;
-        const amount = session.amount_total / 100; 
-        const purchaseDate = new Date().toISOString(); 
+        const userId = session.client_reference_id || session.metadata?.userId;
+        const productName = session.metadata?.planName || "Unknown Product";
+        const purchaseDate = new Date().toISOString();
 
-        console.log(`✅ Payment Successful: ${userId} purchased ${productName} for $${amount}`);
+        console.log(`✅ Payment Successful for User: ${userId}, Product: ${productName}`);
 
-        // ✅ Validate Data
         if (!userId) {
             console.error("❌ Missing userId in session!");
             return res.status(400).json({ error: "Missing user ID from Stripe session." });
         }
-        if (!productName) {
-            console.error("❌ Missing planName in metadata!");
-            return res.status(400).json({ error: "Missing plan name in session metadata." });
-        }
 
         try {
+            // ✅ Fetch User from MongoDB
             const user = await Register.findById(userId);
+            console.log("📌 User Fetched from DB:", user);
+
             if (!user) {
                 console.error(`❌ User not found: ${userId}`);
                 return res.status(404).json({ error: "User not found" });
             }
 
+            // ✅ Ensure `purchasedClasses` Array Exists
             if (!user.purchasedClasses) {
                 user.purchasedClasses = [];
             }
 
+            // ✅ Add Purchased Class to User
             const purchasedProduct = {
                 name: productName,
                 description: `Access to ${productName} subscription`,
@@ -310,11 +336,13 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
             };
 
             user.purchasedClasses.push(purchasedProduct);
-
             await user.save();
-            console.log(`✅ Purchase stored for user: ${user.username}`);
 
-            res.json({ success: true, message: "Purchase stored successfully" });
+            // ✅ Confirm Data is Saved
+            const updatedUser = await Register.findById(userId);
+            console.log("✅ Updated User After Saving:", updatedUser);
+
+            res.status(200).json({ success: true, message: "Purchase stored successfully" });
 
         } catch (error) {
             console.error("❌ Error Processing Subscription:", error);
