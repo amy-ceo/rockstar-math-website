@@ -26,6 +26,11 @@ const allowedOrigins = [
   "https://frontend-production-90a4.up.railway.app", // Production URL
 ];
 
+// ✅ Enable JSON Parsing (Fix for req.body undefined issue)
+app.use(express.json());
+app.use(express.urlencoded({ extended: true })); // Support form-urlencoded bodies
+app.use(bodyParser.json()); // Ensure JSON body parsing
+
 app.use(
   cors({
     origin: function (origin, callback) {
