@@ -110,96 +110,92 @@ exports.login = async (req, res) => {
 }
 
 exports.forgotPassword = async (req, res) => {
-  const { email } = req.body
+  const { email } = req.body;
 
   try {
-    // ✅ Find user by email
-    const user = await Register.findOne({ billingEmail: email })
-
+    const user = await User.findOne({ email });
     if (!user) {
-      return res.status(404).json({ message: 'User not found' })
+      return res.status(404).json({ message: 'User not found' });
     }
 
-    // ✅ Generate reset token
-    const resetToken = crypto.randomBytes(20).toString('hex')
-    user.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex')
-    user.resetPasswordExpires = Date.now() + 10 * 60 * 1000 // Token valid for 10 minutes
-    await user.save() // ✅ Save token in the database
+    // Generate reset token
+    const resetToken = user.getResetPasswordToken();
+    await user.save(); // Save token and expiration to the database
 
-    // ✅ Create reset URL
+    // Create reset URL
     const resetUrl = `https://frontend-production-90a4.up.railway.app/reset-password/${resetToken}`
 
-    // ✅ Send Reset Email
-    const subject = 'Password Reset Request'
+    // Send email
+    const subject = 'Password Reset Request';
     const message = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; background-color: #00008B; border-radius: 10px;">
-        <div style="text-align: center; padding: 10px;">
-          <img src="https://scontent.flhe5-1.fna.fbcdn.net/v/t39.30808-6/442503438_957788876133590_2909592720330641516_n.jpg" alt="Rockstar Math" style="height: 50px; margin-bottom: 20px;" />
-        </div>
-        <div style="background-color: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);">
-          <h2 style="color: #333333; text-align: center;">Password Reset Request</h2>
-          <p style="color: #555555; font-size: 16px;">
-            You requested a password reset. Please click the button below to reset your password:
-          </p>
-          <div style="text-align: center; margin: 20px 0;">
-            <a href="${resetUrl}" target="_blank" style="display: inline-block; padding: 12px 20px; color: #ffffff; background-color: #ffc107; text-decoration: none; border-radius: 5px; font-size: 16px; font-weight: bold;">
-              Reset Password
-            </a>
-          </div>
-          <p style="color: #555555; font-size: 14px;">
-            Or copy and paste this link into your browser: <br />
-            <a href="${resetUrl}" style="color: #007bff; text-decoration: none;">${resetUrl}</a>
-          </p>
-          <p style="color: #555555; font-size: 14px;">
-            If you did not request this, please ignore this email.
-          </p>
-        </div>
-        <div style="text-align: center; margin-top: 20px; font-size: 12px; color: #999999;">
-          © 2025 Rockstar Math. All rights reserved.
-        </div>
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; background-color: #00008B; border: 1px solid #e0e0e0; border-radius: 10px;">
+      <div style="text-align: center; padding: 10px;">
+        <img src="https://scontent.flhe5-1.fna.fbcdn.net/v/t39.30808-6/442503438_957788876133590_2909592720330641516_n.jpg?_nc_cat=101&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=_dgNhmagikUQ7kNvgF7yFq6&_nc_oc=Adhr6WCD8Nl5hiM9AQ1natQbVg_toEMzMqVnjaMr__V4XoY-MX0a4LKwhYr5eJigaBgxjmT1aETfgLzr7M-ieaVR&_nc_zt=23&_nc_ht=scontent.flhe5-1.fna&_nc_gid=A4Uh5Hdlx5SDIa1YcpDnRa3&oh=00_AYDj2m22g0-YYSOi9qqOvw0EWXp14czCwIw4M6zGGPB0cQ&oe=679A2D99" alt="Rockstar Math" style="height: 50px; margin-bottom: 20px;" alt="Rockstar Math" style="height: 50px; margin-bottom: 20px;" />
       </div>
-    `
+      <div style="background-color: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);">
+        <h2 style="color: #333333; text-align: center;">Password Reset Request</h2>
+        <p style="color: #555555; font-size: 16px; line-height: 1.6;">
+          You requested a password reset. Please click the button below to reset your password:
+        </p>
+        <div style="text-align: center; margin: 20px 0;">
+          <a href="${resetUrl}" target="_blank" style="display: inline-block; padding: 12px 20px; color: #ffffff; background-color: #ffc107; text-decoration: none; border-radius: 5px; font-size: 16px; font-weight: bold;">
+            Reset Password
+          </a>
+        </div>
+        <p style="color: #555555; font-size: 14px; line-height: 1.6;">
+          Or copy and paste this link into your browser: <br />
+          <a href="${resetUrl}" style="color: #007bff; text-decoration: none;">${resetUrl}</a>
+        </p>
+        <p style="color: #555555; font-size: 14px; line-height: 1.6;">
+          If you did not request this, please ignore this email or contact us if you have any concerns.
+        </p>
+      </div>
+      <div style="text-align: center; margin-top: 20px; font-size: 12px; color: #999999;">
+        © 2025 Rockstar Math. All rights reserved.
+      </div>
+    </div>
+  `;
+  
 
-    await sendEmail(user.billingEmail, subject, 'Reset Your Password', message)
+    await sendEmail(user.email, subject, 'Reset Your Password', message);
 
-    res.status(200).json({ message: 'Password reset email sent successfully' })
+    res.status(200).json({ message: 'Password reset email sent successfully' });
   } catch (error) {
-    console.error('Error in forgotPassword:', error.message)
-    res.status(500).json({ message: 'Server Error' })
+    console.error('Error in forgotPassword:', error.message);
+    res.status(500).json({ message: 'Server Error' });
   }
-}
+};
 
-// ✅ Reset Password - Change Password
+// Reset Password Controller
+
 exports.resetPassword = async (req, res) => {
-  const { token } = req.params // Token from the URL
-  const { password } = req.body // New password from request
+  const { token } = req.params; // Token from the URL
+  const { password } = req.body; // New password from the request body
 
   try {
-    // ✅ Hash the token to match database entry
-    const resetPasswordToken = crypto.createHash('sha256').update(token).digest('hex')
+    // Hash the token to match the database entry
+    const resetPasswordToken = crypto.createHash('sha256').update(token).digest('hex');
 
-    // ✅ Find user by token and check expiration
-    const user = await Register.findOne({
+    // Find the user by the token and ensure it hasn't expired
+    const user = await User.findOne({
       resetPasswordToken,
-      resetPasswordExpires: { $gt: Date.now() }, // Ensure token isn't expired
-    })
+      resetPasswordExpires: { $gt: Date.now() }, // Token expiration check
+    });
 
     if (!user) {
-      return res.status(400).json({ message: 'Invalid or expired reset token' })
+      return res.status(400).json({ message: 'Invalid or expired reset token' });
     }
-    // ✅ Hash the new password before saving
-    const salt = await bcrypt.genSalt(10)
-    user.password = await bcrypt.hash(password, salt)
 
-    // ✅ Clear the reset token fields
-    user.resetPasswordToken = undefined
-    user.resetPasswordExpires = undefined
+    // Update the user's password
+    user.password = password; // Ensure password hashing is handled in the user model
+    user.resetPasswordToken = undefined; // Clear the token
+    user.resetPasswordExpires = undefined; // Clear the expiration time
 
-    await user.save()
+    await user.save();
 
-    res.status(200).json({ message: 'Password reset successful' })
+    res.status(200).json({ message: 'Password reset successful' });
   } catch (error) {
-    console.error('Error in resetPassword:', error.message)
-    res.status(500).json({ message: 'Server Error' })
+    console.error('Error in resetPassword:', error.message);
+    res.status(500).json({ message: 'Server Error' });
   }
-}
+};
