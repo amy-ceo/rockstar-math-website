@@ -116,7 +116,7 @@ app.use((req, res, next) => {
 });
 
 // ✅ Webhook Route
-app.post("/webhook", (req, res) => {
+app.post("/api/stripe/webhook", (req, res) => {
     console.log("🔍 Extracted RAW BODY:", req.rawBody); // ✅ Debugging raw body
 
     const sig = req.headers["stripe-signature"];
