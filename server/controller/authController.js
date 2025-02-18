@@ -130,7 +130,7 @@ exports.forgotPassword = async (req, res) => {
     await user.save(); // ✅ Save token in the database
 
     // ✅ Create reset URL
-    const resetUrl = `http://localhost:8080/reset-password/${resetToken}`;
+    const resetUrl = `https://frontend-production-90a4.up.railway.app/reset-password/${resetToken}`;
 
     // ✅ Send Reset Email
     const subject = "Password Reset Request";
