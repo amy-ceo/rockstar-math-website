@@ -12,7 +12,7 @@ import PayPalButton from "../components/PayPalButton";
 const PaymentForm = lazy(() => import("../components/PaymentForm"));
 
 // ✅ Load Stripe Public Key
-const stripePromise = loadStripe("pk_test_51QKwhUE4sPC5ms3xgJZhmKyxW9B8Jg9NQHlCoxMzIjWqyIvRNmW8o3tNS4Hrg3guNIEe4hrn5i9dKpvZmXpeVkyp000FmIT2yn");
+const stripePromise = loadStripe("pk_live_51QKwhUE4sPC5ms3x7cYIFoYqx3lULz1hFA9EoRobabZVPwdDm8KbDNlHOZMizb2YftdwRSyxRfyi93ovv5Rev7i300CpaQEtU2");
 
 const CheckoutPage = () => {
   const [cartItems, setCartItems] = useState([]);

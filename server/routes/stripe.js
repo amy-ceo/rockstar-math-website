@@ -2,11 +2,11 @@ const express = require("express");
 const router = express.Router();
 const sendEmail = require('../utils/emailSender')
 require("dotenv").config();  // Ensure environment variables are loaded
-const { updatePaymentStatus } = require("../controller/paymentController");
+// const { updatePaymentStatus } = require("../controller/paymentController");
 const bodyParser = require("body-parser"); // Ensure body-parser is imported
 const { createZoomMeeting } = require('../controller/zoomController');
 const Register = require('../models/registerModel') // ✅ Using Register Model
-const stripe = require("stripe")("sk_test_51QKwhUE4sPC5ms3xk3hyLDiMUFiqZ19gr88RN3k48VfVVIEpjnqUWHz662iRwZ8dBAXOmJSaCuAuzVyCGPcmePrq00FHlWaoS2");
+const stripe = require("stripe")("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");
 
 const ZOOM_LINKS = [
   "https://us06web.zoom.us/meeting/register/mZHoQiy9SqqHx69f4dejgg#/registration",
