@@ -36,7 +36,7 @@ function LoginPage() {
     e.preventDefault();
   
     try {
-      const response = await axios.post("https://frontend-production-9912.up.railway.app/api/auth/login", {
+      const response = await axios.post("https://backend-production-4b2c.up.railway.app/api/auth/login", {
         username: formData.username,
         password: formData.password,
       });

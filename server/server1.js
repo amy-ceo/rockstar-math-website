@@ -24,7 +24,7 @@ const app = express();
 const endpointSecret = "whsec_0WfKaaK99FaR33MCNxNZiVlAP9tt5ue7";
 const allowedOrigins = [
   'http://localhost:8080',
-  'https://frontend-production-9912.up.railway.app'
+  'https://backend-production-4b2c.up.railway.app'
 ];
 
 // CORS Middleware

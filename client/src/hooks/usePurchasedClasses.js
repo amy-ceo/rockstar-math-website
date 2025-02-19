@@ -14,7 +14,7 @@ const usePurchasedClasses = (userId) => {
 
     const fetchPurchasedClasses = async () => {
       try {
-        const response = await fetch(`https://frontend-production-9912.up.railway.app/api/${userId}/purchased-classes`);
+        const response = await fetch(`https://backend-production-4b2c.up.railway.app/api/${userId}/purchased-classes`);
         const data = await response.json();
 
         if (!response.ok) {
