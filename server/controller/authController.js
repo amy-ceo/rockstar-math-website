@@ -113,7 +113,7 @@ exports.forgotPassword = async (req, res) => {
   const { email } = req.body;
 
   try {
-    const user = await User.findOne({ email });
+    const user = await Register.findOne({ email });
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -177,7 +177,7 @@ exports.resetPassword = async (req, res) => {
     const resetPasswordToken = crypto.createHash('sha256').update(token).digest('hex');
 
     // Find the user by the token and ensure it hasn't expired
-    const user = await User.findOne({
+    const user = await Register.findOne({
       resetPasswordToken,
       resetPasswordExpires: { $gt: Date.now() }, // Token expiration check
     });

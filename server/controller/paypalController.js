@@ -33,8 +33,8 @@ exports.createOrder = async (req, res) => {
                 },
             ],
             redirect_urls: {
-                return_url: "http://localhost:8080/success",
-                cancel_url: "http://localhost:8080/cancel",
+                return_url: "https://frontend-production-90a4.up.railway.app/success",
+                cancel_url: "https://frontend-production-90a4.up.railway.app/cancel",
             },
         };
 
@@ -60,9 +60,9 @@ exports.createOrder = async (req, res) => {
 // 🎯 Capture PayPal Payment & Send Email
 exports.captureOrder = async (req, res) => {
     try {
-        const { orderId, userId, userEmail, cartItems } = req.body;
+        const { orderId, userId, billingEmail, cartItems } = req.body;
 
-        if (!orderId || !userId || !userEmail || !cartItems) {
+        if (!orderId || !userId || !billingEmail || !cartItems) {
             return res.status(400).json({ error: "Missing required fields" });
         }
 
@@ -80,7 +80,7 @@ exports.captureOrder = async (req, res) => {
             const newPayment = new Payment({
                 orderId,
                 userId,
-                userEmail,
+                billingEmail,
                 amount: payment.transactions[0].amount.total,
                 currency: payment.transactions[0].amount.currency,
                 status: "Completed",
@@ -92,7 +92,7 @@ exports.captureOrder = async (req, res) => {
 
             // ✅ Send Confirmation Email
             await sendEmail(
-                userEmail,
+                billingEmail,
                 "Payment Confirmation - Your Order is Successful",
                 `Thank you for your purchase! Your order ID is ${orderId}.`,
                 `<h3>Thank You for Your Payment</h3>

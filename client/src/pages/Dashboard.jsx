@@ -86,37 +86,26 @@ console.log(users);
     <div className="flex min-h-auto">
       <div className="flex-grow bg-gray-100">
         <AnimatedSection direction="right">
-          {purchasedClasses.length > 0 ? (
-            <ul>
-              {purchasedClasses.map((item, index) => (
-                <li key={index}>
-                  <h3>{item.name}</h3>
-                  <p>{item.description}</p>
-                  <p>📅 {new Date(item.purchaseDate).toLocaleDateString()}</p>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p>No Purchased Classes</p>
-          )}
+          <section>
+            <h3 className="text-xl font-semibold text-gray-800 mb-4">Here are your purchased classes:</h3>
+            {loading ? (
+              <p className="text-gray-600">Loading classes...</p>
+            ) : currentClasses.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {currentClasses.map((cls, index) => <ClassCard key={index} classData={cls} />)}
+              </div>
+            ) : (
+              <p>No purchased classes yet.</p>
+            )}
+          </section>
+
           {/* ✅ Zoom Meeting Section */}
           {zoomMeeting ? (
             <section className="mt-6 p-4 bg-white shadow-md rounded-lg mt-11">
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                Your Upcoming Zoom Meeting:
-              </h3>
-              <p>
-                <strong>Topic:</strong> {zoomMeeting.topic}
-              </p>
-              <p>
-                <strong>Start Time:</strong> {new Date(zoomMeeting.startTime).toLocaleString()}
-              </p>
-              <a
-                href={zoomMeeting.joinUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 underline"
-              >
+              <h3 className="text-xl font-semibold text-gray-800 mb-2">Your Upcoming Zoom Meeting:</h3>
+              <p><strong>Topic:</strong> {zoomMeeting.topic}</p>
+              <p><strong>Start Time:</strong> {new Date(zoomMeeting.startTime).toLocaleString()}</p>
+              <a href={zoomMeeting.joinUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
                 ➡️ Join Meeting
               </a>
             </section>
