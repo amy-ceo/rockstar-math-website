@@ -123,7 +123,7 @@ exports.forgotPassword = async (req, res) => {
     await user.save(); // Save token and expiration to the database
 
     // Create reset URL
-    const resetUrl = `https://frontend-production-90a4.up.railway.app/reset-password/${resetToken}`
+    const resetUrl = `https://frontend-production-9912.up.railway.app/reset-password/${resetToken}`
 
     // Send email
     const subject = 'Password Reset Request';

@@ -21,7 +21,7 @@ const Services = () => {
   useEffect(() => {
     const fetchServices = async () => {
       try {
-        const response = await axios.get("https://frontend-production-90a4.up.railway.app/api/stripe/get-products");
+        const response = await axios.get("https://frontend-production-9912.up.railway.app/api/stripe/get-products");
         setServices(response.data);
       } catch (error) {
         console.error("❌ Error fetching products:", error);
