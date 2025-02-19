@@ -25,7 +25,7 @@ const Dashboard = () => {
     const fetchPurchasedClasses = async () => {
       setLoading(true)
       try {
-        const response = await fetch(`https://rockstarmathfinal-production.up.railway.app/api/${users._id}/purchased-classes`)
+        const response = await fetch(`https://frontend-production-90a4.up.railway.app/api/${users._id}/purchased-classes`)
         const data = await response.json()
 
         if (!response.ok) throw new Error(data.message || 'Failed to fetch purchased classes.')
@@ -39,7 +39,7 @@ const Dashboard = () => {
 
     const fetchZoomMeeting = async () => {
       try {
-        const response = await fetch(`https://rockstarmathfinal-production.up.railway.app/api/${users._id}/zoom-meeting`)
+        const response = await fetch(`https://frontend-production-90a4.up.railway.app/api/${users._id}/zoom-meeting`)
         const data = await response.json()
 
         if (!response.ok) throw new Error(data.message || 'No Zoom meeting found.')

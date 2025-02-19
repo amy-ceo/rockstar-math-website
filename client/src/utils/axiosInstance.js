@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const axiosInstance = axios.create({
-  baseURL: "https://rockstarmathfinal-production.up.railway.app/api",
+  baseURL: "https://frontend-production-90a4.up.railway.app/api",
 });
 
 axiosInstance.interceptors.request.use(

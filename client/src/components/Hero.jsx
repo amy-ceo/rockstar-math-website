@@ -17,7 +17,7 @@ function Hero() {
     e.preventDefault()
 
     try {
-      const response = await axios.post('https://rockstarmathfinal-production.up.railway.app/api/consultation/request', {
+      const response = await axios.post('https://frontend-production-90a4.up.railway.app/api/consultation/request', {
         email,
         firstname,
         lastname,
