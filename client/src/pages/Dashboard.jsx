@@ -1,110 +1,81 @@
 import React, { useEffect, useState } from 'react'
 import Sidebar from '../components/Sidebar'
-import ClassCard from '../components/ClassCard.jsx'
-import Header from '../components/Header.jsx'
 import AnimatedSection from '../components/AnimatedSection.jsx'
 import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
+import ClassCard from '../components/ClassCard.jsx'
+
 const Dashboard = () => {
-  const user = JSON.parse(localStorage.getItem('user')) || { name: 'Guest', id: null }
-  const [currentClasses, setCurrentClasses] = useState([])
+  const { users } = useAuth() // ✅ Use AuthContext properly
+  const navigate = useNavigate()
+  const [purchasedClasses, setPurchasedClasses] = useState([])
   const [zoomMeeting, setZoomMeeting] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [purchasedClasses, setPurchasedClasses] = useState([]) // ✅ Fix: State Hook Added
-  const navigate = useNavigate()
-  const { users } = useAuth()
 
   useEffect(() => {
     if (!users) {
       navigate('/login') // 🚀 Redirect if not logged in
     }
-  }, [user, navigate])
+  }, [users, navigate])
 
-  // useEffect(() => {
-  //   if (!users || !users._id) return;
-  //   const fetchDashboardData = async () => {
-  //     setLoading(true);
-  //     try {
-  //       // ✅ Fetch Purchased Classes
-  //       const classResponse = await fetch(`https://rockstarmathfinal-production.up.railway.app/api/${users._id}/purchased-classes`);
-  //       const classData = await classResponse.json();
+  useEffect(() => {
+    if (!users || !users._id) return
 
-  //       if (classResponse.ok && classData.purchasedClasses) {
-  //         setCurrentClasses(classData.purchasedClasses);
-  //       }
-
-  //       // ✅ Fetch Zoom Meeting if user has a subscription
-  //       const zoomResponse = await fetch(`https://rockstarmathfinal-production.up.railway.app/api/${users._id}/zoom-meeting`);
-  //       const zoomData = await zoomResponse.json();
-
-  //       if (zoomResponse.ok && zoomData.meeting) {
-  //         setZoomMeeting(zoomData.meeting);
-  //       } else {
-  //         setZoomMeeting(null);
-  //       }
-  //     } catch (error) {
-  //       console.error("❌ Error fetching dashboard data:", error);
-  //       setError("Failed to load data. Please try again later.");
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
-
-  //   fetchDashboardData();
-  // }, [users]);
-console.log(users);
-
- useEffect(() => {
     const fetchPurchasedClasses = async () => {
-        try {
-            console.log("🔍 Fetching Purchased Classes...");
-            const response = await axios.get(`https://rockstarmathfinal-production.up.railway.app/api/${users._id}/purchased-classes`);
-            
-            console.log("✅ Purchased Classes Fetched:", response.data);
-            
-            if (response.data && response.data.purchasedClasses) {
-                setPurchasedClasses(response.data.purchasedClasses);
-            } else {
-                console.error("❌ API Response doesn't have purchasedClasses:", response.data);
-            }
-            
-        } catch (error) {
-            console.error("❌ Error fetching purchased classes:", error);
-        }
-    };
+      setLoading(true)
+      try {
+        const response = await fetch(`https://rockstarmathfinal-production.up.railway.app/api/${users._id}/purchased-classes`)
+        const data = await response.json()
 
-    fetchPurchasedClasses();
+        if (!response.ok) throw new Error(data.message || 'Failed to fetch purchased classes.')
 
-    // ✅ Auto-Refresh Every 5 Seconds for Real-Time Updates
-    const interval = setInterval(fetchPurchasedClasses, 5000);
-    return () => clearInterval(interval);
-}, [users._id]);
+        setPurchasedClasses(data.purchasedClasses || [])
+      } catch (error) {
+        console.error('❌ Error fetching classes:', error)
+        setError('Failed to load classes. Try again.')
+      }
+    }
+
+    const fetchZoomMeeting = async () => {
+      try {
+        const response = await fetch(`https://rockstarmathfinal-production.up.railway.app/api/${users._id}/zoom-meeting`)
+        const data = await response.json()
+
+        if (!response.ok) throw new Error(data.message || 'No Zoom meeting found.')
+
+        setZoomMeeting(data.meeting)
+      } catch (error) {
+        console.error('❌ Error fetching Zoom meeting:', error)
+        setZoomMeeting(null)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchPurchasedClasses()
+    fetchZoomMeeting()
+  }, [users])
+
+  if (loading) return <p>Loading dashboard...</p>
+  if (error) return <p className="text-red-600">{error}</p>
 
   return (
     <div className="flex min-h-auto">
       <div className="flex-grow bg-gray-100">
         <AnimatedSection direction="right">
           {purchasedClasses.length > 0 ? (
-            <ul>
-              {purchasedClasses.map((item, index) => (
-                <li key={index}>
-                  <h3>{item.name}</h3>
-                  <p>{item.description}</p>
-                  <p>📅 {new Date(item.purchaseDate).toLocaleDateString()}</p>
-                </li>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+              {purchasedClasses.map((classItem, index) => (
+                <ClassCard key={index} classData={classItem} />
               ))}
-            </ul>
+            </div>
           ) : (
             <p>No Purchased Classes</p>
           )}
-          {/* ✅ Zoom Meeting Section */}
-          {zoomMeeting ? (
-            <section className="mt-6 p-4 bg-white shadow-md rounded-lg mt-11">
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                Your Upcoming Zoom Meeting:
-              </h3>
+          {zoomMeeting && (
+            <section className="mt-6 p-4 bg-white shadow-md rounded-lg">
+              <h3>Your Upcoming Zoom Meeting:</h3>
               <p>
                 <strong>Topic:</strong> {zoomMeeting.topic}
               </p>
@@ -120,8 +91,6 @@ console.log(users);
                 ➡️ Join Meeting
               </a>
             </section>
-          ) : (
-            <p className="mt-11">No Zoom meeting scheduled.</p>
           )}
         </AnimatedSection>
       </div>
