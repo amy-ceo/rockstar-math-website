@@ -23,7 +23,7 @@ connectDB();
 const app = express();
 const allowedOrigins = [
   "http://localhost:8080", // Local Development
-  "http://localhost:5000", // Production URL
+  "https://frontend-production-90a4.up.railway.app", // Production URL
 ];
 
 // ✅ Enable JSON Parsing (Fix for req.body undefined issue)

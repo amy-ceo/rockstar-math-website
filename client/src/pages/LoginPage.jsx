@@ -36,7 +36,7 @@ function LoginPage() {
     e.preventDefault();
   
     try {
-      const response = await axios.post("http://localhost:5000/api/auth/login", {
+      const response = await axios.post("https://frontend-production-90a4.up.railway.app/api/auth/login", {
         username: formData.username,
         password: formData.password,
       });
