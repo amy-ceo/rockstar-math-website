@@ -11,7 +11,7 @@ const SubscriptionPage = () => {
   useEffect(() => {
     const fetchPlans = async () => {
       try {
-        const response = await fetch("https://rockstarmathfinal-production.up.railway.app/api/stripe/get-plans");
+        const response = await fetch("http://localhost:5000/api/stripe/get-plans");
         const data = await response.json();
 
         console.log("✅ Fetched Plans:", data);

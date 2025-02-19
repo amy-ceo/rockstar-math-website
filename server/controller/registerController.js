@@ -2,7 +2,37 @@ const bcrypt = require('bcryptjs')
 const Register = require('../models/registerModel')
 const jwt = require('jsonwebtoken')
 const crypto = require('crypto')
+const sendEmail = require("../utils/emailSender");
+
 // ✅ Function to Generate JWT Token
+
+// ✅ Define Zoom Course Names
+const ZOOM_COURSES = ["Learn", "Achieve", "Excel"];
+
+// ✅ Define Service Packages and Their Booking Limits
+const SERVICE_PACKAGES = {
+  "3x30": 3,
+  "5x30": 5,
+  "8x30": 8,
+};
+
+// ✅ Define Zoom Links (Static Links for Courses)
+const ZOOM_LINKS = [
+  "https://us06web.zoom.us/meeting/register/mZHoQiy9SqqHx69f4dejgg#/registration",
+  "https://us06web.zoom.us/meeting/register/kejThKqpTpetwaMNI33bAQ#/registration",
+  "https://us06web.zoom.us/meeting/register/jH2N2rfMSXyqX1UDEZAarQ#/registration",
+  "https://us06web.zoom.us/meeting/register/Lsd_MFiwQpKRKhMZhPIYPw#/registration",
+  "https://us06web.zoom.us/meeting/register/XsYhADVmQcK8BIT3Sfbpyg#/registration",
+];
+
+// ✅ Define Calendly Booking Links for Services
+const CALENDLY_LINKS = {
+  "3x30": "https://calendly.com/your-company/3-sessions",
+  "5x30": "https://calendly.com/your-company/5-sessions",
+  "8x30": "https://calendly.com/your-company/8-sessions",
+};
+
+
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' }) // Token valid for 7 days
 }
@@ -95,37 +125,171 @@ exports.registerUser = async (req, res) => {
   }
 };
 
+// 🎯 Function to Handle Purchase
 exports.addPurchasedClass = async (req, res) => {
   try {
-      const { userId, purchasedClasses } = req.body;
+    const { userId, purchasedItems, userEmail } = req.body;
 
-      if (!userId || !purchasedClasses || (Array.isArray(purchasedClasses) && (Array.isArray(purchasedClasses) && purchasedClasses.length === 0))) {
-          return res.status(400).json({ message: "Invalid request. Missing data." });
+    console.log("🔄 Processing Purchase Request...");
+
+    if (!userId || !purchasedItems || !Array.isArray(purchasedItems) || purchasedItems.length === 0) {
+      return res.status(400).json({ message: "Invalid request. Missing data." });
+    }
+
+    // ✅ Find User
+    console.log(`🔎 Finding User: ${userId}`);
+    const user = await Register.findById(userId);
+    if (!user) {
+      console.error("❌ User Not Found");
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    let newPurchases = [];
+    let zoomCoursesPurchased = [];
+    let servicePurchased = [];
+
+    console.log("🛒 Processing Purchased Items...");
+    for (const item of purchasedItems) {
+      if (user.purchasedClasses.some(pc => pc.name === item.name)) {
+        console.log(`⚠️ ${item.name} is already purchased, skipping...`);
+        continue;
       }
 
-      const user = await Register.findById(userId);
-      if (!user) {
-          return res.status(404).json({ message: "User not found." });
+      let newPurchase = {
+        name: item.name,
+        description: item.description || "No description available",
+        purchaseDate: new Date(),
+      };
+
+      if (ZOOM_COURSES.includes(item.name)) {
+        zoomCoursesPurchased.push(item.name);
       }
 
-      // ✅ Ensure purchasedClasses is always an array
-      const newClasses = Array.isArray(purchasedClasses) ? purchasedClasses : [purchasedClasses];
+      if (SERVICE_PACKAGES[item.name]) {
+        newPurchase.sessionCount = SERVICE_PACKAGES[item.name];
+        newPurchase.remainingSessions = SERVICE_PACKAGES[item.name];
+        newPurchase.bookingLink = CALENDLY_LINKS[item.name];
+        servicePurchased.push(item.name);
+      }
 
-   
-      // ✅ Add classes to the purchasedClasses array
-      user.purchasedClasses = [...user.purchasedClasses, ...newClasses];
-      await user.save();
+      newPurchases.push(newPurchase);
+    }
 
-      console.log("✅ Updated Purchased Classes:", user.purchasedClasses);
+    console.log("📝 Updating User Purchases...");
+    user.purchasedClasses.push(...newPurchases);
+    await user.save();
+    console.log("✅ Purchases Updated!");
 
-      console.log("✅ Updated Purchased Classes:", user.purchasedClasses);
+    // ✅ Send Zoom/Calendly Email
+    if (zoomCoursesPurchased.length > 0 || servicePurchased.length > 0) {
+      console.log(`📧 Sending purchase details email to: ${userEmail}`);
 
-      return res.status(200).json({ message: "Purchased classes updated.", purchasedClasses: user.purchasedClasses });
+      let emailSubject = "🎉 Welcome! Your Purchase Details";
+      let emailHtml = `<h2>🎉 Hello ${user.username},</h2><p>Thank you for your purchase.</p>`;
+
+      if (zoomCoursesPurchased.length > 0) {
+        emailHtml += `<h3>🔗 Here are your Zoom links:</h3><ul>${ZOOM_LINKS.map(link => `<li><a href="${link}" target="_blank">${link}</a></li>`).join("")}</ul>`;
+      }
+
+      if (servicePurchased.length > 0) {
+        emailHtml += `<h3>📅 Use the links below to book your sessions:</h3><ul>${servicePurchased.map(s => `<li><a href="${CALENDLY_LINKS[s]}" target="_blank">${CALENDLY_LINKS[s]}</a></li>`).join("")}</ul>`;
+      }
+
+      await sendEmail(userEmail, emailSubject, "", emailHtml);
+      console.log("✅ Purchase details email sent successfully!");
+    }
+
+    // ✅ Send Welcome Email Separately
+    console.log(`📧 Sending Welcome Email to: ${userEmail}`);
+
+    let welcomeSubject = "Welcome to Rockstar Math - Important Tips for Your Upcoming Tutoring Session";
+    let welcomeText = `
+Dear ${user.username},
+
+Thank you for booking your session with Rockstar Math! I'm excited to work with you. To ensure we make the most of our time together, please take a moment to review these tips for a smooth and productive online tutoring experience:
+
+🔹 **Stay Focused**: Keep distractions minimal by turning your camera on during the session whenever possible.
+
+🔹 **Show Your Work**: I need to see how you solve problems to help you better:
+   - Use a **Zoom Whiteboard** (best with a touchscreen tablet or laptop with a digital pen).
+   - Use a **document camera** or a **phone holder** to show your paper while you write.
+
+🔹 **Screen Sharing**: If your homework is online, use a **touchscreen device (not a mobile phone)** for better interaction.
+
+Having a clear way to share your work is essential for me to provide the best guidance possible.
+
+If you have any questions, feel free to reach out. I look forward to helping you on your math journey!
+
+Best regards,  
+Amy Gemme  
+Rockstar Math Tutoring  
+📞 510-410-4963
+    `;
+
+    let welcomeHtml = `
+    <div style="background-color: #f9fafb; padding: 20px; font-family: Arial, sans-serif; color: #333;">
+      
+      <!-- Container -->
+      <div style="max-width: 600px; margin: 0 auto; background: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);">
+  
+        <!-- Header Section -->
+        <div style="text-align: center; border-bottom: 3px solid #00008B; padding-bottom: 10px;">
+          <img src="https://lh3.googleusercontent.com/E4_qZbXYrWVJzqYKoVRZExsZyUHewJ5P9Tkds6cvoXXlturq57Crg1a-7xtiGFVJFM1MB-yDWalHjXrb1tOFYs0=w16383" alt="Rockstar Math Logo" style="width: 120px; margin-bottom: 10px;">
+          <h2 style="color: #00008B; font-size: 24px;">🎉 Welcome to Rockstar Math, ${user.username}!</h2>
+        </div>
+  
+        <!-- Body Content -->
+        <div style="padding: 20px;">
+          <p style="font-size: 16px;">Thank you for booking your session with <strong>Rockstar Math</strong>! I'm excited to work with you. To ensure we make the most of our time together, please take a moment to review these important tips:</p>
+  
+          <h3 style="color: #00008B; font-size: 18px; margin-top: 15px;">🔹 Stay Focused</h3>
+          <p>Keep distractions minimal by turning your camera on during the session whenever possible.</p>
+  
+          <h3 style="color: #00008B; font-size: 18px; margin-top: 15px;">🔹 Show Your Work</h3>
+          <p>It’s crucial for me to see how you solve problems so I can guide you better:</p>
+          <ul style="list-style: none; padding-left: 0;">
+            <li style="margin-bottom: 5px;">✅ Use the <strong>Zoom Whiteboard</strong> (best with a touchscreen tablet or laptop with a digital pen).</li>
+            <li style="margin-bottom: 5px;">✅ Use a <strong>document camera</strong> or a <strong>phone holder</strong> to position your phone camera over your paper while writing.</li>
+          </ul>
+  
+          <h3 style="color: #00008B; font-size: 18px; margin-top: 15px;">🔹 Screen Sharing</h3>
+          <p>If your homework is online, use a <strong>touchscreen device (other than a mobile phone)</strong> for better interaction.</p>
+  
+          <p style="margin-top: 15px;">Having a clear way to share your work ensures I can provide the best guidance possible.</p>
+  
+          <p>If you have any questions, feel free to reach out. I look forward to helping you on your math journey!</p>
+  
+          <!-- Call to Action Button -->
+          <div style="text-align: center; margin-top: 20px;">
+            <a href="https://rockstarmath.com/book-session" style="display: inline-block; background: #00008B; color: #ffffff; padding: 12px 20px; text-decoration: none; border-radius: 5px; font-size: 16px;">📅 Book Your Next Session</a>
+          </div>
+  
+        </div>
+  
+        <!-- Footer -->
+        <div style="text-align: center; margin-top: 20px; font-size: 14px; color: #777;">
+          <p><strong>Best regards,</strong><br>
+          Amy Gemme<br>
+          Rockstar Math Tutoring<br>
+          📞 510-410-4963</p>
+          <p>Follow us on: <a href="#" style="color: #00008B; text-decoration: none;">Facebook</a> | <a href="#" style="color: #00008B; text-decoration: none;">Twitter</a></p>
+        </div>
+  
+      </div>
+    </div>
+  `;
+
+    await sendEmail(userEmail, welcomeSubject, welcomeText, welcomeHtml);
+    console.log("✅ Welcome email sent successfully!");
+
+    return res.status(200).json({ message: "Purchase updated & both emails sent!" });
+
   } catch (error) {
-      console.error("❌ Error adding purchased class:", error);
-      res.status(500).json({ message: "Server error" });
+    console.error("❌ Error processing purchase:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };
+
 
 
 exports.getPurchasedClasses = async (req, res) => {

@@ -1,6 +1,17 @@
-const mongoose = require('mongoose')
-const bcrypt = require('bcryptjs')
+const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
 
+const purchasedClassSchema = new mongoose.Schema({
+  name: { type: String, required: true }, // Product Name
+  description: { type: String, required: true }, // Product Description
+  purchaseDate: { type: Date, default: Date.now }, // Date of Purchase
+  sessionCount: { type: Number, default: 0 }, // ✅ Number of Sessions (For Services)
+  remainingSessions: { type: Number, default: 0 }, // ✅ Remaining Sessions (For Services)
+  bookingLink: { type: String, default: null }, // ✅ Calendly Booking Link (For Services)
+});
+
+// ✅ Define Schema
 const RegisterSchema = new mongoose.Schema(
   {
     username: { type: String, required: true, unique: true },
@@ -19,9 +30,9 @@ const RegisterSchema = new mongoose.Schema(
       ],
       validate: {
         validator: function (students) {
-          return students.length === this.numStudents // ✅ Ensure student array matches numStudents
+          return students.length === this.numStudents; // ✅ Ensure student array matches numStudents
         },
-        message: 'Number of students does not match student details provided!',
+        message: "Number of students does not match student details provided!",
       },
     },
     billingEmail: { type: String, required: true },
@@ -30,19 +41,15 @@ const RegisterSchema = new mongoose.Schema(
     goals: { type: String, required: true },
     didUserApproveSMS: { type: Boolean, default: false },
     didUserApproveWebcam: { type: Boolean, default: false },
+
     // ✅ Password Reset Fields
     resetPasswordToken: { type: String },
     resetPasswordExpires: { type: Date },
-    // ✅ Purchased Classes Field
-    purchasedClasses: [
-      {
-        name: { type: String, required: true }, // Product Name
-        description: { type: String, required: true }, // Product Description
-        purchaseDate: { type: Date, default: Date.now }, // Date of Purchase
-      },
-    ],
 
-    // ✅ Zoom Meeting Details
+    // ✅ Purchased Classes & Services
+    purchasedClasses: [purchasedClassSchema], // ✅ Includes both Zoom & Service purchases
+
+    // ✅ Zoom Meeting Details (For Purchased Classes)
     zoomMeetings: [
       {
         meetingId: { type: String, required: true }, // Zoom Meeting ID
@@ -53,34 +60,32 @@ const RegisterSchema = new mongoose.Schema(
       },
     ],
   },
+  { timestamps: true }
+);
 
-  { timestamps: true },
-)
+// ✅ Password Hashing Before Saving
+RegisterSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
 
-// ✅ Password Hashing
-// ✅ Hash password before saving
-RegisterSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next()
-
-  // ✅ Hash only if it's not already hashed
-  if (!this.password.startsWith('$2b$')) {
-    const salt = await bcrypt.genSalt(10)
-    this.password = await bcrypt.hash(this.password, salt)
+  if (!this.password.startsWith("$2b$")) {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
   }
 
-  next()
-})
+  next();
+});
 
+// ✅ Match Password for Login
 RegisterSchema.methods.matchPassword = async function (enteredPassword) {
-  return await bcrypt.compare(enteredPassword, this.password)
-}
+  return await bcrypt.compare(enteredPassword, this.password);
+};
 
 // ✅ Generate Reset Password Token
 RegisterSchema.methods.getResetPasswordToken = function () {
-  const resetToken = crypto.randomBytes(20).toString('hex')
-  this.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex')
-  this.resetPasswordExpires = Date.now() + 10 * 60 * 1000 // 10 minutes expiry
-  return resetToken
-}
+  const resetToken = crypto.randomBytes(20).toString("hex");
+  this.resetPasswordToken = crypto.createHash("sha256").update(resetToken).digest("hex");
+  this.resetPasswordExpires = Date.now() + 10 * 60 * 1000; // 10 minutes expiry
+  return resetToken;
+};
 
-module.exports = mongoose.model('Register', RegisterSchema)
+module.exports = mongoose.model("Register", RegisterSchema);

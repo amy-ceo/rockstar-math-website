@@ -4,7 +4,7 @@ import { toast } from "react-toastify";
 
 const PayPalButton = ({ totalAmount, cartItems }) => {
     // ✅ Fetch API Base URL from Environment Variables
-    const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "https://rockstarmathfinal-production.up.railway.app";
+    const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
 
     const handleCreateOrder = async () => {
         try {
