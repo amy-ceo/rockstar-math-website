@@ -13,7 +13,7 @@ const WaitlistForm = ({ setIsFormModalOpen }) => {
     e.preventDefault();
 
     try {
-      const response = await axios.post("http://localhost:5000/api/waitlist", {
+      const response = await axios.post("https://rockstarmathfinal-production.up.railway.app/api/waitlist", {
         email,
         firstname,
         lastname,
