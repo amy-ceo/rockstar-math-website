@@ -19,7 +19,7 @@ const MyClasses = () => {
        setLoading(true);
        try {
          // ✅ Fetch Purchased Classes
-         const classResponse = await fetch(`https://frontend-production-90a4.up.railway.app/api/${users._id}/purchased-classes`);
+         const classResponse = await fetch(`http://localhost:5000/api/${users._id}/purchased-classes`);
          const classData = await classResponse.json();
          
          if (classResponse.ok && classData.purchasedClasses) {
@@ -27,7 +27,7 @@ const MyClasses = () => {
          }
  
          // ✅ Fetch Zoom Meeting if user has a subscription
-         const zoomResponse = await fetch(`https://frontend-production-90a4.up.railway.app/api/${users._id}/zoom-meeting`);
+         const zoomResponse = await fetch(`http://localhost:5000/api/${users._id}/zoom-meeting`);
          const zoomData = await zoomResponse.json();
          
          if (zoomResponse.ok && zoomData.meeting) {
