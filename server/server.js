@@ -47,17 +47,17 @@ app.use(
   })
 );
 
-// ✅ Remove Manual Header Setting (Fixes conflict)
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", allowedOrigins.includes(req.headers.origin) ? req.headers.origin : "*");
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  res.header("Access-Control-Allow-Credentials", "true"); // ✅ Ensure credentials are allowed
-  next();
-});
+// // ✅ Remove Manual Header Setting (Fixes conflict)
+// app.use((req, res, next) => {
+//   res.header("Access-Control-Allow-Origin", allowedOrigins.includes(req.headers.origin) ? req.headers.origin : "*");
+//   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+//   res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+//   res.header("Access-Control-Allow-Credentials", "true"); // ✅ Ensure credentials are allowed
+//   next();
+// });
 
-// ✅ Handle Preflight Requests Properly
-app.options("*", cors());
+// // ✅ Handle Preflight Requests Properly
+// app.options("*", cors());
 
 
 const client = new twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
