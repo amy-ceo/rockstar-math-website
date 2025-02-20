@@ -147,6 +147,7 @@ exports.addPurchasedClass = async (req, res) => {
     let newPurchases = [];
     let zoomCoursesPurchased = [];
     let servicePurchased = [];
+    let acuityAppointments = [];
 
     console.log("🛒 Processing Purchased Items...");
     for (const item of purchasedItems) {

@@ -8,6 +8,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
 import Navbar from "./components/Navbar.jsx";
 import Footer from "./components/Footer.jsx";
+import CourseDetail from "./components/CourseDetail.jsx";
 
 // Lazy Load Pages & Components
 const App = lazy(() => import("./App.jsx"));
@@ -61,7 +62,7 @@ createRoot(document.getElementById("root")).render(
             <Route path="cart" element={<CartPage />} />
             <Route path="checkout" element={<CheckoutPage />} />
             <Route path="/newsletter" element={<Newsletter />} />
-
+            <Route path="/course/:id" element={<CourseDetail />} /> 
             {/* Dashboard Routes Wrapped in Layout */}
             <Route path="/dashboard/*" element={<DashboardLayout />}>
               <Route index element={<Dashboard />} />
