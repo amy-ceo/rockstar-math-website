@@ -149,6 +149,8 @@ exports.addPurchasedClass = async (req, res) => {
     let servicePurchased = [];
     let acuityAppointments = [];
 
+    let isCommonCorePurchased = false; // ✅ Flag for "Common Core- Parents"
+
     console.log("🛒 Processing Purchased Items...");
     for (const item of purchasedItems) {
       if (user.purchasedClasses.some(pc => pc.name === item.name)) {
@@ -162,7 +164,9 @@ exports.addPurchasedClass = async (req, res) => {
         purchaseDate: new Date(),
       };
 
-      if (ZOOM_COURSES.includes(item.name)) {
+      if (item.name === "Common Core- Parents") {
+        isCommonCorePurchased = true; // ✅ Set flag
+      } else if (ZOOM_COURSES.includes(item.name)) {
         zoomCoursesPurchased.push(item.name);
       }
 
@@ -181,7 +185,26 @@ exports.addPurchasedClass = async (req, res) => {
     await user.save();
     console.log("✅ Purchases Updated!");
 
-    // ✅ Send Zoom/Calendly Email
+    // ✅ Send Email for "Common Core- Parents"
+    if (isCommonCorePurchased) {
+      console.log(`📧 Sending Single Zoom Link Email to: ${userEmail}`);
+
+      const commonCoreZoomLink = "https://us06web.zoom.us/meeting/register/mZHoQiy9SqqHx69f4dejgg#/registration"; // ✅ Change to actual link
+
+      let emailSubject = "🔗 Your Common Core- Parents Zoom Link";
+      let emailHtml = `
+        <h2>🎉 Hello ${user.username},</h2>
+        <p>Thank you for purchasing the <strong>Common Core- Parents</strong> subscription!</p>
+        <p>Here is your Zoom link for your upcoming session:</p>
+        <p><a href="${commonCoreZoomLink}" target="_blank">${commonCoreZoomLink}</a></p>
+        <p>We look forward to seeing you!</p>
+      `;
+
+      await sendEmail(userEmail, emailSubject, "", emailHtml);
+      console.log("✅ Single Zoom link email sent!");
+    }
+
+    // ✅ Send Regular Zoom/Calendly Email if other courses were purchased
     if (zoomCoursesPurchased.length > 0 || servicePurchased.length > 0) {
       console.log(`📧 Sending purchase details email to: ${userEmail}`);
 
@@ -189,7 +212,7 @@ exports.addPurchasedClass = async (req, res) => {
       let emailHtml = `<h2>🎉 Hello ${user.username},</h2><p>Thank you for your purchase.</p>`;
 
       if (zoomCoursesPurchased.length > 0) {
-        emailHtml += `<h3>🔗 Here are your Zoom links:</h3><ul>${ZOOM_LINKS.map(link => `<li><a href="${link}" target="_blank">${link}</a></li>`).join("")}</ul>`;
+        emailHtml += `<h3>🔗 Here are your Zoom links:</h3><ul>${zoomCoursesPurchased.map(name => `<li><a href="${ZOOM_LINKS[name]}" target="_blank">${ZOOM_LINKS[name]}</a></li>`).join("")}</ul>`;
       }
 
       if (servicePurchased.length > 0) {
@@ -200,96 +223,23 @@ exports.addPurchasedClass = async (req, res) => {
       console.log("✅ Purchase details email sent successfully!");
     }
 
-    // ✅ Send Welcome Email Separately
+    // ✅ Send Welcome Email (same as before)
     console.log(`📧 Sending Welcome Email to: ${userEmail}`);
 
     let welcomeSubject = "Welcome to Rockstar Math - Important Tips for Your Upcoming Tutoring Session";
-    let welcomeText = `
-Dear ${user.username},
+    let welcomeText = `Dear ${user.username},\n\nThank you for booking your session with Rockstar Math! I'm excited to work with you. Please review these tips for a smooth and productive online tutoring experience:\n\n🔹 **Stay Focused**\n🔹 **Show Your Work**\n🔹 **Screen Sharing**\n\nIf you have any questions, feel free to reach out.\n\nBest regards,\nAmy Gemme\nRockstar Math Tutoring\n📞 510-410-4963`;
 
-Thank you for booking your session with Rockstar Math! I'm excited to work with you. To ensure we make the most of our time together, please take a moment to review these tips for a smooth and productive online tutoring experience:
-
-🔹 **Stay Focused**: Keep distractions minimal by turning your camera on during the session whenever possible.
-
-🔹 **Show Your Work**: I need to see how you solve problems to help you better:
-   - Use a **Zoom Whiteboard** (best with a touchscreen tablet or laptop with a digital pen).
-   - Use a **document camera** or a **phone holder** to show your paper while you write.
-
-🔹 **Screen Sharing**: If your homework is online, use a **touchscreen device (not a mobile phone)** for better interaction.
-
-Having a clear way to share your work is essential for me to provide the best guidance possible.
-
-If you have any questions, feel free to reach out. I look forward to helping you on your math journey!
-
-Best regards,  
-Amy Gemme  
-Rockstar Math Tutoring  
-📞 510-410-4963
-    `;
-
-    let welcomeHtml = `
-    <div style="background-color: #f9fafb; padding: 20px; font-family: Arial, sans-serif; color: #333;">
-      
-      <!-- Container -->
-      <div style="max-width: 600px; margin: 0 auto; background: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);">
-  
-        <!-- Header Section -->
-        <div style="text-align: center; border-bottom: 3px solid #00008B; padding-bottom: 10px;">
-          <img src="https://lh3.googleusercontent.com/E4_qZbXYrWVJzqYKoVRZExsZyUHewJ5P9Tkds6cvoXXlturq57Crg1a-7xtiGFVJFM1MB-yDWalHjXrb1tOFYs0=w16383" alt="Rockstar Math Logo" style="width: 120px; margin-bottom: 10px;">
-          <h2 style="color: #00008B; font-size: 24px;">🎉 Welcome to Rockstar Math, ${user.username}!</h2>
-        </div>
-  
-        <!-- Body Content -->
-        <div style="padding: 20px;">
-          <p style="font-size: 16px;">Thank you for booking your session with <strong>Rockstar Math</strong>! I'm excited to work with you. To ensure we make the most of our time together, please take a moment to review these important tips:</p>
-  
-          <h3 style="color: #00008B; font-size: 18px; margin-top: 15px;">🔹 Stay Focused</h3>
-          <p>Keep distractions minimal by turning your camera on during the session whenever possible.</p>
-  
-          <h3 style="color: #00008B; font-size: 18px; margin-top: 15px;">🔹 Show Your Work</h3>
-          <p>It’s crucial for me to see how you solve problems so I can guide you better:</p>
-          <ul style="list-style: none; padding-left: 0;">
-            <li style="margin-bottom: 5px;">✅ Use the <strong>Zoom Whiteboard</strong> (best with a touchscreen tablet or laptop with a digital pen).</li>
-            <li style="margin-bottom: 5px;">✅ Use a <strong>document camera</strong> or a <strong>phone holder</strong> to position your phone camera over your paper while writing.</li>
-          </ul>
-  
-          <h3 style="color: #00008B; font-size: 18px; margin-top: 15px;">🔹 Screen Sharing</h3>
-          <p>If your homework is online, use a <strong>touchscreen device (other than a mobile phone)</strong> for better interaction.</p>
-  
-          <p style="margin-top: 15px;">Having a clear way to share your work ensures I can provide the best guidance possible.</p>
-  
-          <p>If you have any questions, feel free to reach out. I look forward to helping you on your math journey!</p>
-  
-          <!-- Call to Action Button -->
-          <div style="text-align: center; margin-top: 20px;">
-            <a href="https://rockstarmath.com/book-session" style="display: inline-block; background: #00008B; color: #ffffff; padding: 12px 20px; text-decoration: none; border-radius: 5px; font-size: 16px;">📅 Book Your Next Session</a>
-          </div>
-  
-        </div>
-  
-        <!-- Footer -->
-        <div style="text-align: center; margin-top: 20px; font-size: 14px; color: #777;">
-          <p><strong>Best regards,</strong><br>
-          Amy Gemme<br>
-          Rockstar Math Tutoring<br>
-          📞 510-410-4963</p>
-          <p>Follow us on: <a href="#" style="color: #00008B; text-decoration: none;">Facebook</a> | <a href="#" style="color: #00008B; text-decoration: none;">Twitter</a></p>
-        </div>
-  
-      </div>
-    </div>
-  `;
-
-    await sendEmail(userEmail, welcomeSubject, welcomeText, welcomeHtml);
+    await sendEmail(userEmail, welcomeSubject, welcomeText, "");
     console.log("✅ Welcome email sent successfully!");
 
-    return res.status(200).json({ message: "Purchase updated & both emails sent!" });
+    return res.status(200).json({ message: "Purchase updated & all emails sent!" });
 
   } catch (error) {
     console.error("❌ Error processing purchase:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
+
 
 
 
