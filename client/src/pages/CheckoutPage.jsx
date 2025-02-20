@@ -54,7 +54,7 @@ const createPaymentIntent = async () => {
 
       console.log("🔹 Sending Payment Request:", { amount: total, currency, userId, orderId });
 
-      const response = await fetch("https://backend-production-4b2c.up.railway.app/api/stripe/create-payment-intent", {
+      const response = await fetch("https://backend-production-cbe2.up.railway.app/api/stripe/create-payment-intent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ amount: total, currency, userId, orderId }),
@@ -89,7 +89,7 @@ const startCheckout = async () => {
 
       console.log("🔹 Sending Payment Request:", { userId: user._id, cartItems });
 
-      const response = await fetch("https://backend-production-4b2c.up.railway.app/api/create-checkout-session", {
+      const response = await fetch("https://backend-production-cbe2.up.railway.app/api/create-checkout-session", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -137,7 +137,7 @@ const handlePaymentSuccess = async () => {
       purchasedClasses: formattedClasses
     });
 
-    const response = await fetch("https://backend-production-4b2c.up.railway.app/api/add-purchased-class", {
+    const response = await fetch("https://backend-production-cbe2.up.railway.app/api/add-purchased-class", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

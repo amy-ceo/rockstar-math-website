@@ -36,8 +36,8 @@ exports.createOrder = async (req, res) => {
                 },
             ],
             application_context: {
-                return_url: "https://backend-production-4b2c.up.railway.app/success",
-                cancel_url: "https://backend-production-4b2c.up.railway.app/cancel",
+                return_url: "https://backend-production-cbe2.up.railway.app/success",
+                cancel_url: "https://backend-production-cbe2.up.railway.app/cancel",
             },
         });
 

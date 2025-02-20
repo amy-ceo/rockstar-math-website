@@ -17,7 +17,7 @@ function Hero() {
     e.preventDefault()
 
     try {
-      const response = await axios.post('https://backend-production-4b2c.up.railway.app/api/consultation/request', {
+      const response = await axios.post('https://backend-production-cbe2.up.railway.app/api/consultation/request', {
         email,
         firstname,
         lastname,
