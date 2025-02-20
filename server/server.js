@@ -19,17 +19,17 @@ const paymentRoutes = require("./routes/paymentRoutes"); // ✅ Import Payment R
 const ordersRoute = require("./routes/order.js"); // ✅ Import Orders Route
 const paypalRoutes = require("./routes/paypalRoutes.js")
 connectDB();
-
 const app = express();
+app.use(express.json());
+app.use(express.urlencoded({ extended: true })); // Support form-urlencoded bodies
+app.use(bodyParser.json()); // Ensure JSON body parsing
 const allowedOrigins = [
   "http://localhost:8080", // Local Development
   "https://frontend-production-9912.up.railway.app", // Production URL
 ];
 
 // ✅ Enable JSON Parsing (Fix for req.body undefined issue)
-app.use(express.json());
-app.use(express.urlencoded({ extended: true })); // Support form-urlencoded bodies
-app.use(bodyParser.json()); // Ensure JSON body parsing
+
 
 app.use(
   cors({
