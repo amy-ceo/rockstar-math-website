@@ -75,13 +75,10 @@ function Reviews() {
 
     return (
 <div className="py-14 bg-gray-50">
-    {/* Header Section */}
     <div className="text-center py-8 bg-gray-50">
-    {/* Main Heading */}
     <h1 className="text-3xl font-extrabold text-black leading-tight">
-        900+ Reviews on Shopper Approved 150+ Reviews on Facebook
+    100s of Successful Students · 10,000+ Hours of Expert Math Tutoring
     </h1>
-    {/* Subheading */}
     <p className="mt-4 text-xl text-black font-medium">
         Average <span className="text-black">5-Star</span> Rating
     </p>

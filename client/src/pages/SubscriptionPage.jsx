@@ -77,7 +77,7 @@ const SubscriptionPage = () => {
         <Toaster position="top-right" /> {/* ✅ Toast Notifications */}
         {/* ✅ Subscription Plans */}
         {/* ✅ Subscription Plans */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-10 max-w-6xl mx-auto px-4 md:px-0">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-10 max-w-6xl mx-auto px-4 md:px-0">
           {loading ? (
             <p className="text-center text-gray-700 text-lg">Loading plans...</p>
           ) : plans.length > 0 ? (

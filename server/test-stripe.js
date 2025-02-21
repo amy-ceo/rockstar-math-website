@@ -1,13 +1,15 @@
-require("dotenv").config();
-const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+const stripe = require('stripe')('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'); // 🛑 Replace with your actual Stripe Secret Key
 
-async function fetchProducts() {
+async function getAllCoupons() {
   try {
-    const products = await stripe.products.list();
-    console.log("All Products from Stripe:", products.data);
+    const coupons = await stripe.coupons.list({ limit: 10 }); // Fetch last 10 coupons
+    console.log("🎟 Available Coupons:");
+    coupons.data.forEach(coupon => {
+      console.log(`🆔 ${coupon.id} | 💰 ${coupon.percent_off}% Off | 📆 ${coupon.duration}`);
+    });
   } catch (error) {
-    console.error("Error fetching products:", error);
+    console.error("❌ Error Fetching Coupons:", error.message);
   }
 }
 
-fetchProducts();
+getAllCoupons();

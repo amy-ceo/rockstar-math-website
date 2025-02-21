@@ -11,12 +11,10 @@ function CalendarBanner() {
                 {/* Left Section: Text */}
                 <div className="lg:w-1/2 text-center lg:text-left">
                     <h2 className="text-3xl sm:text-4xl lg:text-4xl font-bold mb-6 leading-tight">
-                        Your Personalized Calendar:
-                        Plan, Organize, and Track Events, Meetings!
+                    Unlock Your Math Potential: Book Sessions with Amy Today!
                     </h2>
                     <p className="text-lg text-gray-600 mb-6 leading-relaxed">
-                        Stay on top of your schedule with our easy-to-use calendar. Organize events, meetings, and deadlines effortlessly. Keep track of important dates, set reminders, and plan ahead with a user-friendly interface designed to simplify your daily life.
-                    </p>
+                    Stay on top of your math goals with our easy-to-use calendar. Check Amy’s availability, schedule sessions, and track progress—all in one place. Plan ahead, set reminders, and take the first step toward math success with Amy and RockstarMath.</p>
                     <Link to="https://www.youtube.com/watch?v=aYH6CCTiqVY" target="_blank">
                         <button className="px-6 py-3 border border-black  text-black font-medium rounded-full shadow-md hover:bg-sky-600 hover:text-white transition duration-300">
                             See Demo Lectures

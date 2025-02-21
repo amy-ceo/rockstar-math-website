@@ -12,7 +12,7 @@ function AboutPage() {
       image: "/images/about1.png",
       title: "The Language of Math",
       description:
-        "Do you know how to read 3x +4(x+2) outloud? It is okay, most people don't.Math is a language, and your teacher is speaking it. You should too.",
+        "Do you know how to read 3x +4(x+2) outloud? It is okay, most people don't. Math is a language, and your teacher is speaking it. You should too.",
     },
     {
       image: "/images/about2.png",
@@ -29,10 +29,10 @@ function AboutPage() {
   ];
 
   const stats = [
-    { number: 5, text: "years of teaching at CSU campuses." },
-    { number: 20, text: "years of tutoring 1-1" },
-    { number: "10,000", text: "hours of teaching/tutoring" },
-    { number: "2+", text: "degrees Taught at 3 different colleges" },
+    { number: 5, text: "Years Of Teaching At CSU Campuses." },
+    { number: 20, text: "Years Of Tutoring 1-1" },
+    { number: "10,000", text: "Hours Of Teaching/Tutoring" },
+    { number: "2+", text: "Hegrees Taught At 3 Different Colleges" },
     { number: 2, text: "Homeschooling 2 Kids For 2 Years" },
     { number: 1, text: "Patent Pending For Algorithm" },
     { number: 30, text: "Years Video Games & Skateboarding" },

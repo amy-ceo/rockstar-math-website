@@ -2,33 +2,27 @@ const nodemailer = require("nodemailer");
 
 const sendEmail = async (to, subject, text, html) => {
     try {
-        console.log(`📧 Attempting to send email to: ${to}`);
-
-        const transporter = nodemailer.createTransport({
-            service: "gmail",
+        let transporter = nodemailer.createTransport({
+            service: "Gmail", // 🔹 Ensure this is correct
             auth: {
-                user: process.env.EMAIL_USER,
+                user: process.env.EMAIL_USER,  // 🔹 Check if email credentials are set
                 pass: process.env.EMAIL_PASS,
             },
-            logger: true, // ✅ Enable logging
-            debug: true,  // ✅ Show detailed logs
         });
 
-        const mailOptions = {
-            from: `"Your Academy" <${process.env.EMAIL_USER}>`,
-            to,
-            subject,
-            text,
-            html,
+        let mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: to,
+            subject: subject,
+            text: text,
+            html: html,
         };
 
-        console.log("📨 Sending email...");
-        const info = await transporter.sendMail(mailOptions);
-        console.log(`✅ Email sent successfully! Response: ${info.response}`);
-
-        return true; // Ensure the function completes
+        let info = await transporter.sendMail(mailOptions);
+        console.log("✅ Email Sent: ", info.response);
+        return true;
     } catch (error) {
-        console.error("❌ Error sending email:", error);
+        console.error("❌ Email Sending Failed: ", error);
         return false;
     }
 };

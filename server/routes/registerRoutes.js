@@ -1,5 +1,5 @@
 const express = require("express");
-const { registerUser,addPurchasedClass,getPurchasedClasses } = require("../controller/registerController");
+const { registerUser,addPurchasedClass,getPurchasedClasses,getUserCoupons  } = require("../controller/registerController");
 const { checkUserRegistration } = require("../controller/checkRegisterController");
 
 const router = express.Router();
@@ -8,7 +8,7 @@ const router = express.Router();
 router.post("/register", registerUser);
 router.post("/add-purchased-class", addPurchasedClass);
 router.get("/:userId/purchased-classes", getPurchasedClasses);
-// ✅ Check if User is Already Registered
+router.get("/user-coupons/:userId", getUserCoupons);
 router.post("/check-registration", checkUserRegistration);
 
 

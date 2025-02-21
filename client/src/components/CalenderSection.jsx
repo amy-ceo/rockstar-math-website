@@ -49,7 +49,7 @@ const CalenderSection = () => {
         Calendar
       </h2>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto pb-10">
         <table className="w-full border-collapse border rounded-lg">
           <thead>
             <tr className="bg-gray-200">

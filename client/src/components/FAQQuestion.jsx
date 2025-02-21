@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { FaMinus, FaPlus } from "react-icons/fa6";
+import { Link } from 'react-router-dom';
 
 function FAQQuestion() {
     const [openFAQs, setOpenFAQs] = useState(Array(6).fill(false));
@@ -97,9 +98,9 @@ function FAQQuestion() {
                 <p className="text-gray-600 mb-4">
                     Can’t find the answer you’re looking for? Please chat to our friendly team.
                 </p>
-                <button className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-full shadow-md transition duration-300">
+                <Link to='/contact' className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-full shadow-md transition duration-300">
                     Get in Touch
-                </button>
+                </Link>
             </div>
         </div>
     </div>
