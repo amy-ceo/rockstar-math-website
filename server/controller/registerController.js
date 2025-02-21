@@ -159,8 +159,8 @@ exports.addPurchasedClass = async (req, res) => {
       return res.status(400).json({ message: 'Invalid request. Missing data.' })
     }
 
-    let couponCode = null;
-    let discountPercent = 0;
+    let couponCode = null
+    let discountPercent = 0
     // ✅ Find User
     console.log(`🔎 Finding User: ${userId}`)
     const user = await Register.findById(userId)
@@ -207,23 +207,23 @@ exports.addPurchasedClass = async (req, res) => {
         servicePurchased.push(item.name)
       }
 
-     // 🎟 Assign Coupon Based on Purchased Plan
-    if (purchasedItems.some(item => item.name === "Learn")) {
-      couponCode = "URem36bx"; 
-      discountPercent = 10;
-    } else if (purchasedItems.some(item => item.name === "Achieve")) {
-      couponCode = "G4R1If1p"; 
-      discountPercent = 30;
-    } else if (purchasedItems.some(item => item.name === "Excel")) {
-      couponCode = "mZybTHmQ"; 
-      discountPercent = 20;
-    }
+      // 🎟 Assign Coupon Based on Purchased Plan
+      if (purchasedItems.some((item) => item.name === 'Learn')) {
+        couponCode = 'URem36bx'
+        discountPercent = 10
+      } else if (purchasedItems.some((item) => item.name === 'Achieve')) {
+        couponCode = 'G4R1If1p'
+        discountPercent = 30
+      } else if (purchasedItems.some((item) => item.name === 'Excel')) {
+        couponCode = 'mZybTHmQ'
+        discountPercent = 20
+      }
 
-    // ✅ Store Coupon Inside User's Register Model
-    if (couponCode) {
-      user.coupons.push({ code: couponCode, percent_off: discountPercent });
-      await user.save();
-    }
+      // ✅ Store Coupon Inside User's Register Model
+      if (couponCode) {
+        user.coupons.push({ code: couponCode, percent_off: discountPercent })
+        await user.save()
+      }
 
       newPurchases.push(newPurchase)
     }
@@ -272,8 +272,89 @@ exports.addPurchasedClass = async (req, res) => {
         emailHtml += `<h3>🎟 Your Exclusive Discount Coupon:</h3><p><b>Coupon Code:</b> ${couponCode}</p>`
       }
 
-      await sendEmail(userEmail, emailSubject, '', emailHtml)
-      console.log('✅ Purchase details email sent successfully!')
+      let welcomeSubject =
+        'Welcome to Rockstar Math - Important Tips for Your Upcoming Tutoring Session'
+      let welcomeText = `
+  Dear ${user.username},
+  
+  Thank you for booking your session with Rockstar Math! I'm excited to work with you. To ensure we make the most of our time together, please take a moment to review these tips for a smooth and productive online tutoring experience:
+  
+  🔹 **Stay Focused**: Keep distractions minimal by turning your camera on during the session whenever possible.
+  
+  🔹 **Show Your Work**: I need to see how you solve problems to help you better:
+     - Use a **Zoom Whiteboard** (best with a touchscreen tablet or laptop with a digital pen).
+     - Use a **document camera** or a **phone holder** to show your paper while you write.
+  
+  🔹 **Screen Sharing**: If your homework is online, use a **touchscreen device (not a mobile phone)** for better interaction.
+  
+  Having a clear way to share your work is essential for me to provide the best guidance possible.
+  
+  If you have any questions, feel free to reach out. I look forward to helping you on your math journey!
+  
+  Best regards,  
+  Amy Gemme  
+  Rockstar Math Tutoring  
+  📞 510-410-4963
+      `
+
+      let welcomeHtml = `
+      <div style="background-color: #f9fafb; padding: 20px; font-family: Arial, sans-serif; color: #333;">
+        
+        <!-- Container -->
+        <div style="max-width: 600px; margin: 0 auto; background: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);">
+    
+          <!-- Header Section -->
+          <div style="text-align: center; border-bottom: 3px solid #00008B; padding-bottom: 10px;">
+            <img src="https://lh3.googleusercontent.com/E4_qZbXYrWVJzqYKoVRZExsZyUHewJ5P9Tkds6cvoXXlturq57Crg1a-7xtiGFVJFM1MB-yDWalHjXrb1tOFYs0=w16383" alt="Rockstar Math Logo" style="width: 120px; margin-bottom: 10px;">
+            <h2 style="color: #00008B; font-size: 24px;">🎉 Welcome to Rockstar Math, ${user.username}!</h2>
+          </div>
+    
+          <!-- Body Content -->
+          <div style="padding: 20px;">
+            <p style="font-size: 16px;">Thank you for booking your session with <strong>Rockstar Math</strong>! I'm excited to work with you. To ensure we make the most of our time together, please take a moment to review these important tips:</p>
+    
+            <h3 style="color: #00008B; font-size: 18px; margin-top: 15px;">🔹 Stay Focused</h3>
+            <p>Keep distractions minimal by turning your camera on during the session whenever possible.</p>
+    
+            <h3 style="color: #00008B; font-size: 18px; margin-top: 15px;">🔹 Show Your Work</h3>
+            <p>It’s crucial for me to see how you solve problems so I can guide you better:</p>
+            <ul style="list-style: none; padding-left: 0;">
+              <li style="margin-bottom: 5px;">✅ Use the <strong>Zoom Whiteboard</strong> (best with a touchscreen tablet or laptop with a digital pen).</li>
+              <li style="margin-bottom: 5px;">✅ Use a <strong>document camera</strong> or a <strong>phone holder</strong> to position your phone camera over your paper while writing.</li>
+            </ul>
+    
+            <h3 style="color: #00008B; font-size: 18px; margin-top: 15px;">🔹 Screen Sharing</h3>
+            <p>If your homework is online, use a <strong>touchscreen device (other than a mobile phone)</strong> for better interaction.</p>
+    
+            <p style="margin-top: 15px;">Having a clear way to share your work ensures I can provide the best guidance possible.</p>
+    
+            <p>If you have any questions, feel free to reach out. I look forward to helping you on your math journey!</p>
+    
+            <!-- Call to Action Button -->
+            <div style="text-align: center; margin-top: 20px;">
+              <a href="https://rockstarmath.com/book-session" style="display: inline-block; background: #00008B; color: #ffffff; padding: 12px 20px; text-decoration: none; border-radius: 5px; font-size: 16px;">📅 Book Your Next Session</a>
+            </div>
+    
+          </div>
+    
+          <!-- Footer -->
+          <div style="text-align: center; margin-top: 20px; font-size: 14px; color: #777;">
+            <p><strong>Best regards,</strong><br>
+            Amy Gemme<br>
+            Rockstar Math Tutoring<br>
+            📞 510-410-4963</p>
+            <p>Follow us on: <a href="#" style="color: #00008B; text-decoration: none;">Facebook</a> | <a href="#" style="color: #00008B; text-decoration: none;">Twitter</a></p>
+          </div>
+    
+        </div>
+      </div>
+    `
+
+      console.log(`📧 Sending welcome email to: ${userEmail}`)
+
+      await sendEmail(userEmail, welcomeSubject, welcomeText, welcomeHtml)
+
+      console.log('✅ Welcome email sent successfully!')
     }
 
     return res.status(200).json({ message: 'Purchase updated & all emails sent!' })
@@ -310,19 +391,18 @@ exports.getPurchasedClasses = async (req, res) => {
   }
 }
 
-
 exports.getUserCoupons = async (req, res) => {
   try {
-    const { userId } = req.params;
-    const user = await Register.findById(userId);
+    const { userId } = req.params
+    const user = await Register.findById(userId)
 
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ message: 'User not found' })
     }
 
-    res.status(200).json({ coupons: user.coupons });
+    res.status(200).json({ coupons: user.coupons })
   } catch (error) {
-    console.error("❌ Error fetching coupons:", error);
-    res.status(500).json({ message: "Server error" });
+    console.error('❌ Error fetching coupons:', error)
+    res.status(500).json({ message: 'Server error' })
   }
-};
+}
