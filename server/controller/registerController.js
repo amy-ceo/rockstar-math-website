@@ -352,7 +352,7 @@ exports.addPurchasedClass = async (req, res) => {
 
       console.log(`📧 Sending welcome email to: ${userEmail}`)
 
-      await sendEmail(userEmail, welcomeSubject, welcomeText, welcomeHtml)
+      await sendEmail(userEmail, emailSubject, '', emailHtml)
 
       console.log('✅ Welcome email sent successfully!')
     }
