@@ -9,6 +9,7 @@ import { CartProvider } from "./context/CartContext";
 import Navbar from "./components/Navbar.jsx";
 import Footer from "./components/Footer.jsx";
 import CourseDetail from "./components/CourseDetail.jsx";
+import Archive from "./components/Archive.jsx";
 
 // Lazy Load Pages & Components
 const App = lazy(() => import("./App.jsx"));
@@ -68,6 +69,7 @@ createRoot(document.getElementById("root")).render(
               <Route index element={<Dashboard />} />
               <Route path="courses" element={<MyClasses />} />
               <Route path="schedule" element={<Schedule />} />
+              <Route path="archive" element={<Archive />} />
             </Route>
           </Routes>
         </Suspense>

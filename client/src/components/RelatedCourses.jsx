@@ -10,19 +10,20 @@ import { IoIosStats } from "react-icons/io";
 import { RiFunctionLine } from "react-icons/ri";
 import AnimatedSection from "./AnimatedSection";
 
+// ✅ Courses Array with Separate Links
 const courses = [
-  { id: "algebra", Icon: FaSquareRootAlt, title: "Algebra I & II" },
-  { id: "trigonometry", Icon: TbGeometry, title: "Trigonometry (Pre-Calculus)" },
-  { id: "math-analysis", Icon: BiAnalyse, title: "Math Analysis" },
-  { id: "precalculus", Icon: TbMath, title: "Math Analysis (Pre-Calculus)" },
-  { id: "business-calculus", Icon: TbBusinessplan, title: "Business Calculus" },
-  { id: "calculus-1", Icon: TbMath, title: "Calculus 1" },
-  { id: "calculus-2", Icon: RiFunctionLine, title: "Calculus 2" },
-  { id: "calculus-3", Icon: GiStairs, title: "Calculus 3 (Multivariable)" },
-  { id: "probability", Icon: IoIosStats, title: "Probability and Statistics" },
-  { id: "discrete-math", Icon: MdOutlineBarChart, title: "Discrete Math" },
-  { id: "linear-algebra", Icon: MdOutlineMultilineChart, title: "Linear Algebra" },
-  { id: "differential-equations", Icon: RiFunctionLine, title: "Differential Equations" },
+  { id: "algebra", Icon: FaSquareRootAlt, title: "Algebra 1 Tutoring", link: "https://us06web.zoom.us/meeting/register/mZHoQiy9SqqHx69f4dejgg#/registration" },
+  { id: "trigonometry", Icon: TbGeometry, title: "Calc 1 Tutoring", link: "https://us06web.zoom.us/meeting/register/kejThKqpTpetwaMNI33bAQ#/registration" },
+  { id: "math-analysis", Icon: BiAnalyse, title: "Pre Calc and Trig Tutoring", link: "https://us06web.zoom.us/meeting/register/jH2N2rfMSXyqX1UDEZAarQ#/registration" },
+  { id: "precalculus", Icon: TbMath, title: "Geometry Tutoring", link: "https://us06web.zoom.us/meeting/register/Lsd_MFiwQpKRKhMZhPIYPw#/registration" },
+  { id: "business-calculus", Icon: TbBusinessplan, title: "Common Core for Parents", link: "https://us06web.zoom.us/meeting/register/XsYhADVmQcK8BIT3Sfbpyg#/registration" },
+  { id: "calculus-1", Icon: TbMath, title: "Calculus 1", link: "/courses/calculus-1" },
+  { id: "calculus-2", Icon: RiFunctionLine, title: "Calculus 2", link: "/courses/calculus-2" },
+  { id: "calculus-3", Icon: GiStairs, title: "Calculus 3 (Multivariable)", link: "/courses/calculus-3" },
+  { id: "probability", Icon: IoIosStats, title: "Probability and Statistics", link: "/courses/probability" },
+  { id: "discrete-math", Icon: MdOutlineBarChart, title: "Discrete Math", link: "/courses/discrete-math" },
+  { id: "linear-algebra", Icon: MdOutlineMultilineChart, title: "Linear Algebra", link: "/courses/linear-algebra" },
+  { id: "differential-equations", Icon: RiFunctionLine, title: "Differential Equations", link: "/courses/differential-equations" },
 ];
 
 function RelatedCourses() {
@@ -36,11 +37,12 @@ function RelatedCourses() {
           </p>
         </div>
 
+        {/* ✅ Map Over Courses with Separate Links */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
           {courses.map((course, index) => (
             <Link
               key={index}
-              to={`/course/${course.id}`} // Dynamic Route
+              to={course.link} // ✅ Using Separate Link for Each Course
               className="flex items-center gap-4 p-4 rounded-lg shadow-md bg-white border border-gray-200 transition-transform hover:shadow-lg hover:scale-105"
             >
               <div className="p-3 bg-gray-100 rounded-full text-deepBlue text-4xl">

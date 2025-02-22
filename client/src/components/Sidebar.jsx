@@ -8,6 +8,7 @@ import {
   FaCalendarAlt,
   FaEnvelope,
   FaSignOutAlt,
+  FaArchive 
 } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
 
@@ -71,6 +72,15 @@ const Sidebar = () => {
             ${isExpanded && !isMobile ? "justify-start" : "justify-center"}`}
           >
             <FaCalendarAlt className="text-xl" /> {!isMobile && isExpanded && "Schedule"}
+          </Link>
+        </li>
+        <li>
+          <Link
+            to="/dashboard/archive"
+            className={`flex items-center gap-3 px-4 py-2 text-lg rounded-lg hover:bg-blue-600 transition-all duration-300 
+            ${isExpanded && !isMobile ? "justify-start" : "justify-center"}`}
+          >
+            <FaArchive  className="text-xl" /> {!isMobile && isExpanded && "Archive"}
           </Link>
         </li>
         {/* <li>

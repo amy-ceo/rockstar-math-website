@@ -1,80 +1,97 @@
-import React, { useEffect, useState } from 'react';
-import Sidebar from '../components/Sidebar';
-import AnimatedSection from '../components/AnimatedSection.jsx';
-import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import ClassCard from '../components/ClassCard.jsx';
+import React, { useEffect, useState } from 'react'
+import Sidebar from '../components/Sidebar'
+import AnimatedSection from '../components/AnimatedSection.jsx'
+import { useAuth } from '../context/AuthContext'
+import { useNavigate } from 'react-router-dom'
+import ClassCard from '../components/ClassCard.jsx'
 
 const Dashboard = () => {
-  const { users } = useAuth(); // ✅ Use AuthContext properly
-  const navigate = useNavigate();
-  const [purchasedClasses, setPurchasedClasses] = useState([]);
-  const [zoomMeeting, setZoomMeeting] = useState(null);
-  const [calendlyBookings, setCalendlyBookings] = useState([]); // ✅ New State for Calendly Bookings
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const { users } = useAuth() // ✅ Use AuthContext properly
+  const navigate = useNavigate()
+  const [purchasedClasses, setPurchasedClasses] = useState([])
+  const [zoomMeeting, setZoomMeeting] = useState(null)
+  const [calendlyBookings, setCalendlyBookings] = useState([]) // ✅ New State for Calendly Bookings
+  const [coupons, setCoupons] = useState([]) // ✅ New State for Coupons
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     if (!users) {
-      navigate('/login'); // 🚀 Redirect if not logged in
+      navigate('/login') // 🚀 Redirect if not logged in
     }
-  }, [users, navigate]);
+  }, [users, navigate])
 
   useEffect(() => {
-    if (!users || !users._id) return;
+    if (!users || !users._id) return
 
     const fetchPurchasedClasses = async () => {
-      setLoading(true);
+      setLoading(true)
       try {
-        const response = await fetch(`https://backend-production-cbe2.up.railway.app/api/${users._id}/purchased-classes`);
-        const data = await response.json();
+        const response = await fetch(`https://backend-production-cbe2.up.railway.app/api/${users._id}/purchased-classes`)
+        const data = await response.json()
 
-        if (!response.ok) throw new Error(data.message || 'Failed to fetch purchased classes.');
+        if (!response.ok) throw new Error(data.message || 'Failed to fetch purchased classes.')
 
-        setPurchasedClasses(data.purchasedClasses || []);
+        setPurchasedClasses(data.purchasedClasses || [])
       } catch (error) {
-        console.error('❌ Error fetching classes:', error);
-        setError('Failed to load classes. Try again.');
+        console.error('❌ Error fetching classes:', error)
+        setError('Failed to load classes. Try again.')
       }
-    };
+    }
 
     const fetchZoomMeeting = async () => {
       try {
-        const response = await fetch(`https://backend-production-cbe2.up.railway.app/api/${users._id}/zoom-meeting`);
-        const data = await response.json();
+        const response = await fetch(`https://backend-production-cbe2.up.railway.app/api/${users._id}/zoom-meeting`)
+        const data = await response.json()
 
-        if (!response.ok) throw new Error(data.message || 'No Zoom meeting found.');
+        if (!response.ok) throw new Error(data.message || 'No Zoom meeting found.')
 
-        setZoomMeeting(data.meeting);
+        setZoomMeeting(data.meeting)
       } catch (error) {
-        console.error('❌ Error fetching Zoom meeting:', error);
-        setZoomMeeting(null);
+        console.error('❌ Error fetching Zoom meeting:', error)
+        setZoomMeeting(null)
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
+    }
 
     const fetchCalendlyBookings = async () => {
       try {
-        const response = await fetch(`https://backend-production-cbe2.up.railway.app/api/webhook/${users._id}/calendly-bookings`);
-        const data = await response.json();
+        const response = await fetch(`https://backend-production-cbe2.up.railway.app/api/${users._id}/calendly-bookings`)
+        const data = await response.json()
 
-        if (!response.ok) throw new Error(data.message || 'No Calendly bookings found.');
+        if (!response.ok) throw new Error(data.message || 'No Calendly bookings found.')
 
-        setCalendlyBookings(data.bookings);
+        setCalendlyBookings(data.bookings)
       } catch (error) {
-        console.error('❌ Error fetching Calendly bookings:', error);
-        setCalendlyBookings([]);
+        console.error('❌ Error fetching Calendly bookings:', error)
+        setCalendlyBookings([])
       }
-    };
+    }
 
-    fetchPurchasedClasses();
-    fetchZoomMeeting();
-    fetchCalendlyBookings(); // ✅ Fetch Calendly Bookings
-  }, [users]);
+    // ✅ Fetch Coupons
+    const fetchCoupons = async () => {
+      try {
+        const response = await fetch(`https://backend-production-cbe2.up.railway.app/api/user-coupons/${users._id}`)
+        const data = await response.json()
 
-  if (loading) return <p>Loading dashboard...</p>;
-  if (error) return <p className="text-red-600">{error}</p>;
+        if (!response.ok) throw new Error(data.message || 'No Coupons found.')
+
+        setCoupons(data.coupons)
+      } catch (error) {
+        console.error('❌ Error fetching Coupons:', error)
+        setCoupons([])
+      }
+    }
+
+    fetchPurchasedClasses()
+    fetchZoomMeeting()
+    fetchCalendlyBookings() // ✅ Fetch Calendly Bookings
+    fetchCoupons() // ✅ Fetch Coupons
+  }, [users])
+
+  if (loading) return <p>Loading dashboard...</p>
+  if (error) return <p className="text-red-600">{error}</p>
 
   return (
     <div className="flex min-h-auto">
@@ -83,7 +100,12 @@ const Dashboard = () => {
           {purchasedClasses.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
               {purchasedClasses.map((classItem, index) => (
-                <ClassCard key={index} classData={classItem} />
+                <ClassCard
+                  key={index}
+                  classData={classItem}
+                  userId={users._id}
+                  setPurchasedClasses={setPurchasedClasses}
+                />
               ))}
             </div>
           ) : (
@@ -127,14 +149,33 @@ const Dashboard = () => {
                     <p>
                       <strong>⏳ End:</strong> {new Date(booking.endTime).toLocaleString()}
                     </p>
-                    <a
-                      href={booking.eventId}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 underline"
-                    >
-                      🔗 View in Calendly
-                    </a>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* ✅ New Section for Coupons */}
+          {coupons.length > 0 && (
+            <section className="mt-6 p-4 bg-white shadow-md rounded-lg">
+              <h3 className="text-lg font-bold mb-2">🎟 Your Available Coupons</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {coupons.map((coupon, index) => (
+                  <div key={index} className="p-4 bg-green-200 rounded-lg shadow">
+                    <p>
+                      <strong>💰 Coupon Code:</strong> {coupon.code}
+                    </p>
+                    <p>
+                      <strong>🎯 Discount:</strong> {coupon.percent_off}% Off
+                    </p>
+                    <p>
+                      <strong>✅ Valid:</strong>{' '}
+                      {coupon.valid ? (
+                        <span className="text-green-700 font-bold">Yes</span>
+                      ) : (
+                        <span className="text-red-600 font-bold">Expired</span>
+                      )}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -143,7 +184,7 @@ const Dashboard = () => {
         </AnimatedSection>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default Dashboard;
+export default Dashboard

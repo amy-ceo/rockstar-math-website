@@ -2,7 +2,15 @@ import React from "react";
 
 const SubscriptionCard = ({ plan, handleSubscribe }) => {
   return (
-    <div className="bg-white p-8 rounded-lg shadow-lg border border-gray-200 text-center flex flex-col justify-between">
+    <div className="relative bg-white p-8 rounded-lg shadow-lg border border-gray-200 text-center flex flex-col justify-between">
+      
+      {/* 🔹 Ribbon at Top Right */}
+      {plan.discount && (
+        <div className="absolute top-0 right-0 bg-red-600 text-white text-xs font-bold py-1 px-3 transform rotate-45 translate-x-6 -translate-y-3 shadow-md">
+          {plan.discount}
+        </div>
+      )}
+
       {/* ✅ Plan Header */}
       <div className="flex flex-col items-center mb-4">
         <img
@@ -22,10 +30,10 @@ const SubscriptionCard = ({ plan, handleSubscribe }) => {
       {/* ✅ Description */}
       <p className="text-sm text-gray-600 my-4">{plan.description}</p>
 
-      {/* ✅ Subscribe Button (Add to Cart) */}
+      {/* ✅ Subscribe Button */}
       <button
         className="mt-auto bg-blue-600 text-white w-full py-3 rounded-lg font-medium hover:bg-blue-700 transition-all"
-        onClick={() => handleSubscribe(plan)} // ✅ Add to Cart & Show Toast
+        onClick={() => handleSubscribe(plan)}
       >
         Subscribe
       </button>

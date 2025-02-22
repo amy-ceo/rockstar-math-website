@@ -29,6 +29,18 @@ const couponSchema = new mongoose.Schema({
   assignedAt: { type: Date, default: Date.now },
 })
 
+// ✅ Archived Classes Schema (Same as purchasedClasses)
+const archivedClassSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  description: { type: String },
+  archivedAt: { type: Date, default: Date.now },
+})
+// ✅ Store Booking Count for each Calendly Service
+const calendlyBookingsCountSchema = new mongoose.Schema({
+  "3x30": { type: Number, default: 0 },
+  "5x30": { type: Number, default: 0 },
+  "8x30": { type: Number, default: 0 },
+});
 // ✅ Define Schema
 const RegisterSchema = new mongoose.Schema(
   {
@@ -63,13 +75,15 @@ const RegisterSchema = new mongoose.Schema(
     // ✅ Password Reset Fields
     resetPasswordToken: { type: String },
     resetPasswordExpires: { type: Date },
-
+    // ✅ Archived Classes (New Feature)
+    archivedClasses: [purchasedClassSchema], // ✅ Archived Classes
     // ✅ Store User Coupons
     coupons: [couponSchema],
     // ✅ Purchased Classes & Services
     purchasedClasses: [purchasedClassSchema], // ✅ Includes both Zoom & Service purchases
     // ✅ New: Calendly Bookings
     calendlyBookings: [calendlyBookingSchema],
+    calendlyBookingsCount: { type: calendlyBookingsCountSchema, default: {} },
     // ✅ Zoom Meeting Details (For Purchased Classes)
     zoomMeetings: [
       {

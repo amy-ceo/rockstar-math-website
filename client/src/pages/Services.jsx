@@ -80,7 +80,7 @@ const Services = () => {
     "Seasonal - AP Calc Review": services.filter((service) =>
       /(\bAP Calc Review 20 hours\b)/i.test(service.name)
     ),
-    "30 Minute Sessions - *Recommended For Algebra 1 Students And Below*": services.filter(
+    "Recommended for Student up to Algebra I": services.filter(
       (service) =>
         /(\b8 x 30 minutes\b|\b5 x 30 minutes\b|\b3 x 30 minutes\b)/i.test(service.name)
     ),

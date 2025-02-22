@@ -27,23 +27,42 @@ const ZOOM_LINKS = [
 
 // ✅ Define Calendly Booking Links for Services (Updated from Image)
 const CALENDLY_LINKS = {
-  '3x30': 'https://calendly.com/rockstarmathtutoring/30min',
-  '5x30': 'https://calendly.com/rockstarmathtutoring/60min',
+  '3x30': 'https://calendly.com/rockstarmathtutoring/30-minute-session',
+  '5x30': '60 minutes: https://calendly.com/rockstarmathtutoring/60min',
   '8x30': 'https://calendly.com/rockstarmathtutoring/90-minute-sessions',
 }
 
 // ✅ Function to Generate Calendly Scheduling Link (If Needed)
-const generateCalendlyLink = async (sessionType) => {
+const generateCalendlyLink = async (userId, sessionType) => {
   try {
-    if (CALENDLY_LINKS[sessionType]) {
-      return CALENDLY_LINKS[sessionType] // 📌 Return pre-defined Calendly link
+    const user = await Register.findById(userId);
+    if (!user) {
+      console.error("❌ User not found");
+      return null;
     }
-    return null
+
+    // Get current booking count
+    const currentBookings = user.calendlyBookingsCount[sessionType] || 0;
+    const maxBookings = SERVICE_PACKAGES[sessionType];
+
+    // ✅ Check if user has exceeded their limit
+    if (currentBookings >= maxBookings) {
+      console.warn(`⚠️ User ${userId} has exceeded their booking limit for ${sessionType}`);
+      return null; // Stop user from booking more
+    }
+
+    // ✅ Allow Booking and Increment Count
+    user.calendlyBookingsCount[sessionType] = currentBookings + 1;
+    await user.save();
+
+    console.log(`✅ Calendly Link Generated for ${sessionType}: ${CALENDLY_LINKS[sessionType]}`);
+    return CALENDLY_LINKS[sessionType];
   } catch (error) {
-    console.error('❌ Calendly Link Generation Failed: ', error)
-    return null
+    console.error("❌ Calendly Link Generation Failed:", error);
+    return null;
   }
-}
+};
+
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' }) // Token valid for 7 days
@@ -159,8 +178,8 @@ exports.addPurchasedClass = async (req, res) => {
       return res.status(400).json({ message: 'Invalid request. Missing data.' })
     }
 
-    let couponCode = null
-    let discountPercent = 0
+    let couponCode = null;
+    let discountPercent = 0;
     // ✅ Find User
     console.log(`🔎 Finding User: ${userId}`)
     const user = await Register.findById(userId)
@@ -198,32 +217,37 @@ exports.addPurchasedClass = async (req, res) => {
         // 🎯 Generate Calendly Link if it's `5x30` or `8x30`
         if (item.name === '5x30' || item.name === '8x30') {
           console.log(`📅 Assigning Calendly Link for: ${item.name}`)
-          calendlyMeetingLink = await generateCalendlyLink(item.name)
+          calendlyMeetingLink = await generateCalendlyLink(userId, item.name);
           if (calendlyMeetingLink) {
-            newPurchase.bookingLink = calendlyMeetingLink
+            newPurchase.bookingLink = calendlyMeetingLink;
+          } else {
+            console.warn(`❌ Booking Limit Exceeded for ${item.name}`);
+            return res.status(400).json({
+              message: `You have reached the booking limit for ${item.name}.`,
+            });
           }
         }
 
         servicePurchased.push(item.name)
       }
 
-      // 🎟 Assign Coupon Based on Purchased Plan
-      if (purchasedItems.some((item) => item.name === 'Learn')) {
-        couponCode = 'URem36bx'
-        discountPercent = 10
-      } else if (purchasedItems.some((item) => item.name === 'Achieve')) {
-        couponCode = 'G4R1If1p'
-        discountPercent = 30
-      } else if (purchasedItems.some((item) => item.name === 'Excel')) {
-        couponCode = 'mZybTHmQ'
-        discountPercent = 20
-      }
+     // 🎟 Assign Coupon Based on Purchased Plan
+    if (purchasedItems.some(item => item.name === "Learn")) {
+      couponCode = "URem36bx"; 
+      discountPercent = 10;
+    } else if (purchasedItems.some(item => item.name === "Achieve")) {
+      couponCode = "G4R1If1p"; 
+      discountPercent = 30;
+    } else if (purchasedItems.some(item => item.name === "Excel")) {
+      couponCode = "mZybTHmQ"; 
+      discountPercent = 20;
+    }
 
-      // ✅ Store Coupon Inside User's Register Model
-      if (couponCode) {
-        user.coupons.push({ code: couponCode, percent_off: discountPercent })
-        await user.save()
-      }
+    // ✅ Store Coupon Inside User's Register Model
+    if (couponCode) {
+      user.coupons.push({ code: couponCode, percent_off: discountPercent });
+      await user.save();
+    }
 
       newPurchases.push(newPurchase)
     }
@@ -272,89 +296,10 @@ exports.addPurchasedClass = async (req, res) => {
         emailHtml += `<h3>🎟 Your Exclusive Discount Coupon:</h3><p><b>Coupon Code:</b> ${couponCode}</p>`
       }
 
-      let welcomeSubject =
-        'Welcome to Rockstar Math - Important Tips for Your Upcoming Tutoring Session'
-      let welcomeText = `
-  Dear ${user.username},
-  
-  Thank you for booking your session with Rockstar Math! I'm excited to work with you. To ensure we make the most of our time together, please take a moment to review these tips for a smooth and productive online tutoring experience:
-  
-  🔹 **Stay Focused**: Keep distractions minimal by turning your camera on during the session whenever possible.
-  
-  🔹 **Show Your Work**: I need to see how you solve problems to help you better:
-     - Use a **Zoom Whiteboard** (best with a touchscreen tablet or laptop with a digital pen).
-     - Use a **document camera** or a **phone holder** to show your paper while you write.
-  
-  🔹 **Screen Sharing**: If your homework is online, use a **touchscreen device (not a mobile phone)** for better interaction.
-  
-  Having a clear way to share your work is essential for me to provide the best guidance possible.
-  
-  If you have any questions, feel free to reach out. I look forward to helping you on your math journey!
-  
-  Best regards,  
-  Amy Gemme  
-  Rockstar Math Tutoring  
-  📞 510-410-4963
-      `
+      
 
-      let welcomeHtml = `
-      <div style="background-color: #f9fafb; padding: 20px; font-family: Arial, sans-serif; color: #333;">
-        
-        <!-- Container -->
-        <div style="max-width: 600px; margin: 0 auto; background: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);">
-    
-          <!-- Header Section -->
-          <div style="text-align: center; border-bottom: 3px solid #00008B; padding-bottom: 10px;">
-            <img src="https://lh3.googleusercontent.com/E4_qZbXYrWVJzqYKoVRZExsZyUHewJ5P9Tkds6cvoXXlturq57Crg1a-7xtiGFVJFM1MB-yDWalHjXrb1tOFYs0=w16383" alt="Rockstar Math Logo" style="width: 120px; margin-bottom: 10px;">
-            <h2 style="color: #00008B; font-size: 24px;">🎉 Welcome to Rockstar Math, ${user.username}!</h2>
-          </div>
-    
-          <!-- Body Content -->
-          <div style="padding: 20px;">
-            <p style="font-size: 16px;">Thank you for booking your session with <strong>Rockstar Math</strong>! I'm excited to work with you. To ensure we make the most of our time together, please take a moment to review these important tips:</p>
-    
-            <h3 style="color: #00008B; font-size: 18px; margin-top: 15px;">🔹 Stay Focused</h3>
-            <p>Keep distractions minimal by turning your camera on during the session whenever possible.</p>
-    
-            <h3 style="color: #00008B; font-size: 18px; margin-top: 15px;">🔹 Show Your Work</h3>
-            <p>It’s crucial for me to see how you solve problems so I can guide you better:</p>
-            <ul style="list-style: none; padding-left: 0;">
-              <li style="margin-bottom: 5px;">✅ Use the <strong>Zoom Whiteboard</strong> (best with a touchscreen tablet or laptop with a digital pen).</li>
-              <li style="margin-bottom: 5px;">✅ Use a <strong>document camera</strong> or a <strong>phone holder</strong> to position your phone camera over your paper while writing.</li>
-            </ul>
-    
-            <h3 style="color: #00008B; font-size: 18px; margin-top: 15px;">🔹 Screen Sharing</h3>
-            <p>If your homework is online, use a <strong>touchscreen device (other than a mobile phone)</strong> for better interaction.</p>
-    
-            <p style="margin-top: 15px;">Having a clear way to share your work ensures I can provide the best guidance possible.</p>
-    
-            <p>If you have any questions, feel free to reach out. I look forward to helping you on your math journey!</p>
-    
-            <!-- Call to Action Button -->
-            <div style="text-align: center; margin-top: 20px;">
-              <a href="https://rockstarmath.com/book-session" style="display: inline-block; background: #00008B; color: #ffffff; padding: 12px 20px; text-decoration: none; border-radius: 5px; font-size: 16px;">📅 Book Your Next Session</a>
-            </div>
-    
-          </div>
-    
-          <!-- Footer -->
-          <div style="text-align: center; margin-top: 20px; font-size: 14px; color: #777;">
-            <p><strong>Best regards,</strong><br>
-            Amy Gemme<br>
-            Rockstar Math Tutoring<br>
-            📞 510-410-4963</p>
-            <p>Follow us on: <a href="#" style="color: #00008B; text-decoration: none;">Facebook</a> | <a href="#" style="color: #00008B; text-decoration: none;">Twitter</a></p>
-          </div>
-    
-        </div>
-      </div>
-    `
-
-      console.log(`📧 Sending welcome email to: ${userEmail}`)
-
-      await sendEmail(userEmail, welcomeSubject, welcomeText, welcomeHtml)
-
-      console.log('✅ Welcome email sent successfully!')
+      await sendEmail(userEmail, emailSubject, '', emailHtml)
+      console.log('✅ Purchase details email sent successfully!')
     }
 
     return res.status(200).json({ message: 'Purchase updated & all emails sent!' })
@@ -391,18 +336,114 @@ exports.getPurchasedClasses = async (req, res) => {
   }
 }
 
+
 exports.getUserCoupons = async (req, res) => {
   try {
-    const { userId } = req.params
-    const user = await Register.findById(userId)
+    const { userId } = req.params;
+    const user = await Register.findById(userId);
 
     if (!user) {
-      return res.status(404).json({ message: 'User not found' })
+      return res.status(404).json({ message: "User not found" });
     }
 
-    res.status(200).json({ coupons: user.coupons })
+    res.status(200).json({ coupons: user.coupons });
   } catch (error) {
-    console.error('❌ Error fetching coupons:', error)
-    res.status(500).json({ message: 'Server error' })
+    console.error("❌ Error fetching coupons:", error);
+    res.status(500).json({ message: "Server error" });
   }
-}
+};
+
+// ✅ Archive a Class
+exports.archiveClass = async (req, res) => {
+  try {
+    const { userId, className } = req.body;
+    const user = await Register.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Find the class to archive
+    const classToArchive = user.purchasedClasses.find((c) => c.name === className);
+    if (!classToArchive) {
+      return res.status(404).json({ message: 'Class not found' });
+    }
+
+    // Remove from purchasedClasses and add to archivedClasses
+    user.purchasedClasses = user.purchasedClasses.filter((c) => c.name !== className);
+    user.archivedClasses.push(classToArchive);
+    
+    await user.save();
+    
+    res.status(200).json({ message: 'Class archived successfully!' });
+  } catch (error) {
+    console.error('❌ Error archiving class:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+
+// ✅ Fetch Archived Classes
+exports.getArchivedClasses = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    console.log('📂 Fetching Archived Classes for User ID:', userId);
+
+    const user = await Register.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    res.status(200).json({ archivedClasses: user.archivedClasses || [] });
+  } catch (error) {
+    console.error('❌ Error fetching archived classes:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// ✅ Restore a Class
+exports.restoreClass = async (req, res) => {
+  try {
+    const { userId, className } = req.body;
+
+    if (!userId || !className) {
+      return res.status(400).json({ message: "Invalid request data." });
+    }
+
+    console.log(`🔄 Restoring Class: ${className} for User ID: ${userId}`);
+
+    const user = await Register.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    // ✅ Find the class in archivedClasses
+    const archivedClassIndex = user.archivedClasses.findIndex((c) => c.name === className);
+    if (archivedClassIndex === -1) {
+      return res.status(404).json({ message: "Class not found in archive." });
+    }
+
+    // ✅ Extract and ensure the class has the required fields
+    let restoredClass = user.archivedClasses[archivedClassIndex];
+
+    if (!restoredClass.name || !restoredClass.description) {
+      return res.status(400).json({ message: "Class data is incomplete, cannot restore." });
+    }
+
+    // ✅ Remove from archivedClasses and push to purchasedClasses
+    user.archivedClasses.splice(archivedClassIndex, 1);
+    user.purchasedClasses.push({
+      name: restoredClass.name,
+      description: restoredClass.description,
+      purchaseDate: restoredClass.purchaseDate || new Date(),
+      sessionCount: restoredClass.sessionCount || 0,
+      remainingSessions: restoredClass.remainingSessions || 0,
+      bookingLink: restoredClass.bookingLink || null,
+    });
+
+    await user.save();
+
+    res.status(200).json({ message: "Class restored successfully!" });
+  } catch (error) {
+    console.error("❌ Error restoring class:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
