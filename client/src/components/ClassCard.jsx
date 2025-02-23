@@ -1,36 +1,13 @@
 import React from "react";
 import { FaCalendarAlt } from "react-icons/fa";
 
-const ClassCard = ({ classData, userId, setPurchasedClasses }) => {
-  
-  const handleArchive = async () => {
-    if (!userId) {
-      alert("User not found. Please log in again.");
-      return;
-    }
+const ClassCard = ({ classData }) => {
+  // ✅ Convert purchase date to a JavaScript Date object
+  const classDate = new Date(classData.purchaseDate);
+  const currentDate = new Date();
 
-    try {
-      console.log(`📂 Archiving class: ${classData.name} for user: ${userId}`);
-
-      const response = await fetch("https://backend-production-cbe2.up.railway.app/api/archive-class", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, className: classData.name }),
-      });
-
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Failed to archive class.");
-
-      console.log("✅ Class archived successfully:", data);
-
-      // ✅ Remove Archived Class from UI
-      setPurchasedClasses((prev) => prev.filter((c) => c.name !== classData.name));
-      alert(`📂 ${classData.name} archived successfully!`);
-    } catch (error) {
-      console.error("❌ Error archiving class:", error);
-      alert("Failed to archive class. Try again.");
-    }
-  };
+  // ✅ Check if class date has expired
+  const isExpired = classDate < currentDate;
 
   return (
     <div className="relative bg-white border border-gray-200 rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all duration-300">
@@ -54,16 +31,17 @@ const ClassCard = ({ classData, userId, setPurchasedClasses }) => {
         {/* Purchase Date */}
         <div className="flex items-center text-gray-500 text-sm mt-3">
           <FaCalendarAlt className="mr-2 text-sky-500" />
-          <span>{new Date(classData.purchaseDate).toLocaleDateString()}</span>
+          <span>{classDate.toLocaleDateString()}</span>
         </div>
 
-        {/* ✅ Archive Button */}
-        <button
-          className="mt-3 bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600 transition-all"
-          onClick={handleArchive} // ✅ Now properly calls handleArchive
-        >
-          📂 Archive
-        </button>
+        {/* ✅ Show Archive Button Only if Class is NOT Expired */}
+        {!isExpired && (
+          <button
+            className="mt-3 bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600 transition-all"
+          >
+            📂 Archive
+          </button>
+        )}
       </div>
     </div>
   );

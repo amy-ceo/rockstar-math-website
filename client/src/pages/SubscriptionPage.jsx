@@ -39,10 +39,10 @@ const SubscriptionPage = () => {
   // 🎯 **Function to Customize Ribbon Text for Each Plan**
   const getRibbonText = (planName) => {
     const ribbonMapping = {
-      Achieve: "Limited Offer 🔥",
-      Excel: "Top Choice ⭐",
-      Learn: "Best Value 💡",
-      "Common Core-Parents": "Special Deal 🎉",
+      Achieve: " Free Tutoring Session",
+      Excel: "Top Choice",
+      Learn: "Digital Courses Only",
+      "Common Core-Parents": "Best For Parents",
     };
     return ribbonMapping[planName] || "Best Offer"; // Default if not found
   };
@@ -92,7 +92,7 @@ const SubscriptionPage = () => {
               >
                 {/* 🔹 Ribbon at Top Right (Now Dynamic) */}
                 <div
-                  className={`absolute top-2 -right-6 text-white text-xs font-bold py-1 px-2 transform rotate-45 shadow-md ${
+                  className={`absolute top-2 -right-6 text-white text-xs font-bold py-2 px-2 transform rotate-45 shadow-md ${
                     plan.name.toLowerCase() === "achieve" ? "bg-red-600" : "bg-blue-600"
                   }`}
                 >

@@ -2,12 +2,47 @@ const bcrypt = require('bcryptjs')
 const Register = require('../models/registerModel')
 const jwt = require('jsonwebtoken')
 const crypto = require('crypto')
+const cron = require("node-cron");
 const sendEmail = require('../utils/emailSender')
 
 // ✅ Function to Generate JWT Token
 
 // ✅ Define Zoom Course Names
 const ZOOM_COURSES = ['Learn', 'Achieve', 'Excel']
+
+// ✅ Function to Automatically Archive Expired Classes
+const archiveExpiredClasses = async () => {
+  try {
+    console.log("🔄 Running auto-archiving process...");
+
+    const users = await Register.find();
+    const currentDate = new Date();
+
+    users.forEach(async (user) => {
+      const expiredClasses = user.purchasedClasses.filter(
+        (cls) => new Date(cls.purchaseDate) < currentDate
+      );
+
+      if (expiredClasses.length > 0) {
+        console.log(`📂 Archiving ${expiredClasses.length} expired classes for ${user.username}`);
+
+        user.archivedClasses.push(...expiredClasses);
+        user.purchasedClasses = user.purchasedClasses.filter(
+          (cls) => new Date(cls.purchaseDate) >= currentDate
+        );
+
+        await user.save();
+      }
+    });
+
+    console.log("✅ Auto-archiving process completed!");
+  } catch (error) {
+    console.error("❌ Error auto-archiving classes:", error);
+  }
+};
+
+// ✅ Schedule the function to run daily at midnight
+cron.schedule("0 0 * * *", archiveExpiredClasses);
 
 // ✅ Define Service Packages and Their Booking Limits
 const SERVICE_PACKAGES = {
@@ -33,25 +68,22 @@ const CALENDLY_LINKS = {
 }
 
 // ✅ Function to Generate Calendly Scheduling Link (If Needed)
+// ✅ Function to Generate Calendly Link with Booking Limits
 const generateCalendlyLink = async (userId, sessionType) => {
   try {
     const user = await Register.findById(userId);
-    if (!user) {
-      console.error("❌ User not found");
-      return null;
-    }
+    if (!user) return null;
 
-    // Get current booking count
+    user.calendlyBookingsCount = user.calendlyBookingsCount || {}; // Ensure field exists
     const currentBookings = user.calendlyBookingsCount[sessionType] || 0;
     const maxBookings = SERVICE_PACKAGES[sessionType];
 
-    // ✅ Check if user has exceeded their limit
+    // ✅ Prevent Overbooking
     if (currentBookings >= maxBookings) {
-      console.warn(`⚠️ User ${userId} has exceeded their booking limit for ${sessionType}`);
-      return null; // Stop user from booking more
+      console.warn(`⚠️ User ${userId} exceeded booking limit for ${sessionType}`);
+      return null;
     }
 
-    // ✅ Allow Booking and Increment Count
     user.calendlyBookingsCount[sessionType] = currentBookings + 1;
     await user.save();
 
@@ -62,7 +94,6 @@ const generateCalendlyLink = async (userId, sessionType) => {
     return null;
   }
 };
-
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' }) // Token valid for 7 days
@@ -404,31 +435,19 @@ exports.restoreClass = async (req, res) => {
   try {
     const { userId, className } = req.body;
 
-    if (!userId || !className) {
-      return res.status(400).json({ message: "Invalid request data." });
-    }
-
-    console.log(`🔄 Restoring Class: ${className} for User ID: ${userId}`);
+    if (!userId || !className) return res.status(400).json({ message: "Invalid request data." });
 
     const user = await Register.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: "User not found." });
-    }
+    if (!user) return res.status(404).json({ message: "User not found." });
 
-    // ✅ Find the class in archivedClasses
     const archivedClassIndex = user.archivedClasses.findIndex((c) => c.name === className);
-    if (archivedClassIndex === -1) {
-      return res.status(404).json({ message: "Class not found in archive." });
-    }
+    if (archivedClassIndex === -1) return res.status(404).json({ message: "Class not found in archive." });
 
-    // ✅ Extract and ensure the class has the required fields
     let restoredClass = user.archivedClasses[archivedClassIndex];
-
     if (!restoredClass.name || !restoredClass.description) {
       return res.status(400).json({ message: "Class data is incomplete, cannot restore." });
     }
 
-    // ✅ Remove from archivedClasses and push to purchasedClasses
     user.archivedClasses.splice(archivedClassIndex, 1);
     user.purchasedClasses.push({
       name: restoredClass.name,
