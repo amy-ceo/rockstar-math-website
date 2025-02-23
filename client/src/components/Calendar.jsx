@@ -79,27 +79,31 @@ const Calendar = () => {
         </div>
 
         {/* ✅ Legend Section in 2x2 Grid Format */}
-        <div className="mt-6 bg-white p-4 rounded-lg shadow-md text-gray-900 text-center max-w-lg mx-auto">
-          <h3 className="text-lg font-semibold mb-2">Legend</h3>
-          <div className="grid grid-cols-2 gap-4 text-sm text-center">
-            <div className="flex items-center  gap-2">
-              <span className="w-3 h-3 bg-blue-500 rounded-full inline-block"></span>
-              <span className="text-blue-500">Individual Classes</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 bg-purple-500 rounded-full inline-block"></span>
-              <span className="text-purple-500">Group Study</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 bg-green-500 rounded-full inline-block"></span>
-              <span className="text-green-500">Common Core Drop-In</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 bg-yellow-500 rounded-full inline-block"></span>
-              <span className="text-yellow-500">To Be Determined</span>
-            </div>
-          </div>
-        </div>
+        <div className="mt-6 bg-white p-4 rounded-lg shadow-md text-gray-900 max-w-lg mx-auto">
+  {/* ✅ Moved "Legend" slightly to the left */}
+  <h3 className="text-lg font-semibold mb-2 text-left pl-6">Legend</h3> 
+
+  {/* ✅ Kept Grid for bullet points */}
+  <div className="grid grid-cols-2 gap-4 text-sm text-center px-6">
+    <div className="flex items-center gap-2">
+      <span className="w-3 h-3 bg-blue-500 rounded-full inline-block"></span>
+      <span className="text-blue-500">Individual Classes</span>
+    </div>
+    <div className="flex items-center gap-2">
+      <span className="w-3 h-3 bg-purple-500 rounded-full inline-block"></span>
+      <span className="text-purple-500">Group Study</span>
+    </div>
+    <div className="flex items-center gap-2">
+      <span className="w-3 h-3 bg-green-500 rounded-full inline-block"></span>
+      <span className="text-green-500">Common Core Drop-In</span>
+    </div>
+    <div className="flex items-center gap-2">
+      <span className="w-3 h-3 bg-yellow-500 rounded-full inline-block"></span>
+      <span className="text-yellow-500">To Be Determined</span>
+    </div>
+  </div>
+</div>
+
       </div>
     </AnimatedSection>
   );

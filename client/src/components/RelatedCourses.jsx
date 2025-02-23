@@ -12,11 +12,11 @@ import WaitlistForm from "./WaitlistForm"; // ✅ Import Waitlist Form
 
 // ✅ Courses Array with Tooltip Hover Effects
 const courses = [
-  { id: "algebra", Icon: FaSquareRootAlt, title: "Algebra 1 Tutoring", link: "/subscription", tooltip: "Join Us For Our Algebra 1 Study Group On Tuesday's from 7-8 pm." },
-  { id: "trigonometry", Icon: TbGeometry, title: "Calc 1 Tutoring", link: "/subscription", tooltip: "Join Us For Our Calc 1 Study Group On Tuesday's from 8-9 pm." },
-  { id: "math-analysis", Icon: BiAnalyse, title: "Pre Calc and Trig Tutoring", link: "/subscription", tooltip: "Join Us For Our PreCalc and Trig Study Group On Monday's from 8-9 pm." },
-  { id: "precalculus", Icon: TbMath, title: "Geometry Tutoring", link: "/subscription", tooltip: "Join Us For Our Geometry Study Group On Wednesday's from 8-9 pm." },
-  { id: "business-calculus", Icon: TbBusinessplan, title: "Common Core for Parents", link: "/subscription", tooltip: "Join Us For Our Common Core For Parents Study Group On Sunday's from 8-9 pm." },
+  { id: "algebra", Icon: FaSquareRootAlt, title: "Algebra 1 Tutoring", link: "/subscription", tooltip: "⭐ Join Us For Our Algebra 1 Study Group On Tuesday's from 7-8 pm." },
+  { id: "trigonometry", Icon: TbGeometry, title: "Calc 1 Tutoring", link: "/subscription", tooltip: "⭐ Join Us For Our Calc 1 Study Group On Tuesday's from 8-9 pm." },
+  { id: "math-analysis", Icon: BiAnalyse, title: "Pre Calc and Trig Tutoring", link: "/subscription", tooltip: "⭐ Join Us For Our PreCalc and Trig Study Group On Monday's from 8-9 pm." },
+  { id: "precalculus", Icon: TbMath, title: "Geometry Tutoring", link: "/subscription", tooltip: "⭐ Join Us For Our Geometry Study Group On Wednesday's from 8-9 pm." },
+  { id: "business-calculus", Icon: TbBusinessplan, title: "Common Core For Parents", link: "/subscription", tooltip: "⭐ Join Us For Our Common Core For Parents Study Group On Sunday's from 8-9 pm." },
   { id: "calculus-1", Icon: TbMath, title: "Calculus 1", link: "/courses/calculus-1" },
   { id: "calculus-2", Icon: RiFunctionLine, title: "Calculus 2", link: "/courses/calculus-2" },
   { id: "calculus-3", Icon: GiStairs, title: "Calculus 3 (Multivariable)", link: "/courses/calculus-3" },
