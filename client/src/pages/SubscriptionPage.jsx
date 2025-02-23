@@ -1,71 +1,73 @@
-import React, { useEffect, useState, useCallback } from "react";
-import { useCart } from "../context/CartContext"; // ✅ Import Cart Context
-import { toast, Toaster } from "react-hot-toast"; // ✅ Toast Notifications
+import React, { useEffect, useState, useCallback } from 'react'
+import { useCart } from '../context/CartContext' // ✅ Import Cart Context
+import { toast, Toaster } from 'react-hot-toast' // ✅ Toast Notifications
+import './ribbon.css' // ✅ Import Ribbon CSS
 
 const SubscriptionPage = () => {
-  const [plans, setPlans] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const { addToCart } = useCart(); // ✅ Access addToCart function
+  const [plans, setPlans] = useState([])
+  const [loading, setLoading] = useState(true)
+  const { addToCart } = useCart() // ✅ Access addToCart function
 
   // ✅ Fetch Subscription Plans from API
   useEffect(() => {
     const fetchPlans = async () => {
       try {
         const response = await fetch(
-          "https://backend-production-cbe2.up.railway.app/api/stripe/get-plans"
-        );
-        const data = await response.json();
+          'https://backend-production-cbe2.up.railway.app/api/stripe/get-plans',
+        )
+        const data = await response.json()
 
-        console.log("✅ Fetched Plans:", data);
+        console.log('✅ Fetched Plans:', data)
 
         if (Array.isArray(data)) {
           setPlans(
             data.map((plan) => ({
               ...plan,
               ribbonText: getRibbonText(plan.name), // Assign ribbon text dynamically
-            }))
-          );
+              ribbonColor: plan.name === 'Achieve' ? 'bg-red-600' : 'bg-blue-600', // ✅ Dynamic color condition
+            })),
+          )
         }
       } catch (error) {
-        console.error("❌ Error fetching plans:", error);
+        console.error('❌ Error fetching plans:', error)
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
+    }
 
-    fetchPlans();
-  }, []);
+    fetchPlans()
+  }, [])
 
   // 🎯 **Function to Customize Ribbon Text for Each Plan**
   const getRibbonText = (planName) => {
     const ribbonMapping = {
-      Achieve: " Free Tutoring Session",
-      Excel: "Top Choice",
-      Learn: "Digital Courses Only",
-      "Common Core-Parents": "Best For Parents",
-    };
-    return ribbonMapping[planName] || "Best Offer"; // Default if not found
-  };
+      Achieve: '🔥 Free Tutoring', // 🔹 Added <br> to break into two lines
+      Excel: '⭐ Top Choice',
+      Learn: '💡 Digital Courses',
+      'Common Core-Parents': '🎉 Best For Parents',
+    }
+    return ribbonMapping[planName] || '🎯 Parents Choice' // Default if not found
+  }
 
   // ✅ Handle Subscription Click
   const handleSubscribe = useCallback(
     (plan) => {
-      console.log("🔹 handleSubscribe Clicked for Plan:", plan.name);
+      console.log('🔹 handleSubscribe Clicked for Plan:', plan.name)
 
       if (!plan.price || isNaN(Number(plan.price))) {
-        toast.dismiss();
-        toast.error(`⚠️ Cannot subscribe to ${plan.name}, missing price!`);
-        return;
+        toast.dismiss()
+        toast.error(`⚠️ Cannot subscribe to ${plan.name}, missing price!`)
+        return
       }
 
-      addToCart(plan);
-      console.log("🛒 Plan added to cart:", plan);
+      addToCart(plan)
+      console.log('🛒 Plan added to cart:', plan)
 
-      toast.dismiss();
-      toast.success(`✅ ${plan.name} added to cart!`, { id: "subscribe-toast" });
+      toast.dismiss()
+      toast.success(`✅ ${plan.name} added to cart!`, { id: 'subscribe-toast' })
     },
-    [addToCart]
-  );
+    [addToCart],
+  )
 
   return (
     <>
@@ -79,7 +81,6 @@ const SubscriptionPage = () => {
           </p>
         </div>
         <Toaster position="top-right" /> {/* ✅ Toast Notifications */}
-
         {/* ✅ Subscription Plans */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-10 max-w-6xl mx-auto px-4 md:px-0">
           {loading ? (
@@ -90,36 +91,35 @@ const SubscriptionPage = () => {
                 key={index}
                 className="relative bg-white p-8 rounded-lg shadow-lg border border-gray-200 text-center flex flex-col justify-between h-full"
               >
-                {/* 🔹 Ribbon at Top Right (Now Dynamic) */}
-                <div
-                  className={`absolute top-2 -right-6 text-white text-xs font-bold py-2 px-2 transform rotate-45 shadow-md ${
-                    plan.name.toLowerCase() === "achieve" ? "bg-red-600" : "bg-blue-600"
-                  }`}
-                >
-                  {plan.ribbonText}
+                {/* ✅ Dynamically Colored Ribbon */}
+                <div className="ribbon">
+                  <span
+                    className={`${plan.ribbonColor}`}
+                    dangerouslySetInnerHTML={{ __html: plan.ribbonText }} // ✅ This renders <br> as a real line break
+                  ></span>
                 </div>
 
                 {/* ✅ Plan Header */}
                 <div className="flex flex-col items-center mb-4">
                   <img
-                    src={plan.images || "/default-image.png"}
+                    src={plan.images || '/default-image.png'}
                     alt={plan.name}
                     className="w-24 h-24 object-contain mb-3"
                   />
                   <h3 className="text-2xl font-semibold text-gray-800">{plan.name}</h3>
                 </div>
 
-                {/* ✅ Price */}
+                {/* ✅ Price Section */}
                 <p className="text-3xl font-bold text-gray-900 my-3">
-                  ${plan.price !== "N/A" ? plan.price : "Not Available"}{" "}
+                  ${plan.price !== 'N/A' ? plan.price : 'Not Available'}
                   <span className="text-sm text-gray-500">/ {plan.currency}</span>
                 </p>
 
                 {/* ✅ Description */}
                 <p className="text-sm text-gray-600 my-4 flex-grow">{plan.description}</p>
 
-                {/* ✅ Subscribe Button (Disabled for "Learn" Plan) */}
-                {plan.name.toLowerCase() === "learn" ? (
+                {/* ✅ Subscribe Button */}
+                {plan.name.toLowerCase() === 'learn' ? (
                   <p className="mt-auto bg-gray-300 text-gray-700 w-full py-3 rounded-lg font-medium cursor-not-allowed">
                     Coming Soon
                   </p>
@@ -139,7 +139,7 @@ const SubscriptionPage = () => {
         </div>
       </div>
     </>
-  );
-};
+  )
+}
 
-export default SubscriptionPage;
+export default SubscriptionPage

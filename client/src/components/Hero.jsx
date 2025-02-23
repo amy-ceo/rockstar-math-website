@@ -66,12 +66,12 @@ function Hero() {
 
           {/* Buttons */}
           <div className="flex items-center md:items-baseline gap-4 justify-center lg:justify-start">
-            <button
-              onClick={() => setIsModalOpen(true)}
+            <Link
+             to='https://calendly.com/rockstarmathtutoring/15min'
               className="px-8 py-3 border border-yellow-300 text-yellow-300 font-semibold rounded-full transition duration-300 ease-in-out hover:bg-yellow-300 hover:text-indigo-600"
             >
               Free Consultation
-            </button>
+            </Link>
             <Link
               to="/services"
               className="px-8 py-3 bg-yellow-300 text-indigo-600 font-semibold rounded-full transition duration-300 ease-in-out hover:bg-transparent hover:text-yellow-300 hover:border-yellow-300 border border-transparent"
