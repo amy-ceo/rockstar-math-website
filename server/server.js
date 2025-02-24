@@ -18,6 +18,8 @@ const userRoutes = require("./routes/userRoutes")
 const paymentRoutes = require("./routes/paymentRoutes"); // ✅ Import Payment Routes
 const ordersRoute = require("./routes/order.js"); // ✅ Import Orders Route
 const paypalRoutes = require("./routes/paypalRoutes.js")
+const adminRoutes = require("./routes/adminRoutes");
+const blogRoutes = require('./routes/blogRoutes');
 const webhookRoutes = require("./routes/webhookRoutes.js")
 connectDB();
 const app = express();
@@ -47,6 +49,7 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+app.use('/uploads', express.static('uploads')); // Serve uploaded images
 
 // // ✅ Remove Manual Header Setting (Fixes conflict)
 // app.use((req, res, next) => {
@@ -116,6 +119,8 @@ app.use('/api/contact', contactRoutes);
 app.use("/api/stripe", stripeRoutes); // Set up route
 app.use("/api", registerRoutes);
 // app.use("/api/otp", otpRoutes);
+app.use("/api/admin", adminRoutes);
+app.use('/api/blogs', blogRoutes);
 app.use("/api/webhook", webhookRoutes);
 app.use("/api/paypal", paypalRoutes);
 app.use("/api/consultation", consultationRoutes);

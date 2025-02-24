@@ -99,18 +99,29 @@ const CheckoutPage = () => {
     try {
       const user = JSON.parse(localStorage.getItem('user'))
       const userId = user && user._id ? user._id : 'guest_user' // ✅ Fix applied
+      const userName = user && user.name ? user.name : 'Guest User' // ✅ Add User Name
+      const userEmail = user && user.email ? user.email : 'guest@example.com' // ✅ Add User Email
       const orderId = `order_${Date.now()}`
       const currency = 'usd'
 
-      console.log('🔹 Sending Payment Request:', { amount: total, currency, userId, orderId })
+      console.log('🔹 Sending Payment Request:', { amount: total, currency, userId, orderId, userName, userEmail })
 
       const response = await fetch(
         'https://backend-production-cbe2.up.railway.app/api/stripe/create-payment-intent',
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ amount: total, currency, userId, orderId }),
-        },
+          body: JSON.stringify({ 
+            amount: total, 
+            currency, 
+            userId, 
+            orderId, 
+            metadata: { 
+              customer_name: userName, // ✅ Store User Name in Metadata
+              customer_email: userEmail // ✅ Store User Email in Metadata
+            } 
+          }),
+        }
       )
 
       if (!response.ok) {
@@ -129,7 +140,8 @@ const CheckoutPage = () => {
       toast.error(`Payment Error: ${error.message}`)
       return null
     }
-  }
+}
+
 
   const startCheckout = async () => {
     try {

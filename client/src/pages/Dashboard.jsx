@@ -29,9 +29,7 @@ const Dashboard = () => {
       try {
         const response = await fetch(`https://backend-production-cbe2.up.railway.app/api/${users._id}/purchased-classes`)
         const data = await response.json()
-
         if (!response.ok) throw new Error(data.message || 'Failed to fetch purchased classes.')
-
         setPurchasedClasses(data.purchasedClasses || [])
       } catch (error) {
         console.error('❌ Error fetching classes:', error)
@@ -43,9 +41,7 @@ const Dashboard = () => {
       try {
         const response = await fetch(`https://backend-production-cbe2.up.railway.app/api/${users._id}/zoom-meeting`)
         const data = await response.json()
-
         if (!response.ok) throw new Error(data.message || 'No Zoom meeting found.')
-
         setZoomMeeting(data.meeting)
       } catch (error) {
         console.error('❌ Error fetching Zoom meeting:', error)
@@ -59,10 +55,27 @@ const Dashboard = () => {
       try {
         const response = await fetch(`https://backend-production-cbe2.up.railway.app/api/${users._id}/calendly-bookings`)
         const data = await response.json()
-
         if (!response.ok) throw new Error(data.message || 'No Calendly bookings found.')
 
-        setCalendlyBookings(data.bookings)
+        // ✅ Archive Expired Sessions Before Setting State
+        const currentDate = new Date()
+        const activeSessions = []
+        const expiredSessions = []
+
+        data.bookings.forEach((session) => {
+          if (new Date(session.startTime) < currentDate) {
+            expiredSessions.push(session) // ✅ Mark expired sessions for archiving
+          } else {
+            activeSessions.push(session) // ✅ Keep only active sessions
+          }
+        })
+
+        setCalendlyBookings(activeSessions) // ✅ Only show active sessions in dashboard
+
+        if (expiredSessions.length > 0) {
+          console.log(`📂 Moving ${expiredSessions.length} expired sessions to archive...`)
+          await archiveExpiredSessions(expiredSessions) // ✅ Archive expired sessions
+        }
       } catch (error) {
         console.error('❌ Error fetching Calendly bookings:', error)
         setCalendlyBookings([])
@@ -74,9 +87,7 @@ const Dashboard = () => {
       try {
         const response = await fetch(`https://backend-production-cbe2.up.railway.app/api/user-coupons/${users._id}`)
         const data = await response.json()
-
         if (!response.ok) throw new Error(data.message || 'No Coupons found.')
-
         setCoupons(data.coupons)
       } catch (error) {
         console.error('❌ Error fetching Coupons:', error)
@@ -89,6 +100,25 @@ const Dashboard = () => {
     fetchCalendlyBookings() // ✅ Fetch Calendly Bookings
     fetchCoupons() // ✅ Fetch Coupons
   }, [users])
+
+  // ✅ Function to Archive Expired Sessions
+  const archiveExpiredSessions = async (expiredSessions) => {
+    try {
+      const response = await fetch(`https://backend-production-cbe2.up.railway.app/api/${users._id}/archive-calendly-sessions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessions: expiredSessions })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to archive expired sessions.')
+      }
+
+      console.log('✅ Expired Calendly sessions moved to archive successfully!')
+    } catch (error) {
+      console.error('❌ Error archiving sessions:', error)
+    }
+  }
 
   if (loading) return <p>Loading dashboard...</p>
   if (error) return <p className="text-red-600">{error}</p>
@@ -133,49 +163,31 @@ const Dashboard = () => {
             </section>
           )}
 
-          {/* ✅ New Section for Calendly Bookings */}
+          {/* ✅ Show Only Active Calendly Bookings */}
           {calendlyBookings.length > 0 && (
             <section className="mt-6 p-4 bg-white shadow-md rounded-lg">
               <h3 className="text-lg font-bold mb-2">📅 Your Scheduled Calendly Bookings</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 {calendlyBookings.map((booking, index) => (
                   <div key={index} className="p-4 bg-gray-200 rounded-lg shadow">
-                    <p>
-                      <strong>📌 Event:</strong> {booking.eventType}
-                    </p>
-                    <p>
-                      <strong>📅 Start:</strong> {new Date(booking.startTime).toLocaleString()}
-                    </p>
-                    <p>
-                      <strong>⏳ End:</strong> {new Date(booking.endTime).toLocaleString()}
-                    </p>
+                    <p><strong>📌 Event:</strong> {booking.eventType}</p>
+                    <p><strong>📅 Start:</strong> {new Date(booking.startTime).toLocaleString()}</p>
+                    <p><strong>⏳ End:</strong> {new Date(booking.endTime).toLocaleString()}</p>
                   </div>
                 ))}
               </div>
             </section>
           )}
 
-          {/* ✅ New Section for Coupons */}
+          {/* ✅ Show Available Coupons */}
           {coupons.length > 0 && (
             <section className="mt-6 p-4 bg-white shadow-md rounded-lg">
               <h3 className="text-lg font-bold mb-2">🎟 Your Available Coupons</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 {coupons.map((coupon, index) => (
                   <div key={index} className="p-4 bg-green-200 rounded-lg shadow">
-                    <p>
-                      <strong>💰 Coupon Code:</strong> {coupon.code}
-                    </p>
-                    <p>
-                      <strong>🎯 Discount:</strong> {coupon.percent_off}% Off
-                    </p>
-                    <p>
-                      <strong>✅ Valid:</strong>{' '}
-                      {coupon.valid ? (
-                        <span className="text-green-700 font-bold">Yes</span>
-                      ) : (
-                        <span className="text-red-600 font-bold">Expired</span>
-                      )}
-                    </p>
+                    <p><strong>💰 Coupon Code:</strong> {coupon.code}</p>
+                    <p><strong>🎯 Discount:</strong> {coupon.percent_off}% Off</p>
                   </div>
                 ))}
               </div>

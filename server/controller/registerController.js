@@ -11,38 +11,39 @@ const sendEmail = require('../utils/emailSender')
 const ZOOM_COURSES = ['Learn', 'Achieve', 'Excel']
 
 // ✅ Function to Automatically Archive Expired Classes
-const archiveExpiredClasses = async () => {
+const archiveExpiredCalendlySessions = async () => {
   try {
-    console.log("🔄 Running auto-archiving process...");
+    console.log("🔄 Running Calendly auto-archiving process...");
 
     const users = await Register.find();
     const currentDate = new Date();
 
     users.forEach(async (user) => {
-      const expiredClasses = user.purchasedClasses.filter(
-        (cls) => new Date(cls.purchaseDate) < currentDate
+      const expiredSessions = user.purchasedClasses.filter(
+        (cls) => cls.bookingLink && new Date(cls.purchaseDate) < currentDate
       );
 
-      if (expiredClasses.length > 0) {
-        console.log(`📂 Archiving ${expiredClasses.length} expired classes for ${user.username}`);
+      if (expiredSessions.length > 0) {
+        console.log(`📂 Archiving ${expiredSessions.length} expired Calendly sessions for ${user.username}`);
 
-        user.archivedClasses.push(...expiredClasses);
+        user.archivedClasses.push(...expiredSessions);
         user.purchasedClasses = user.purchasedClasses.filter(
-          (cls) => new Date(cls.purchaseDate) >= currentDate
+          (cls) => !(cls.bookingLink && new Date(cls.purchaseDate) < currentDate)
         );
 
         await user.save();
       }
     });
 
-    console.log("✅ Auto-archiving process completed!");
+    console.log("✅ Auto-archiving of expired Calendly sessions completed!");
   } catch (error) {
-    console.error("❌ Error auto-archiving classes:", error);
+    console.error("❌ Error auto-archiving Calendly sessions:", error);
   }
 };
 
 // ✅ Schedule the function to run daily at midnight
-cron.schedule("0 0 * * *", archiveExpiredClasses);
+cron.schedule("0 0 * * *", archiveExpiredCalendlySessions);
+
 
 // ✅ Define Service Packages and Their Booking Limits
 const SERVICE_PACKAGES = {
