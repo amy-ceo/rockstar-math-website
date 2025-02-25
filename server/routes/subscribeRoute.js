@@ -1,9 +1,10 @@
 const express = require("express");
-const { subscribe } = require("../controller/subscribeController");
-
 const router = express.Router();
+const { subscribe, getSubscribers, deleteSubscriber, updateSubscriber } = require("../controller/subscribeController");
 
-// POST route to handle subscriptions
-router.post("/subscribe", subscribe);
+router.post("/subscribe", subscribe);  // Existing subscription route
+router.get("/subscribers", getSubscribers); // Fetch all subscribers
+router.delete("/subscribers/:id", deleteSubscriber); // Delete a subscriber
+router.put("/subscribers/:id", updateSubscriber); // Update a subscriber's email
 
 module.exports = router;

@@ -72,3 +72,49 @@ exports.subscribe = async (req, res) => {
         res.status(500).json({ success: false, message: "Internal server error" });
     }
 };
+
+
+exports.getSubscribers = async (req, res) => {
+    try {
+        const subscribers = await Subscriber.find();
+        res.status(200).json(subscribers);
+    } catch (error) {
+        console.error("Error fetching subscribers:", error);
+        res.status(500).json({ success: false, message: "Internal server error" });
+    }
+};
+
+// Function to delete a subscriber
+exports.deleteSubscriber = async (req, res) => {
+    try {
+        const { id } = req.params;
+        await Subscriber.findByIdAndDelete(id);
+        res.status(200).json({ success: true, message: "Subscriber deleted successfully" });
+    } catch (error) {
+        console.error("Error deleting subscriber:", error);
+        res.status(500).json({ success: false, message: "Internal server error" });
+    }
+};
+
+// Function to update a subscriber's email
+exports.updateSubscriber = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { email } = req.body;
+
+        if (!email || !email.includes("@")) {
+            return res.status(400).json({ success: false, message: "Invalid email format" });
+        }
+
+        const updatedSubscriber = await Subscriber.findByIdAndUpdate(id, { email }, { new: true });
+
+        if (!updatedSubscriber) {
+            return res.status(404).json({ success: false, message: "Subscriber not found" });
+        }
+
+        res.status(200).json({ success: true, message: "Subscriber updated successfully", data: updatedSubscriber });
+    } catch (error) {
+        console.error("Error updating subscriber:", error);
+        res.status(500).json({ success: false, message: "Internal server error" });
+    }
+};

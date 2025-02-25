@@ -86,7 +86,7 @@ const SubscriptionPage = () => {
         <div className="flex flex-col md:flex-row items-center justify-center mt-10 max-w-6xl mx-auto px-4 md:px-0 gap-10">
           
           {/* ✅ Subscription Plans */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+          <div className="grid grid-cols-2 md:grid-cols-2 gap-6 w-full">
             {loading ? (
               <p className="text-center text-gray-700 text-lg">Loading plans...</p>
             ) : plans.length > 0 ? (

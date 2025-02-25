@@ -7,6 +7,8 @@ const connectDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const registerRoutes = require("./routes/registerRoutes");
 // const otpRoutes = require("./routes/otpRoutes");
+const classRoutes = require("./routes/classRoutes");
+
 const subscribeRoute = require("./routes/subscribeRoute");
 const contactRoutes = require('./routes/contactRoutes');
 const stripeRoutes = require("./routes/stripe"); // Import the Stripe route
@@ -118,6 +120,8 @@ app.use("/api", subscribeRoute);
 app.use('/api/contact', contactRoutes);
 app.use("/api/stripe", stripeRoutes); // Set up route
 app.use("/api", registerRoutes);
+app.use("/api/classes", classRoutes);
+
 // app.use("/api/otp", otpRoutes);
 app.use("/api/admin", adminRoutes);
 app.use('/api/blogs', blogRoutes);

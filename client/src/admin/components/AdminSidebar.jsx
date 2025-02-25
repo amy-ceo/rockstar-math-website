@@ -9,6 +9,8 @@ import {
   FaMoneyBill,
   FaChartBar,
 } from "react-icons/fa";
+import { GiLoveLetter } from "react-icons/gi";
+
 
 const AdminSidebar = () => {
   const [isExpanded, setIsExpanded] = useState(false); // ✅ Toggle State
@@ -82,6 +84,24 @@ const AdminSidebar = () => {
             ${isExpanded && !isMobile ? "justify-start" : "justify-center"}`}
           >
             <FaChartBar className="text-xl" /> {!isMobile && isExpanded && "Analytics"}
+          </Link>
+        </li>
+        <li>
+          <Link
+            to="/admin/dashboard/newsletter"
+            className={`flex items-center gap-3 px-4 py-2 text-lg rounded-lg hover:bg-gray-700 transition-all duration-300 
+            ${isExpanded && !isMobile ? "justify-start" : "justify-center"}`}
+          >
+            <GiLoveLetter className="text-xl" /> {!isMobile && isExpanded && "NewsLetter"}
+          </Link>
+        </li>
+        <li>
+          <Link
+            to="/admin/dashboard/upcomingsession"
+            className={`flex items-center gap-3 px-4 py-2 text-lg rounded-lg hover:bg-gray-700 transition-all duration-300 
+            ${isExpanded && !isMobile ? "justify-start" : "justify-center"}`}
+          >
+            <GiLoveLetter className="text-xl" /> {!isMobile && isExpanded && "Upcoming Sessions"}
           </Link>
         </li>
       </ul>

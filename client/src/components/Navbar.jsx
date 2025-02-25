@@ -2,18 +2,27 @@ import { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 import { MdLockOutline } from "react-icons/md";
-import { FaChevronDown } from "react-icons/fa";
+import { FaChevronDown, FaShoppingCart } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
+import { useCart } from "../context/CartContext"; // ✅ Import Cart Context
 import 'animate.css';
+
 export function Navbar() {
-  const { users, logout, updateCounter } = useAuth();
+  const { users, logout } = useAuth();
+  const { cart } = useCart(); // ✅ Get cart from CartContext
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [user, setUser] = useState(null);
+  const [cartCount, setCartCount] = useState(0);
 
   useEffect(() => {
     setUser(users);
-  }, [users, updateCounter]);
+  }, [users]);
+
+  useEffect(() => {
+    // ✅ Count total items in cart
+    setCartCount(cart.length); // Cart items count
+  }, [cart]);
 
   const handleLogout = () => {
     logout();
@@ -27,7 +36,7 @@ export function Navbar() {
   };
 
   return (
-    <header className="bg-white shadow-md fixed w-full top-0 left-0 z-50 ">
+    <header className="bg-white shadow-md fixed w-full top-0 left-0 z-50">
       <nav className="mx-auto max-w-7xl flex items-center justify-between px-6 py-3 animate__animated animate__fadeInRight">
         {/* Logo */}
         <div className="flex items-center justify-between w-full lg:w-auto">
@@ -83,7 +92,6 @@ export function Navbar() {
                 <NavLink to="/contact" onClick={handleLinkClick} className="block px-4 py-2 text-gray-700 hover:bg-gray-100">
                   Contact
                 </NavLink>
-              
               </div>
             )}
           </div>
@@ -91,26 +99,34 @@ export function Navbar() {
           <NavLink to="/services" onClick={handleLinkClick} className="text-gray-700 hover:text-sky-600 transition-all">
             Tutoring
           </NavLink>
-          <NavLink to="/cart" onClick={handleLinkClick} className="text-gray-700 hover:text-sky-600 transition-all">
-            Cart
+
+          {/* 🛒 Cart with Counter */}
+          <NavLink to="/cart" onClick={handleLinkClick} className="relative text-gray-700 hover:text-sky-600 transition-all flex items-center">
+            {cartCount > 0 && (
+              <span className="absolute -top-2 -right-3 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                {cartCount}
+              </span>
+            )}
+            <span className="ml-1">Cart</span>
           </NavLink>
-           <NavLink to="/subscription" onClick={handleLinkClick} className="block  py-2 text-gray-700  hover:text-sky-600">
-           Group Tutoring
-                </NavLink>
+
+          <NavLink to="/subscription" onClick={handleLinkClick} className="text-gray-700 hover:text-sky-600 transition-all">
+            Group Tutoring
+          </NavLink>
 
           {/* Auth Buttons */}
           {user ? (
-           <>
-            <NavLink to="/dashboard" onClick={handleLinkClick} className="block  py-2 text-gray-700  hover:text-sky-600">
-                  Go To Dashboard
-                </NavLink>
-            <button
-              onClick={handleLogout}
-              className="px-4 py-2 bg-deepBlue text-white rounded-lg hover:bg-sky-600 transition-all"
-            >
-              Logout
-            </button>
-           </>
+            <>
+              <NavLink to="/dashboard" onClick={handleLinkClick} className="text-gray-700 hover:text-sky-600 transition-all">
+                Go To Dashboard
+              </NavLink>
+              <button
+                onClick={handleLogout}
+                className="px-4 py-2 bg-deepBlue text-white rounded-lg hover:bg-sky-600 transition-all"
+              >
+                Logout
+              </button>
+            </>
           ) : (
             <>
               <NavLink to="/login" onClick={handleLinkClick} className="flex items-center text-gray-700 hover:text-sky-600 transition-all">
@@ -122,68 +138,6 @@ export function Navbar() {
             </>
           )}
         </div>
-
-        {/* Mobile Menu */}
-        {mobileMenuOpen && (
-          <div className="absolute top-16 left-0 w-full bg-white shadow-md lg:hidden">
-            <div className="flex flex-col space-y-4 p-4">
-              <NavLink to="/" onClick={handleLinkClick} className="text-gray-700 hover:text-sky-600 transition-all">
-                Home
-              </NavLink>
-              <NavLink to="/about" onClick={handleLinkClick} className="text-gray-700 hover:text-sky-600 transition-all">
-                About
-              </NavLink>
-              <NavLink to="/courses" onClick={handleLinkClick} className="text-gray-700 hover:text-sky-600 transition-all">
-                Courses
-              </NavLink>
-
-              {/* Mobile Dropdown Menu */}
-              <div className="relative">
-                <button className="flex items-center text-gray-700 hover:text-sky-600 transition-all" onClick={() => setDropdownOpen(!dropdownOpen)}>
-                  Pages <FaChevronDown />
-                </button>
-                {dropdownOpen && (
-                  <div className="flex flex-col space-y-2 pl-4">
-                    <NavLink to="/reviews" onClick={handleLinkClick} className="text-gray-700 hover:text-sky-600 transition-all">
-                      Reviews
-                    </NavLink>
-                    <NavLink to="/calendar" onClick={handleLinkClick} className="text-gray-700 hover:text-sky-600 transition-all">
-                      Calendar
-                    </NavLink>
-                    <NavLink to="/faqs" onClick={handleLinkClick} className="text-gray-700 hover:text-sky-600 transition-all">
-                      FAQs
-                    </NavLink>
-                    <NavLink to="/blogs" onClick={handleLinkClick} className="text-gray-700 hover:text-sky-600 transition-all">
-                      Blogs
-                    </NavLink>
-                  </div>
-                )}
-              </div>
-
-              <NavLink to="/services" onClick={handleLinkClick} className="text-gray-700 hover:text-sky-600 transition-all">
-                Services
-              </NavLink>
-              <NavLink to="/cart" onClick={handleLinkClick} className="text-gray-700 hover:text-sky-600 transition-all">
-                Cart
-              </NavLink>
-
-              {user ? (
-                <button onClick={handleLogout} className="px-4 py-2 bg-deepBlue text-white rounded-lg hover:bg-sky-600 transition-all">
-                  Logout
-                </button>
-              ) : (
-                <>
-                  <NavLink to="/login" onClick={handleLinkClick} className="text-gray-700 hover:text-sky-600 transition-all">
-                    Log in
-                  </NavLink>
-                  <NavLink to="/signup" onClick={handleLinkClick} className="bg-deepBlue text-white px-4 py-2 rounded-lg hover:bg-sky-600 transition-all">
-                    Sign Up
-                  </NavLink>
-                </>
-              )}
-            </div>
-          </div>
-        )}
       </nav>
     </header>
   );

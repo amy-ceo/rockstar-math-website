@@ -18,6 +18,8 @@ import AdminAnalytics from './admin/pages/AdminAnalytics.jsx'
 import AdminUsers from './admin/pages/AdminUsers.jsx'
 import AdminBlogs from './admin/pages/AdminBlogs.jsx'
 import Payments from './admin/pages/Payments.jsx'
+import AdminNewsLetter from './admin/pages/AdminNewsLetter.jsx'
+import UpcomingClasses from './admin/pages/UpcomingClasses.jsx'
 
 // Function to check admin authentication
 const isAdminAuthenticated = () => !!localStorage.getItem('adminToken')
@@ -211,6 +213,10 @@ root.render(
                   <Route path="users" element={<AdminUsers />} />
                   <Route path="blogs" element={<AdminBlogs />} />
                   <Route path="payments" element={<Payments />} />
+                  <Route path="newsletter" element={<AdminNewsLetter />} />
+                  <Route path="upcomingsession" element={<UpcomingClasses />} />
+
+
 
                 </Route>
 
