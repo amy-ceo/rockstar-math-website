@@ -105,49 +105,43 @@ const CheckoutPage = () => {
   }
 
   const handlePayPalSuccess = async (data) => {
-    const user = JSON.parse(localStorage.getItem('user'))
+    const user = JSON.parse(localStorage.getItem('user'));
 
     if (!user || !user._id) {
-      toast.error('User not logged in!')
-      console.error('❌ User authentication required.')
-      return
+        toast.error('User authentication required.');
+        throw new Error('User authentication required.');
     }
 
     try {
-      const response = await fetch(
-        'https://backend-production-cbe2.up.railway.app/api/paypal/capture-order',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            orderId: data.orderID,
-            user: {
-              _id: user._id,
-              username: user.username || 'No username',
-              billingEmail: user.email || 'No email',
-              phone: user.phone || 'No phone',
-            },
-          }),
-        },
-      )
+        const response = await fetch('https://backend-production-cbe2.up.railway.app/api/paypal/capture-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                orderId: data.orderID,
+                user: {
+                    _id: user._id,
+                    username: user.username || 'Unknown User',
+                    billingEmail: user.email || 'No email', // ✅ Ensure email is always included
+                    phone: user.phone || 'No phone' // ✅ Ensure phone is always included
+                }
+            }),
+        });
 
-      const result = await response.json()
-      console.log('📡 PayPal Capture Response:', result)
+        const result = await response.json();
+        console.log('📡 PayPal Capture Response:', result);
 
-      if (!response.ok) {
-        console.error('❌ Capture Failed: ', result)
-        toast.error('Payment capture failed. Please try again.')
-        return
-      }
+        if (!response.ok) {
+            throw new Error('PayPal capture failed.');
+        }
 
-      toast.success('🎉 Payment Successful! Your classes have been added.')
-      localStorage.removeItem('cartItems')
-      navigate('/dashboard')
+        toast.success('🎉 Payment Successful! Your classes have been added.');
+        localStorage.removeItem('cartItems');
+        navigate('/dashboard');
     } catch (error) {
-      console.error('❌ Error in Payment Process:', error)
-      toast.error('Payment processing error. Please contact support.')
+        console.error('❌ Error in Payment Process:', error);
+        toast.error(error.message || 'Payment processing error.');
     }
-  }
+};
 
   // ✅ Function to Apply Coupon
   const applyCoupon = () => {
