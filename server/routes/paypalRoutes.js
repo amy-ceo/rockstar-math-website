@@ -5,6 +5,6 @@ const router = express.Router();
 
 router.post("/create-order", createOrder);
 router.post("/capture-order", captureOrder);
-app.post("/webhook", paypalWebhook);
+router.post("/webhook", paypalWebhook);
 
 module.exports = router;
