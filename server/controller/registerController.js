@@ -100,33 +100,37 @@ const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' }) // Token valid for 7 days
 }
 
+const sendEmail = require('../utils/emailSender') // ✅ Import Email Sending Utility
+
 exports.registerUser = async (req, res) => {
   try {
-    let { username, password, numStudents, students, ...restData } = req.body
+    let { username, password, numStudents, students, ...restData } = req.body;
 
-    console.log('🔍 Incoming Registration Data:', req.body)
+    console.log('🔍 Incoming Registration Data:', req.body);
 
     // ✅ Convert username to lowercase
-    username = username.toLowerCase()
+    username = username.toLowerCase();
 
     // ✅ Check if username already exists
-    const existingUser = await Register.findOne({ username })
+    const existingUser = await Register.findOne({ username });
     if (existingUser) {
-      return res.status(400).json({ success: false, error: 'Username already exists' })
+      return res.status(400).json({ success: false, error: 'Username already exists' });
     }
+
     bcrypt.setRandomFallback((size) => {
-      const crypto = require('crypto')
-      return crypto.randomBytes(size)
-    })
+      const crypto = require('crypto');
+      return crypto.randomBytes(size);
+    });
+
     // ✅ Hash Password
-    const salt = await bcrypt.genSalt(10)
-    const hashedPassword = await bcrypt.hash(password, salt)
-    console.log('🔹 Hashed Password:', hashedPassword)
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+    console.log('🔹 Hashed Password:', hashedPassword);
 
     // ✅ Validate Students Data
     if (numStudents > 1) {
       if (!Array.isArray(students) || students.length !== numStudents) {
-        return res.status(400).json({ success: false, error: 'Invalid student details!' })
+        return res.status(400).json({ success: false, error: 'Invalid student details!' });
       }
 
       for (let i = 0; i < students.length; i++) {
@@ -139,12 +143,12 @@ exports.registerUser = async (req, res) => {
           return res.status(400).json({
             success: false,
             error: `Student ${i + 1} details are incomplete!`,
-          })
+          });
         }
       }
     } else {
       if (!restData.studentNames || !restData.studentGrades || !restData.studentMathLevels) {
-        return res.status(400).json({ success: false, error: 'Student details are required!' })
+        return res.status(400).json({ success: false, error: 'Student details are required!' });
       }
     }
 
@@ -165,20 +169,66 @@ exports.registerUser = async (req, res) => {
               },
             ],
       ...restData,
-    })
+    });
 
     // ✅ Save User in Database
-    await newUser.save()
+    await newUser.save();
 
     // ✅ Generate JWT Token
-    const token = generateToken(newUser._id)
+    const token = generateToken(newUser._id);
 
-    console.log('✅ Registration Successful:', newUser)
+    console.log('✅ Registration Successful:', newUser);
+
+    // ✅ Send Welcome Email
+    try {
+      const subject = `🎉 Welcome to Rockstar Math, ${newUser.username}!`;
+      const htmlContent = `
+        <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
+          <div style="text-align: center; padding-bottom: 20px;">
+            <img src="https://your-logo-url.com/logo.png" alt="Rockstar Math" style="width: 150px; margin-bottom: 10px;">
+            <h2 style="color: #2C3E50;">🎉 Welcome to Rockstar Math, ${newUser.username}!</h2>
+            <p style="font-size: 16px;">Thank you for joining <b>Rockstar Math!</b> We're excited to help you achieve your math goals. Here’s what to expect:</p>
+          </div>
+      
+          <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+            <h3 style="color: #007bff;">📌 Personalized Tutoring</h3>
+            <p>We tailor our tutoring sessions to your specific needs and learning style. Our expert tutors are here to support your math journey.</p>
+          </div>
+      
+          <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+            <h3 style="color: #007bff;">📌 Next Steps</h3>
+            <p>Explore your dashboard, schedule sessions, and start learning!</p>
+            <p><b>Log in now:</b> <a href="https://your-website.com/login" target="_blank" style="color: #007bff;">Go to Dashboard</a></p>
+          </div>
+      
+          <p style="text-align: center; font-size: 16px;">If you have any questions, feel free to reach out. We're here to help!</p>
+      
+          <div style="text-align: center; margin-top: 20px;">
+            <a href="https://calendly.com/rockstarmathtutoring" target="_blank"
+              style="display:inline-block; padding:12px 24px; background-color:#007bff; color:#fff; text-decoration:none; border-radius:6px; font-weight:bold; font-size:16px;">
+              📅 Schedule Your First Session
+            </a>
+          </div>
+      
+          <p style="text-align: center; font-size: 14px; color: #555; margin-top: 20px;">
+            Best regards,<br>
+            <b>Amy Gemme</b><br>
+            Rockstar Math Tutoring<br>
+            📞 510-410-4963
+          </p>
+        </div>
+      `;
+
+      await sendEmail(newUser.billingEmail, subject, '', htmlContent);
+      console.log('✅ Welcome email sent successfully!');
+    } catch (emailError) {
+      console.error('❌ Error sending welcome email:', emailError);
+    }
 
     // ✅ Response to Frontend
     res.status(201).json({
       success: true,
-      message: 'Registration successful!',
+      message: 'Registration successful! A welcome email has been sent.',
       user: {
         _id: newUser._id,
         username: newUser.username,
@@ -186,12 +236,12 @@ exports.registerUser = async (req, res) => {
         phone: newUser.phone,
       },
       token, // ✅ Sending token to frontend
-    })
+    });
   } catch (error) {
-    console.error('❌ Registration Error:', error)
-    res.status(500).json({ success: false, error: 'Registration failed. Please try again!' })
+    console.error('❌ Registration Error:', error);
+    res.status(500).json({ success: false, error: 'Registration failed. Please try again!' });
   }
-}
+};
 
 // 🎯 Function to Handle Purchase
 // 🎯 **Updated Purchase Function with Calendly Integration**

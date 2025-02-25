@@ -84,13 +84,20 @@ exports.captureOrder = async (req, res) => {
         // ✅ Capture PayPal Payment
         const captureRequest = new paypal.orders.OrdersCaptureRequest(orderId);
         captureRequest.requestBody({});
-        const captureResponse = await paypalClient.execute(captureRequest);
+        
+        let captureResponse;
+        try {
+            captureResponse = await paypalClient.execute(captureRequest);
+            console.log("✅ Capture Response:", captureResponse.result);
+        } catch (captureError) {
+            console.error("❌ PayPal Capture Error:", captureError);
+            return res.status(400).json({ error: "PayPal capture failed", details: captureError.message });
+        }
 
-        console.log("✅ Capture Response:", captureResponse.result);
-
+        // ✅ Validate Capture Response
         if (!captureResponse.result || captureResponse.result.status !== "COMPLETED") {
-            console.error("❌ PayPal Capture Failed:", captureResponse.result);
-            return res.status(400).json({ error: "Payment capture failed", status: captureResponse.result.status, details: captureResponse.result });
+            console.error("❌ PayPal Capture Failed - Status:", captureResponse.result.status);
+            return res.status(400).json({ error: "Payment capture failed", details: captureResponse.result });
         }
 
         const capturedPayment = captureResponse.result;
@@ -105,7 +112,7 @@ exports.captureOrder = async (req, res) => {
         const amount = captureDetails.amount.value;
         const currency = captureDetails.amount.currency_code;
 
-        // ✅ Save Payment Details
+        // ✅ Save Payment Details First
         try {
             const newPayment = new Payment({
                 orderId,
@@ -125,31 +132,47 @@ exports.captureOrder = async (req, res) => {
             return res.status(500).json({ error: "Failed to save payment, but PayPal capture was successful." });
         }
 
-        // ✅ Call `addPurchasedClass` to Update Purchased Classes and Send Emails
-        console.log("📡 Calling addPurchasedClass API...");
-        const purchaseResponse = await addPurchasedClass({
-            body: {
-                userId: user._id,
-                purchasedItems: user.cartItems,
-                userEmail: user.billingEmail,
-            }
-        });
+        // ✅ Call `addPurchasedClass` API to add purchased items
+        try {
+            const purchaseResponse = await fetch(`${process.env.BACKEND_URL}/api/add-purchased-class`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    userId: user._id,
+                    purchasedItems: user.cartItems.map(item => ({
+                        name: item.name,
+                        description: item.description || "No description available",
+                    })),
+                    userEmail: user.billingEmail,
+                }),
+            });
 
-        if (purchaseResponse.status === 200) {
-            console.log("✅ Purchased classes updated successfully!");
-        } else {
-            console.warn("⚠️ Issue updating purchased classes:", purchaseResponse.message);
+            const purchaseResult = await purchaseResponse.json();
+            console.log("✅ Purchased Classes API Response:", purchaseResult);
+
+            if (!purchaseResponse.ok) {
+                console.warn("⚠️ Issue updating purchased classes:", purchaseResult.message);
+            }
+        } catch (purchaseError) {
+            console.error("❌ Error calling addPurchasedClass API:", purchaseError);
         }
 
-        res.json({
-            message: "Payment captured & records updated successfully.",
-            payment: capturedPayment,
-        });
+        // ✅ Send Confirmation Email
+        try {
+            await sendEmail(user.billingEmail, `Order Confirmation - Your Purchase is Successful!`, `Your order ${orderId} was successful.`, "<h3>Thank you!</h3>");
+            console.log("✅ Confirmation Email Sent");
+        } catch (emailError) {
+            console.error("❌ Email Sending Failed:", emailError);
+        }
+
+        res.json({ message: "Payment captured & records updated successfully.", payment: capturedPayment });
+
     } catch (error) {
         console.error("❌ Error Capturing PayPal Payment:", error);
         res.status(500).json({ error: "Internal Server Error", details: error.message || error });
     }
 };
+
 // 🎯 PayPal Webhook for Order Capture
 exports.paypalWebhook = async (req, res) => {
     try {

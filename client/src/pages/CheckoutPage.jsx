@@ -111,76 +111,77 @@ const CheckoutPage = () => {
   }
 
   const handlePayPalSuccess = async (data) => {
-    const user = JSON.parse(localStorage.getItem('user'))
+    const user = JSON.parse(localStorage.getItem('user'));
 
     if (!user || !user._id) {
-      toast.error('User authentication required.')
-      throw new Error('User authentication required.')
+        toast.error('User authentication required.');
+        throw new Error('User authentication required.');
     }
 
     try {
-      const response = await fetch(
-        'https://backend-production-cbe2.up.railway.app/api/paypal/capture-order',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            orderId: data.orderID,
-            user: {
-              _id: user._id,
-              username: user.username || 'Unknown User',
-              billingEmail: user.email || 'No email',
-              phone: user.phone || 'No phone',
-              cartItems: cartItems.map((item) => ({
-                name: item.name,
-                price: Number(item.price) || 0,
-                quantity: item.quantity || 1,
-              })), // ✅ Sending cartItems now
-            },
-          }),
-        },
-      )
+        // ✅ Step 1: Capture PayPal Order
+        const response = await fetch('https://backend-production-cbe2.up.railway.app/api/paypal/capture-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                orderId: data.orderID,
+                user: {
+                    _id: user._id,
+                    username: user.username || 'Unknown User',
+                    billingEmail: user.email || 'No email',
+                    phone: user.phone || 'No phone',
+                    cartItems: cartItems.map(item => ({
+                        name: item.name,
+                        price: Number(item.price) || 0,
+                        quantity: item.quantity || 1
+                    })) // ✅ Sending cartItems now
+                }
+            }),
+        });
 
-      const result = await response.json()
-      console.log('📡 PayPal Capture Response:', result)
+        const result = await response.json();
+        console.log('📡 PayPal Capture Response:', result);
 
-      if (!response.ok) {
-        throw new Error('PayPal capture failed.')
-      }
+        if (!response.ok) {
+            throw new Error(result.error || 'PayPal capture failed.');
+        }
 
-      // ✅ Call `addPurchasedClass` API to update user purchases
-      console.log('📡 Calling addPurchasedClass API...')
-      const purchaseResponse = await fetch(
-        'https://backend-production-cbe2.up.railway.app/api/add-purchased-class',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId: user._id,
-            purchasedItems: cartItems.map((item) => ({
-              name: item.name,
-              description: item.description || 'No description available',
-            })),
-            userEmail: user.email || 'No email',
-          }),
-        },
-      )
+        // ✅ Step 2: Call `addPurchasedClass` API to update user purchases
+        console.log('📡 Calling addPurchasedClass API...');
+        const purchaseResponse = await fetch(
+            'https://backend-production-cbe2.up.railway.app/api/add-purchased-class',
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: user._id,
+                    purchasedItems: cartItems.map((item) => ({
+                        name: item.name,
+                        description: item.description || 'No description available',
+                    })),
+                    userEmail: user.email || 'No email',
+                }),
+            }
+        );
 
-      const purchaseResult = await purchaseResponse.json()
-      console.log('✅ Purchased Classes API Response:', purchaseResult)
+        const purchaseResult = await purchaseResponse.json();
+        console.log('✅ Purchased Classes API Response:', purchaseResult);
 
-      if (!purchaseResponse.ok) {
-        console.warn('⚠️ Issue updating purchased classes:', purchaseResult.message)
-      }
+        if (!purchaseResponse.ok) {
+            console.warn('⚠️ Issue updating purchased classes:', purchaseResult.message);
+        }
 
-      toast.success('🎉 Payment Successful! Your classes have been added.')
-      localStorage.removeItem('cartItems')
-      navigate('/dashboard')
+        // ✅ Step 3: Display success message & navigate to dashboard
+        toast.success('🎉 Payment Successful! Your classes have been added.');
+        localStorage.removeItem('cartItems');
+        navigate('/dashboard');
+
     } catch (error) {
-      console.error('❌ Error in Payment Process:', error)
-      toast.error(error.message || 'Payment processing error.')
+        console.error('❌ Error in Payment Process:', error);
+        toast.error(error.message || 'Payment processing error.');
     }
-  }
+};
+
 
   // ✅ Function to Apply Coupon
   const applyCoupon = () => {
