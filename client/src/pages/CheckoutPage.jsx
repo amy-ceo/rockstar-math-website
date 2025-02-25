@@ -118,26 +118,43 @@ const CheckoutPage = () => {
         throw new Error('User authentication required.');
     }
 
+    console.log("📡 Sending Payment Capture Data:", {
+        orderId: data.orderID,
+        user: {
+            _id: user._id,
+            username: user.username || "Unknown User",
+            billingEmail: user.email || "No email",
+            phone: user.phone || "No phone",
+            cartItems: cartItems.map((item) => ({
+                name: item.name,
+                price: Number(item.price) || 0,
+                quantity: item.quantity || 1,
+            })),
+        },
+    });
+
     try {
         // ✅ Step 1: Capture PayPal Order
-        const response = await fetch('https://backend-production-cbe2.up.railway.app/api/paypal/capture-order', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                orderId: data.orderID,
-                user: {
-                    _id: user._id,
-                    username: user.username || 'Unknown User',
-                    billingEmail: user.email || 'No email',
-                    phone: user.phone || 'No phone',
-                    cartItems: cartItems.map(item => ({
-                        name: item.name,
-                        price: Number(item.price) || 0,
-                        quantity: item.quantity || 1
-                    })) // ✅ Sending cartItems now
-                }
-            }),
-        });
+        const response = await fetch(
+            'https://backend-production-cbe2.up.railway.app/api/paypal/capture-order',
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    orderId: data.orderID,
+                    user: {
+                        _id: user._id,
+                        username: user.username || 'Unknown User',
+                        billingEmail: user.email || 'No email',
+                        phone: user.phone || 'No phone',
+                        cartItems: cartItems.map(item => ({
+                            name: item.name,
+                            price: Number(item.price) || 0,
+                            quantity: item.quantity || 1
+                        }))
+                    }
+                }),
+            });
 
         const result = await response.json();
         console.log('📡 PayPal Capture Response:', result);
@@ -147,7 +164,7 @@ const CheckoutPage = () => {
         }
 
         // ✅ Step 2: Call `addPurchasedClass` API to update user purchases
-        console.log('📡 Calling addPurchasedClass API...');
+        console.log("📡 Calling addPurchasedClass API...");
         const purchaseResponse = await fetch(
             'https://backend-production-cbe2.up.railway.app/api/add-purchased-class',
             {
@@ -161,17 +178,16 @@ const CheckoutPage = () => {
                     })),
                     userEmail: user.email || 'No email',
                 }),
-            }
-        );
+            });
 
         const purchaseResult = await purchaseResponse.json();
-        console.log('✅ Purchased Classes API Response:', purchaseResult);
+        console.log("✅ Purchased Classes API Response:", purchaseResult);
 
         if (!purchaseResponse.ok) {
-            console.warn('⚠️ Issue updating purchased classes:', purchaseResult.message);
+            console.warn("⚠️ Issue updating purchased classes:", purchaseResult.message);
         }
 
-        // ✅ Step 3: Display success message & navigate to dashboard
+        // ✅ Step 3: Show Success Message & Navigate to Dashboard
         toast.success('🎉 Payment Successful! Your classes have been added.');
         localStorage.removeItem('cartItems');
         navigate('/dashboard');
@@ -181,6 +197,7 @@ const CheckoutPage = () => {
         toast.error(error.message || 'Payment processing error.');
     }
 };
+
 
 
   // ✅ Function to Apply Coupon

@@ -114,6 +114,17 @@ exports.captureOrder = async (req, res) => {
 
         // ✅ Save Payment Details First
         try {
+            console.log("🔹 Saving Payment Details:", {
+                orderId,
+                userId: user._id,
+                billingEmail: user.billingEmail,
+                amount,
+                currency,
+                status: "Completed",
+                paymentMethod: "PayPal",
+                cartItems: user.cartItems,
+            });
+        
             const newPayment = new Payment({
                 orderId,
                 userId: user._id,
@@ -124,17 +135,20 @@ exports.captureOrder = async (req, res) => {
                 paymentMethod: "PayPal",
                 cartItems: user.cartItems,
             });
-
+        
             await newPayment.save();
-            console.log("✅ Payment Record Saved");
-        } catch (err) {
-            console.error("❌ Failed to Save Payment Record:", err);
-            return res.status(500).json({ error: "Failed to save payment, but PayPal capture was successful." });
+            console.log("✅ Payment Record Saved Successfully!");
+        } catch (saveError) {
+            console.error("❌ Error Saving Payment Record:", saveError);
+            return res.status(500).json({
+                error: "Failed to save payment, but PayPal capture was successful.",
+                details: saveError.message,
+            });
         }
 
         // ✅ Call `addPurchasedClass` API to add purchased items
         try {
-            const purchaseResponse = await fetch(`${process.env.BACKEND_URL}/api/add-purchased-class`, {
+            const purchaseResponse = await fetch(`https://backend-production-cbe2.up.railway.app/api/add-purchased-class`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
