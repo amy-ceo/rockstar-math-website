@@ -22,84 +22,95 @@ const Dashboard = () => {
   }, [users, navigate])
 
   useEffect(() => {
-    if (!users || !users._id) return
+    if (!users || !users._id) return;
 
+    setLoading(true);
+  
     const fetchPurchasedClasses = async () => {
-      setLoading(true)
-      try {
-        const response = await fetch(`https://backend-production-cbe2.up.railway.app/api/${users._id}/purchased-classes`)
-        const data = await response.json()
-        if (!response.ok) throw new Error(data.message || 'Failed to fetch purchased classes.')
-        setPurchasedClasses(data.purchasedClasses || [])
-      } catch (error) {
-        console.error('❌ Error fetching classes:', error)
-        setError('Failed to load classes. Try again.')
-      }
-    }
-
-    const fetchZoomMeeting = async () => {
-      try {
-        const response = await fetch(`https://backend-production-cbe2.up.railway.app/api/${users._id}/zoom-meeting`)
-        const data = await response.json()
-        if (!response.ok) throw new Error(data.message || 'No Zoom meeting found.')
-        setZoomMeeting(data.meeting)
-      } catch (error) {
-        console.error('❌ Error fetching Zoom meeting:', error)
-        setZoomMeeting(null)
-      } finally {
-        setLoading(false)
-      }
-    }
+        try {
+            const response = await fetch(`https://backend-production-cbe2.up.railway.app/api/${users._id}/purchased-classes`);
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message || "Failed to fetch purchased classes.");
+            setPurchasedClasses(data.purchasedClasses || []);
+        } catch (error) {
+            console.error("❌ Error fetching classes:", error);
+            setError("Failed to load classes. Try again.");
+        }
+    };
 
     const fetchCalendlyBookings = async () => {
-      try {
-        const response = await fetch(`https://backend-production-cbe2.up.railway.app/api/${users._id}/calendly-bookings`)
-        const data = await response.json()
-        if (!response.ok) throw new Error(data.message || 'No Calendly bookings found.')
+        try {
+            const response = await fetch(`https://backend-production-cbe2.up.railway.app/api/${users._id}/calendly-bookings`);
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message || "No Calendly bookings found.");
 
-        // ✅ Archive Expired Sessions Before Setting State
-        const currentDate = new Date()
-        const activeSessions = []
-        const expiredSessions = []
+            const currentDate = new Date();
+            const activeSessions = [];
+            const expiredSessions = [];
 
-        data.bookings.forEach((session) => {
-          if (new Date(session.startTime) < currentDate) {
-            expiredSessions.push(session) // ✅ Mark expired sessions for archiving
-          } else {
-            activeSessions.push(session) // ✅ Keep only active sessions
-          }
-        })
+            data.bookings.forEach((session) => {
+                if (new Date(session.startTime) < currentDate) {
+                    expiredSessions.push(session);
+                } else {
+                    activeSessions.push(session);
+                }
+            });
 
-        setCalendlyBookings(activeSessions) // ✅ Only show active sessions in dashboard
+            setCalendlyBookings(activeSessions);
 
-        if (expiredSessions.length > 0) {
-          console.log(`📂 Moving ${expiredSessions.length} expired sessions to archive...`)
-          await archiveExpiredSessions(expiredSessions) // ✅ Archive expired sessions
+            if (expiredSessions.length > 0) {
+                console.log(`📂 Archiving ${expiredSessions.length} expired sessions...`);
+                await archiveExpiredSessions(expiredSessions);
+            }
+        } catch (error) {
+            console.error("❌ Error fetching Calendly bookings:", error);
+            setCalendlyBookings([]);
         }
-      } catch (error) {
-        console.error('❌ Error fetching Calendly bookings:', error)
-        setCalendlyBookings([])
-      }
-    }
+    };
 
-    // ✅ Fetch Coupons
     const fetchCoupons = async () => {
-      try {
-        const response = await fetch(`https://backend-production-cbe2.up.railway.app/api/user-coupons/${users._id}`)
-        const data = await response.json()
-        if (!response.ok) throw new Error(data.message || 'No Coupons found.')
-        setCoupons(data.coupons)
-      } catch (error) {
-        console.error('❌ Error fetching Coupons:', error)
-        setCoupons([])
-      }
-    }
+        try {
+            const response = await fetch(`https://backend-production-cbe2.up.railway.app/api/user-coupons/${users._id}`);
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message || "No Coupons found.");
+            setCoupons(data.coupons);
+        } catch (error) {
+            console.error("❌ Error fetching Coupons:", error);
+            setCoupons([]);
+        }
+    };
 
-    fetchPurchasedClasses()
-    fetchZoomMeeting()
-    fetchCalendlyBookings() // ✅ Fetch Calendly Bookings
-    fetchCoupons() // ✅ Fetch Coupons
-  }, [users])
+    const fetchZoomMeeting = async () => {
+        try {
+            const response = await fetch(`https://backend-production-cbe2.up.railway.app/api/${users._id}/zoom-meeting`);
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message || "No Zoom meeting found.");
+            setZoomMeeting(data.meeting);
+        } catch (error) {
+            console.error("❌ Error fetching Zoom meeting:", error);
+            setZoomMeeting(null);
+        }
+    };
+
+    // ✅ Run all API calls in parallel to improve performance
+    Promise.allSettled([fetchPurchasedClasses(), fetchZoomMeeting(), fetchCalendlyBookings(), fetchCoupons()])
+        .finally(() => setLoading(false));
+
+    // ✅ Auto-update purchased classes when user data changes in LocalStorage
+    const handleStorageChange = () => {
+        const updatedUser = JSON.parse(localStorage.getItem("user"));
+        if (updatedUser && updatedUser.purchasedClasses) {
+            setPurchasedClasses(updatedUser.purchasedClasses);
+        }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+
+    return () => {
+        window.removeEventListener("storage", handleStorageChange);
+    };
+}, [users]);
+
 
   // ✅ Function to Archive Expired Sessions
   const archiveExpiredSessions = async (expiredSessions) => {
