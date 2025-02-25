@@ -72,18 +72,30 @@ exports.createOrder = async (req, res) => {
 
 
 // 🎯 Capture PayPal Order & Send Email
+// 🎯 Capture PayPal Order & Update Purchase
 exports.captureOrder = async (req, res) => {
     try {
         const { orderId, user } = req.body;
 
         if (!orderId || !user || !user._id || !user.billingEmail || !user.cartItems) {
+            console.error("❌ Missing required fields:", { orderId, user });
             return res.status(400).json({ error: "Missing required fields" });
         }
+
+        console.log("🛒 Capturing PayPal Order:", orderId);
 
         // ✅ Capture PayPal Payment
         const captureRequest = new paypal.orders.OrdersCaptureRequest(orderId);
         captureRequest.requestBody({});
         const captureResponse = await paypalClient.execute(captureRequest);
+
+        console.log("✅ Capture Response:", captureResponse.result);
+
+        // ✅ Check if payment was actually completed
+        if (!captureResponse.result || captureResponse.result.status !== "COMPLETED") {
+            console.error("❌ PayPal Capture Failed - Status:", captureResponse.result.status);
+            return res.status(400).json({ error: "Payment capture failed", details: captureResponse.result });
+        }
 
         const capturedPayment = captureResponse.result;
         const amount = capturedPayment.purchase_units[0].payments.captures[0].amount.value;
@@ -155,7 +167,8 @@ exports.captureOrder = async (req, res) => {
 
     } catch (error) {
         console.error("❌ Error Capturing PayPal Payment:", error);
-        res.status(500).json({ error: "Internal Server Error" });
+
+        // Send a response back to the frontend
+        res.status(500).json({ error: "Internal Server Error", details: error.message || error });
     }
 };
-
