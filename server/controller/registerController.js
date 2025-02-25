@@ -100,7 +100,6 @@ const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' }) // Token valid for 7 days
 }
 
-const sendEmail = require('../utils/emailSender') // ✅ Import Email Sending Utility
 
 exports.registerUser = async (req, res) => {
   try {
