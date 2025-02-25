@@ -138,7 +138,7 @@ const handlePayPalSuccess = async (data) => {
                   user: {
                       _id: user._id,
                       username: user.username || "Unknown User",
-                      billingEmail: user.email || "No email",
+                      billingEmail: user.billingEmail || "No email",
                       phone: user.phone || "No phone",
                       cartItems: cartItems.map((item) => ({
                           name: item.name,
@@ -170,7 +170,7 @@ const handlePayPalSuccess = async (data) => {
                       name: item.name,
                       description: item.description || "No description available",
                   })),
-                  userEmail: user.email || "No email",
+                  userEmail: user.billingEmail || "No email",
               }),
           }
       );
@@ -200,7 +200,8 @@ const handlePayPalSuccess = async (data) => {
 
       // ✅ Step 5: Clear Cart & Redirect
       toast.success("🎉 Payment Successful! Your classes have been added.");
-      localStorage.removeItem("cartItems");
+       localStorage.removeItem("cartItems");
+       setCartItems([]);
       navigate("/dashboard");
 
   } catch (error) {
@@ -248,7 +249,7 @@ const handlePayPalSuccess = async (data) => {
       const user = JSON.parse(localStorage.getItem('user'))
       const userId = user && user._id ? user._id : 'guest_user' // ✅ Fix applied
       const userName = user && user.name ? user.name : 'Guest User' // ✅ Add User Name
-      const userEmail = user && user.email ? user.email : 'guest@example.com' // ✅ Add User Email
+      const userEmail = user && user.billingEmail ? user.billingEmail : 'guest@example.com' // ✅ Add User Email
       const orderId = `order_${Date.now()}`
       const currency = 'usd'
 

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { toast } from "react-hot-toast";
+import toast, { Toaster } from 'react-hot-toast'
 
 const AdminForgotPassword = () => {
   const [email, setEmail] = useState("");
@@ -10,6 +10,8 @@ const AdminForgotPassword = () => {
     setLoading(true);
 
     try {
+      console.log("🔹 Sending Password Reset Request for Email:", email);
+
       const res = await fetch("https://backend-production-cbe2.up.railway.app/api/admin/request-password-reset", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -17,10 +19,17 @@ const AdminForgotPassword = () => {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
+      console.log("🔹 API Response:", data);
 
-      toast.success("Password reset email sent!");
+      if (!res.ok) {
+        console.error("❌ Forgot Password Error:", data);
+        toast.error(data.message || "Something went wrong!");
+        return;
+      }
+
+      toast.success("✅ Password reset email sent successfully!");
     } catch (err) {
+      console.error("❌ Error in Request:", err);
       toast.error(err.message || "Something went wrong!");
     } finally {
       setLoading(false);
@@ -28,7 +37,9 @@ const AdminForgotPassword = () => {
   };
 
   return (
+    
     <div className="flex justify-center items-center h-screen bg-gray-100">
+         <Toaster position="top-right" />
       <div className="bg-white shadow-lg rounded-lg p-8 w-full max-w-md">
         <h2 className="text-2xl font-bold text-center">Admin Password Reset</h2>
         <form className="mt-6" onSubmit={handleForgotPassword}>

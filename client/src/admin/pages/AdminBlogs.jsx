@@ -30,7 +30,7 @@ const AdminBlogs = () => {
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this blog?')) return;
     try {
-      await axios.delete(`http://localhost:5000/api/blogs/${id}`);
+      await axios.delete(`https://backend-production-cbe2.up.railway.app/api/blogs/${id}`);
       toast.success('Blog deleted successfully.');
       fetchBlogs();
     } catch (error) {
@@ -55,12 +55,12 @@ const AdminBlogs = () => {
 
     try {
       if (editMode) {
-        await axios.put(`http://localhost:5000/api/blogs/${selectedBlog._id}`, formDataToSend, {
+        await axios.put(`https://backend-production-cbe2.up.railway.app/api/blogs/${selectedBlog._id}`, formDataToSend, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
         toast.success('Blog updated successfully.');
       } else {
-        await axios.post('http://localhost:5000/api/blogs', formDataToSend, {
+        await axios.post('https://backend-production-cbe2.up.railway.app/api/blogs', formDataToSend, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
         toast.success('Blog created successfully.');
@@ -110,7 +110,7 @@ const AdminBlogs = () => {
                   <td className="py-3 px-4 border">{blog.title}</td>
                   <td className="py-3 px-4 border">{blog.description.substring(0, 50)}...</td>
                   <td className="py-3 px-4 border">
-                    <img src={`http://localhost:5000${blog.image}`} alt={blog.title} className="w-20 h-12 object-cover rounded-lg shadow-md" />
+                    <img src={`https://backend-production-cbe2.up.railway.app${blog.image}`} alt={blog.title} className="w-20 h-12 object-cover rounded-lg shadow-md" />
                   </td>
                   <td className="py-3 px-4 border">
                     <button
@@ -119,7 +119,7 @@ const AdminBlogs = () => {
                         setEditMode(true);
                         setSelectedBlog(blog);
                         setFormData(blog);
-                        setPreviewImage(`http://localhost:5000${blog.image}`);
+                        setPreviewImage(`https://backend-production-cbe2.up.railway.app${blog.image}`);
                       }}
                       className="mr-2 bg-blue-500 text-white px-2 py-1 rounded shadow-md hover:bg-blue-600 transition-all"
                     >

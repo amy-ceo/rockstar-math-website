@@ -2,7 +2,7 @@ const bcrypt = require('bcryptjs')
 const Register = require('../models/registerModel')
 const jwt = require('jsonwebtoken')
 const crypto = require('crypto')
-const cron = require("node-cron");
+const cron = require('node-cron')
 const sendEmail = require('../utils/emailSender')
 
 // ✅ Function to Generate JWT Token
@@ -26,7 +26,8 @@ const ZOOM_LINKS = [
 ]
 
 // ✅ Specific Zoom Link for "CommonCore"
-const COMMONCORE_ZOOM_LINK = 'https://us06web.zoom.us/meeting/register/XsYhADVmQcK8BIT3Sfbpyg#/registration';
+const COMMONCORE_ZOOM_LINK =
+  'https://us06web.zoom.us/meeting/register/XsYhADVmQcK8BIT3Sfbpyg#/registration'
 
 // ✅ Define Calendly Booking Links
 const CALENDLY_LINKS = {
@@ -38,99 +39,99 @@ const CALENDLY_LINKS = {
 // ✅ Function to Generate Calendly Link with Booking Limits
 const generateCalendlyLink = async (userId, sessionType) => {
   try {
-    const user = await Register.findById(userId);
-    if (!user) return null;
+    const user = await Register.findById(userId)
+    if (!user) return null
 
-    user.calendlyBookingsCount = user.calendlyBookingsCount || {}; // Ensure field exists
-    const currentBookings = user.calendlyBookingsCount[sessionType] || 0;
-    const maxBookings = SERVICE_PACKAGES[sessionType];
+    user.calendlyBookingsCount = user.calendlyBookingsCount || {} // Ensure field exists
+    const currentBookings = user.calendlyBookingsCount[sessionType] || 0
+    const maxBookings = SERVICE_PACKAGES[sessionType]
 
     // ✅ Prevent Overbooking
     if (currentBookings >= maxBookings) {
-      console.warn(`⚠️ User ${userId} exceeded booking limit for ${sessionType}`);
-      return null;
+      console.warn(`⚠️ User ${userId} exceeded booking limit for ${sessionType}`)
+      return null
     }
 
-    user.calendlyBookingsCount[sessionType] = currentBookings + 1;
-    await user.save();
+    user.calendlyBookingsCount[sessionType] = currentBookings + 1
+    await user.save()
 
-    console.log(`✅ Calendly Link Generated for ${sessionType}: ${CALENDLY_LINKS[sessionType]}`);
-    return CALENDLY_LINKS[sessionType];
+    console.log(`✅ Calendly Link Generated for ${sessionType}: ${CALENDLY_LINKS[sessionType]}`)
+    return CALENDLY_LINKS[sessionType]
   } catch (error) {
-    console.error("❌ Calendly Link Generation Failed:", error);
-    return null;
+    console.error('❌ Calendly Link Generation Failed:', error)
+    return null
   }
-};
+}
 
 // ✅ Function to Automatically Archive Expired Classes
 const archiveExpiredCalendlySessions = async () => {
   try {
-    console.log("🔄 Running Calendly auto-archiving process...");
+    console.log('🔄 Running Calendly auto-archiving process...')
 
-    const users = await Register.find();
-    const currentDate = new Date();
+    const users = await Register.find()
+    const currentDate = new Date()
 
     users.forEach(async (user) => {
       const expiredSessions = user.purchasedClasses.filter(
-        (cls) => cls.bookingLink && new Date(cls.purchaseDate) < currentDate
-      );
+        (cls) => cls.bookingLink && new Date(cls.purchaseDate) < currentDate,
+      )
 
       if (expiredSessions.length > 0) {
-        console.log(`📂 Archiving ${expiredSessions.length} expired Calendly sessions for ${user.username}`);
+        console.log(
+          `📂 Archiving ${expiredSessions.length} expired Calendly sessions for ${user.username}`,
+        )
 
-        user.archivedClasses.push(...expiredSessions);
+        user.archivedClasses.push(...expiredSessions)
         user.purchasedClasses = user.purchasedClasses.filter(
-          (cls) => !(cls.bookingLink && new Date(cls.purchaseDate) < currentDate)
-        );
+          (cls) => !(cls.bookingLink && new Date(cls.purchaseDate) < currentDate),
+        )
 
-        await user.save();
+        await user.save()
       }
-    });
+    })
 
-    console.log("✅ Auto-archiving of expired Calendly sessions completed!");
+    console.log('✅ Auto-archiving of expired Calendly sessions completed!')
   } catch (error) {
-    console.error("❌ Error auto-archiving Calendly sessions:", error);
+    console.error('❌ Error auto-archiving Calendly sessions:', error)
   }
-};
+}
 
 // ✅ Schedule the function to run daily at midnight
-cron.schedule("0 0 * * *", archiveExpiredCalendlySessions);
-
+cron.schedule('0 0 * * *', archiveExpiredCalendlySessions)
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' }) // Token valid for 7 days
 }
 
-
 exports.registerUser = async (req, res) => {
   try {
-    let { username, password, numStudents, students, ...restData } = req.body;
+    let { username, password, numStudents, students, ...restData } = req.body
 
-    console.log('🔍 Incoming Registration Data:', req.body);
+    console.log('🔍 Incoming Registration Data:', req.body)
 
     // ✅ Convert username to lowercase
-    username = username.toLowerCase();
+    username = username.toLowerCase()
 
     // ✅ Check if username already exists
-    const existingUser = await Register.findOne({ username });
+    const existingUser = await Register.findOne({ username })
     if (existingUser) {
-      return res.status(400).json({ success: false, error: 'Username already exists' });
+      return res.status(400).json({ success: false, error: 'Username already exists' })
     }
 
     bcrypt.setRandomFallback((size) => {
-      const crypto = require('crypto');
-      return crypto.randomBytes(size);
-    });
+      const crypto = require('crypto')
+      return crypto.randomBytes(size)
+    })
 
     // ✅ Hash Password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-    console.log('🔹 Hashed Password:', hashedPassword);
+    const salt = await bcrypt.genSalt(10)
+    const hashedPassword = await bcrypt.hash(password, salt)
+    console.log('🔹 Hashed Password:', hashedPassword)
 
     // ✅ Validate Students Data
     if (numStudents > 1) {
       if (!Array.isArray(students) || students.length !== numStudents) {
-        return res.status(400).json({ success: false, error: 'Invalid student details!' });
+        return res.status(400).json({ success: false, error: 'Invalid student details!' })
       }
 
       for (let i = 0; i < students.length; i++) {
@@ -143,12 +144,12 @@ exports.registerUser = async (req, res) => {
           return res.status(400).json({
             success: false,
             error: `Student ${i + 1} details are incomplete!`,
-          });
+          })
         }
       }
     } else {
       if (!restData.studentNames || !restData.studentGrades || !restData.studentMathLevels) {
-        return res.status(400).json({ success: false, error: 'Student details are required!' });
+        return res.status(400).json({ success: false, error: 'Student details are required!' })
       }
     }
 
@@ -169,20 +170,20 @@ exports.registerUser = async (req, res) => {
               },
             ],
       ...restData,
-    });
+    })
 
     // ✅ Save User in Database
-    await newUser.save();
+    await newUser.save()
 
     // ✅ Generate JWT Token
-    const token = generateToken(newUser._id);
+    const token = generateToken(newUser._id)
 
-    console.log('✅ Registration Successful:', newUser);
+    console.log('✅ Registration Successful:', newUser)
 
     // ✅ Send Welcome Email
     try {
-      const subject = `🎉 Welcome to Rockstar Math, ${newUser.username}!`;
-     const htmlContent = `
+      const subject = `🎉 Welcome to Rockstar Math, ${newUser.username}!`
+      const htmlContent = `
   <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
     
     <div style="text-align: center; padding-bottom: 20px;">
@@ -225,13 +226,12 @@ exports.registerUser = async (req, res) => {
       📞 510-410-4963
     </p>
   </div>
-`;
+`
 
-
-      await sendEmail(newUser.billingEmail, subject, '', htmlContent);
-      console.log('✅ Welcome email sent successfully!');
+      await sendEmail(newUser.billingEmail, subject, '', htmlContent)
+      console.log('✅ Welcome email sent successfully!')
     } catch (emailError) {
-      console.error('❌ Error sending welcome email:', emailError);
+      console.error('❌ Error sending welcome email:', emailError)
     }
 
     // ✅ Response to Frontend
@@ -245,95 +245,101 @@ exports.registerUser = async (req, res) => {
         phone: newUser.phone,
       },
       token, // ✅ Sending token to frontend
-    });
+    })
   } catch (error) {
-    console.error('❌ Registration Error:', error);
-    res.status(500).json({ success: false, error: 'Registration failed. Please try again!' });
+    console.error('❌ Registration Error:', error)
+    res.status(500).json({ success: false, error: 'Registration failed. Please try again!' })
   }
-};
+}
 
 // 🎯 Function to Handle Purchase
 exports.addPurchasedClass = async (req, res) => {
   try {
-    const { userId, purchasedItems, userEmail } = req.body;
+    const { userId, purchasedItems, userEmail } = req.body
 
-    console.log('🔄 Processing Purchase Request...');
+    console.log('🔄 Processing Purchase Request...')
 
-    if (!userId || !purchasedItems || !Array.isArray(purchasedItems) || purchasedItems.length === 0) {
-      return res.status(400).json({ message: 'Invalid request. Missing data.' });
+    if (
+      !userId ||
+      !purchasedItems ||
+      !Array.isArray(purchasedItems) ||
+      purchasedItems.length === 0
+    ) {
+      return res.status(400).json({ message: 'Invalid request. Missing data.' })
     }
 
-    let zoomLinks = [];
-    let couponCodes = []; // Store multiple coupons
-    let commonCorePurchased = false;
-    let calendlyMeetingLink = null;
+    let zoomLinks = []
+    let couponCodes = [] // Store multiple coupons
+    let commonCorePurchased = false
+    let calendlyMeetingLink = null
 
     // ✅ Find User
-    console.log(`🔎 Finding User: ${userId}`);
-    const user = await Register.findById(userId);
+    console.log(`🔎 Finding User: ${userId}`)
+    const user = await Register.findById(userId)
     if (!user) {
-      console.error('❌ User Not Found');
-      return res.status(404).json({ message: 'User not found.' });
+      console.error('❌ User Not Found')
+      return res.status(404).json({ message: 'User not found.' })
     }
 
-    let newPurchases = [];
+    let newPurchases = []
 
-    console.log('🛒 Processing Purchased Items...');
+    console.log('🛒 Processing Purchased Items...')
     for (const item of purchasedItems) {
       if (user.purchasedClasses.some((pc) => pc.name === item.name)) {
-        console.log(`⚠️ ${item.name} is already purchased, skipping...`);
-        continue;
+        console.log(`⚠️ ${item.name} is already purchased, skipping...`)
+        continue
       }
 
       let newPurchase = {
         name: item.name,
         description: item.description || 'No description available',
         purchaseDate: new Date(),
-      };
+      }
 
-      // 🎟 Assign Coupons
       if (item.name === 'Learn') {
         couponCodes.push({ code: 'URem36bx', percent_off: 10 });
-      } else if (item.name === 'Achieve') {
+    } else if (item.name === 'Achieve') {
         couponCodes.push({ code: 'G4R1If1p', percent_off: 30 });
-      } else if (item.name === 'Excel') {
+    } else if (item.name === 'Excel') {
         couponCodes.push({ code: 'mZybTHmQ', percent_off: 20 });
-      }
-
-      // ✅ Assign Zoom Links for Learn, Achieve, and Excel
-      if (['Learn', 'Achieve', 'Excel'].includes(item.name)) {
-        zoomLinks = [...ZOOM_LINKS]; // Fetch all predefined Zoom links
-      }
+    }
+    
+    if (['Learn', 'Achieve', 'Excel'].includes(item.name)) {
+      console.log(`✅ Adding Zoom Links for ${item.name}`);
+      zoomLinks.push(...ZOOM_LINKS); // ✅ Fix: Properly add links
+  }
 
       // ✅ Assign CommonCore Zoom Link
       if (item.name === 'CommonCore') {
-        commonCorePurchased = true;
+        commonCorePurchased = true
       }
 
-      newPurchases.push(newPurchase);
+      newPurchases.push(newPurchase)
     }
 
-    user.purchasedClasses.push(...newPurchases);
-    user.coupons.push(...couponCodes); // Save all coupons
-    await user.save();
-
+    user.purchasedClasses.push(...newPurchases)
+    user.coupons.push(...couponCodes) // Save all coupons
+    await user.save()
+    console.log("📡 Zoom Links Before Sending Email:", zoomLinks);
+    console.log("🎟 Coupon Codes Before Sending Email:", couponCodes);
+    
     // ✅ Send Welcome Email (Always Sent)
-    console.log(`📧 Sending Welcome Email to: ${userEmail}`);
-    let welcomeSubject = `🎉 Welcome to Rockstar Math, ${user.username}!`;
+    console.log(`📧 Sending Welcome Email to: ${userEmail}`)
+    let welcomeSubject = `🎉 Welcome to Rockstar Math, ${user.username}!`
     let welcomeHtml = `
       <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
         <h2 style="color: #2C3E50;">🎉 Welcome to Rockstar Math, ${user.username}!</h2>
         <p>Thank you for booking your session with <b>Rockstar Math!</b> I'm excited to work with you.</p>
         <p style="text-align: center;"><a href="https://calendly.com/rockstarmathtutoring" style="background-color:#007bff; padding:12px 24px; color:white; text-decoration:none; border-radius:6px; font-weight:bold;">📅 Book Your Next Session</a></p>
         <p>Best regards,<br><b>Amy Gemme</b><br>Rockstar Math Tutoring<br>📞 510-410-4963</p>
-      </div>`;
+      </div>`
 
-    await sendEmail(userEmail, welcomeSubject, '', welcomeHtml);
+    await sendEmail(userEmail, welcomeSubject, '', welcomeHtml)
 
     // ✅ Send Zoom & Coupon Email (Always Sent)
-    console.log(`📧 Sending Zoom Links & Coupon Email to: ${userEmail}`);
+    console.log(`📧 Sending Zoom Links & Coupon Email to: ${userEmail}`)
 
-    let detailsSubject = `📚 Your Rockstar Math Purchase Details`;
+    let detailsSubject = `📚 Your Rockstar Math Purchase Details`
 
     let detailsHtml = `
       <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
@@ -342,31 +348,40 @@ exports.addPurchasedClass = async (req, res) => {
 
         <h3 style="color: #007bff;">🔗 Available Courses & Registration Links:</h3>
         <ul style="list-style-type: none; padding: 0;">
-    `;
+    `
 
     // ✅ Include Zoom Links (if available)
     if (zoomLinks.length > 0) {
       zoomLinks.forEach((link, index) => {
-        detailsHtml += `<li style="margin-bottom: 10px;">📚 Course ${index + 1} – <a href="${link}" target="_blank" style="color: #007bff;">Register Here</a></li>`;
-      });
+        detailsHtml += `<li style="margin-bottom: 10px;">📚 Course ${
+          index + 1
+        } – <a href="${link}" target="_blank" style="color: #007bff;">Register Here</a></li>`
+      })
     }
 
     // ✅ Include CommonCore Zoom Link
     if (commonCorePurchased) {
-      detailsHtml += `<li style="margin-bottom: 10px;">📚 Common Core for Parents – <a href="${COMMONCORE_ZOOM_LINK}" target="_blank" style="color: #007bff;">Register Here</a></li>`;
+      detailsHtml += `<li style="margin-bottom: 10px;">📚 Common Core for Parents – <a href="${COMMONCORE_ZOOM_LINK}" target="_blank" style="color: #007bff;">Register Here</a></li>`
     }
 
-    detailsHtml += `</ul>`;
+    detailsHtml += `</ul>`
 
     // ✅ Include Coupons (if available)
     if (couponCodes.length > 0) {
-      detailsHtml += `<h3 style="color: #d9534f;">🎟 Your Exclusive Discount Coupons:</h3>`;
+      detailsHtml += `<h3 style="color: #d9534f;">🎟 Your Exclusive Discount Coupons:</h3>`
       couponCodes.forEach((coupon) => {
-        detailsHtml += `<p><b>Coupon Code:</b> ${coupon.code} - ${coupon.percent_off}% off</p>`;
-      });
+        detailsHtml += `<p><b>Coupon Code:</b> ${coupon.code} - ${coupon.percent_off}% off</p>`
+      })
     } else {
-      detailsHtml += `<h3 style="color: #d9534f;">🎟 No Discount Coupons Available</h3>`;
+      detailsHtml += `<h3 style="color: #d9534f;">🎟 No Discount Coupons Available</h3>`
     }
+
+    // ✅ Add Amazon Product Link & Image
+    detailsHtml += `
+<h3 style="color: #5bc0de;">🛍 Special Offer for You:</h3>
+<p>Check out this recommended product:</p>
+
+<p><a href="https://www.amazon.com/dp/B0D44R3SL5/ref=sspa_dk_detail_3?psc=1&pd_rd_i=B0D44R3SL5&pd_rd_w=K0MXw&content-id=amzn1.sym.8c2f9165-8e93-42a1-8313-73d3809141a2&pf_rd_p=8c2f9165-8e93-42a1-8313-73d3809141a2&pf_rd_r=CNH7E1SA4NWVVVB5YM4N&pd_rd_wg=9ugAn&pd_rd_r=27af69a2-618d-4241-b284-91a4973d56f2&s=electronics&sp_csd=d2lkZ2V0TmFtZT1zcF9kZXRhaWw" target="_blank" style="color: #007bff;">View on Amazon</a></p>`
 
     detailsHtml += `
         <h3 style="color: #5bc0de;">📌 Next Steps:</h3>
@@ -377,20 +392,21 @@ exports.addPurchasedClass = async (req, res) => {
         </ol>
 
         <p style="text-align: center; font-size: 16px; font-weight: bold;">We can’t wait to see you in class! 🎉</p>
-      </div>`;
+      </div>`
 
-    await sendEmail(userEmail, detailsSubject, '', detailsHtml);
-    console.log("✅ Zoom links & coupon email sent successfully!");
+      if (!ZOOM_LINKS || ZOOM_LINKS.length === 0) {
+        console.error("❌ ZOOM_LINKS is empty or undefined!");
+    }
 
-    return res.status(200).json({ message: 'Purchase updated & all emails sent!' });
+    await sendEmail(userEmail, detailsSubject, '', detailsHtml)
+    console.log('✅ Zoom links & coupon email sent successfully!')
+
+    return res.status(200).json({ message: 'Purchase updated & all emails sent!' })
   } catch (error) {
-    console.error('❌ Error processing purchase:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('❌ Error processing purchase:', error)
+    res.status(500).json({ message: 'Server error' })
   }
-};
-
-
-
+}
 
 exports.getPurchasedClasses = async (req, res) => {
   try {
@@ -419,88 +435,87 @@ exports.getPurchasedClasses = async (req, res) => {
   }
 }
 
-
 exports.getUserCoupons = async (req, res) => {
   try {
-    const { userId } = req.params;
-    const user = await Register.findById(userId);
+    const { userId } = req.params
+    const user = await Register.findById(userId)
 
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ message: 'User not found' })
     }
 
-    res.status(200).json({ coupons: user.coupons });
+    res.status(200).json({ coupons: user.coupons })
   } catch (error) {
-    console.error("❌ Error fetching coupons:", error);
-    res.status(500).json({ message: "Server error" });
+    console.error('❌ Error fetching coupons:', error)
+    res.status(500).json({ message: 'Server error' })
   }
-};
+}
 
 // ✅ Archive a Class
 exports.archiveClass = async (req, res) => {
   try {
-    const { userId, className } = req.body;
-    const user = await Register.findById(userId);
+    const { userId, className } = req.body
+    const user = await Register.findById(userId)
 
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: 'User not found' })
     }
 
     // Find the class to archive
-    const classToArchive = user.purchasedClasses.find((c) => c.name === className);
+    const classToArchive = user.purchasedClasses.find((c) => c.name === className)
     if (!classToArchive) {
-      return res.status(404).json({ message: 'Class not found' });
+      return res.status(404).json({ message: 'Class not found' })
     }
 
     // Remove from purchasedClasses and add to archivedClasses
-    user.purchasedClasses = user.purchasedClasses.filter((c) => c.name !== className);
-    user.archivedClasses.push(classToArchive);
-    
-    await user.save();
-    
-    res.status(200).json({ message: 'Class archived successfully!' });
-  } catch (error) {
-    console.error('❌ Error archiving class:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
+    user.purchasedClasses = user.purchasedClasses.filter((c) => c.name !== className)
+    user.archivedClasses.push(classToArchive)
 
+    await user.save()
+
+    res.status(200).json({ message: 'Class archived successfully!' })
+  } catch (error) {
+    console.error('❌ Error archiving class:', error)
+    res.status(500).json({ message: 'Server error' })
+  }
+}
 
 // ✅ Fetch Archived Classes
 exports.getArchivedClasses = async (req, res) => {
   try {
-    const { userId } = req.params;
-    console.log('📂 Fetching Archived Classes for User ID:', userId);
+    const { userId } = req.params
+    console.log('📂 Fetching Archived Classes for User ID:', userId)
 
-    const user = await Register.findById(userId);
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    const user = await Register.findById(userId)
+    if (!user) return res.status(404).json({ message: 'User not found' })
 
-    res.status(200).json({ archivedClasses: user.archivedClasses || [] });
+    res.status(200).json({ archivedClasses: user.archivedClasses || [] })
   } catch (error) {
-    console.error('❌ Error fetching archived classes:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('❌ Error fetching archived classes:', error)
+    res.status(500).json({ message: 'Server error' })
   }
-};
+}
 
 // ✅ Restore a Class
 exports.restoreClass = async (req, res) => {
   try {
-    const { userId, className } = req.body;
+    const { userId, className } = req.body
 
-    if (!userId || !className) return res.status(400).json({ message: "Invalid request data." });
+    if (!userId || !className) return res.status(400).json({ message: 'Invalid request data.' })
 
-    const user = await Register.findById(userId);
-    if (!user) return res.status(404).json({ message: "User not found." });
+    const user = await Register.findById(userId)
+    if (!user) return res.status(404).json({ message: 'User not found.' })
 
-    const archivedClassIndex = user.archivedClasses.findIndex((c) => c.name === className);
-    if (archivedClassIndex === -1) return res.status(404).json({ message: "Class not found in archive." });
+    const archivedClassIndex = user.archivedClasses.findIndex((c) => c.name === className)
+    if (archivedClassIndex === -1)
+      return res.status(404).json({ message: 'Class not found in archive.' })
 
-    let restoredClass = user.archivedClasses[archivedClassIndex];
+    let restoredClass = user.archivedClasses[archivedClassIndex]
     if (!restoredClass.name || !restoredClass.description) {
-      return res.status(400).json({ message: "Class data is incomplete, cannot restore." });
+      return res.status(400).json({ message: 'Class data is incomplete, cannot restore.' })
     }
 
-    user.archivedClasses.splice(archivedClassIndex, 1);
+    user.archivedClasses.splice(archivedClassIndex, 1)
     user.purchasedClasses.push({
       name: restoredClass.name,
       description: restoredClass.description,
@@ -508,13 +523,13 @@ exports.restoreClass = async (req, res) => {
       sessionCount: restoredClass.sessionCount || 0,
       remainingSessions: restoredClass.remainingSessions || 0,
       bookingLink: restoredClass.bookingLink || null,
-    });
+    })
 
-    await user.save();
+    await user.save()
 
-    res.status(200).json({ message: "Class restored successfully!" });
+    res.status(200).json({ message: 'Class restored successfully!' })
   } catch (error) {
-    console.error("❌ Error restoring class:", error);
-    res.status(500).json({ message: "Server error" });
+    console.error('❌ Error restoring class:', error)
+    res.status(500).json({ message: 'Server error' })
   }
-};
+}

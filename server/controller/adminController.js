@@ -12,37 +12,29 @@ const generateToken = (id) => {
 };
 
 // ✅ Admin Login Function with Password Hash Check & Comparison
+
 exports.loginAdmin = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    // ✅ Find admin by email
     const admin = await Admin.findOne({ email });
 
     if (!admin) {
       return res.status(400).json({ message: "Invalid email or password" });
     }
 
-    // ✅ Check if password is already hashed (bcrypt hashes start with "$2b$")
-    if (!admin.password.startsWith("$2b$")) {
-      console.log("⚠️ Unhashed password detected! Rehashing...");
+    console.log("🔍 Checking Stored Hashed Password:", admin.password);
+    console.log("🔑 Entered Password:", password);
 
-      // ✅ Hash the password and update it in the database
-      const salt = await bcrypt.genSalt(10);
-      admin.password = await bcrypt.hash(admin.password, salt);
-      await admin.save();
-    }
-
-    // ✅ Compare entered password with stored hashed password
     const isMatch = await bcrypt.compare(password, admin.password);
+    console.log("✅ Password Match:", isMatch);
+
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid email or password" });
     }
 
-    // ✅ Generate JWT token
     const token = generateToken(admin._id);
 
-    // ✅ Send Response
     res.status(200).json({
       message: "Admin Login Successful",
       token,
@@ -57,6 +49,7 @@ exports.loginAdmin = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
 
 exports.getAnalytics = async (req, res) => {
   try {
@@ -234,39 +227,38 @@ exports.getAdminStats = async (req, res) => {
 // ✅ 1️⃣ Request Password Reset (Admin)
 exports.requestAdminPasswordReset = async (req, res) => {
   try {
-    const { email } = req.body;
+      const { email } = req.body;
+      const admin = await Admin.findOne({ email });
 
-    // ✅ Check if Admin Exists
-    const admin = await Admin.findOne({ email });
-    if (!admin) {
-      return res.status(404).json({ message: "Admin not found" });
-    }
+      if (!admin) {
+          return res.status(400).json({ message: "Admin with this email does not exist" });
+      }
 
-    // ✅ Generate Reset Token (Hashed)
-    const resetToken = crypto.randomBytes(20).toString("hex");
-    admin.resetPasswordToken = crypto.createHash("sha256").update(resetToken).digest("hex");
-    admin.resetPasswordExpires = Date.now() + 10 * 60 * 1000; // Token expires in 10 min
-    await admin.save();
+      // ✅ Generate Secure Token
+      const resetToken = crypto.randomBytes(32).toString("hex");
 
-    // ✅ Send Reset Email using `sendEmail`
-    const resetUrl = `http://localhost:8080/admin/reset-password/${resetToken}`;
-    const subject = "Admin Password Reset Request";
-    const message = `
-      <p>Hello ${admin.name},</p>
-      <p>You requested a password reset. Click the link below to reset:</p>
-      <a href="${resetUrl}" target="_blank">${resetUrl}</a>
-      <p>This link expires in 10 minutes.</p>
-    `;
+      // ✅ Hash Token before saving
+      const salt = await bcrypt.genSalt(10);
+      const hashedToken = await bcrypt.hash(resetToken, salt);
 
-    await sendEmail(admin.email, subject, "", message);
-    res.json({ message: "Password reset email sent!" });
+      admin.resetPasswordToken = hashedToken;
+      admin.resetPasswordExpires = Date.now() + 3600000; // Token expires in 1 hour
 
+      await admin.save();
+
+      console.log("🔹 Reset Token (Plain):", resetToken);
+      console.log("🔹 Hashed Token Saved:", hashedToken);
+
+      // ✅ Send Email with Reset Link
+      const resetURL = `http://localhost:8080/admin/reset-password/${resetToken}`;
+      sendEmail(admin.email, "Password Reset Request", `Click here to reset your password: ${resetURL}`);
+
+      res.json({ message: "Password reset link sent to email" });
   } catch (error) {
-    console.error("❌ Error requesting password reset:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
+      console.error("Password Reset Request Error:", error);
+      res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-
 // ✅ 2️⃣ Reset Password (Admin)
 exports.resetAdminPassword = async (req, res) => {
   try {
@@ -277,15 +269,29 @@ exports.resetAdminPassword = async (req, res) => {
           return res.status(400).json({ message: "New password is required" });
       }
 
-      const admin = await Admin.findOne({ resetPasswordToken: token, resetPasswordExpires: { $gt: Date.now() } });
+      // ✅ Find Admin with Valid Token
+      const admin = await Admin.findOne({ resetPasswordExpires: { $gt: Date.now() } });
 
       if (!admin) {
           return res.status(400).json({ message: "Invalid or expired token" });
       }
 
-      // Hash new password
+      // ✅ Verify Token with bcrypt.compare()
+      const isTokenValid = await bcrypt.compare(token, admin.resetPasswordToken);
+
+      console.log("🔍 Stored Hashed Token:", admin.resetPasswordToken);
+      console.log("🔍 Incoming Token:", token);
+      console.log("✅ Token Match Result:", isTokenValid);
+
+      if (!isTokenValid) {
+          return res.status(400).json({ message: "Invalid or expired token" });
+      }
+
+      // ✅ Hash the new password before saving
       const salt = await bcrypt.genSalt(10);
       admin.password = await bcrypt.hash(newPassword, salt);
+
+      // Clear reset token fields
       admin.resetPasswordToken = undefined;
       admin.resetPasswordExpires = undefined;
 

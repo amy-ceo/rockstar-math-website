@@ -180,6 +180,10 @@ exports.captureOrder = async (req, res) => {
         console.error("❌ Email Sending Failed:", emailError);
       }
   
+
+      // ✅ Cart Empty ka Response Frontend ko bhejna
+      res.json({ message: "Payment captured & records updated successfully.", clearCart: true });
+
       res.json({ message: "Payment captured & records updated successfully.", payment: captureResponse.result });
   
     } catch (error) {

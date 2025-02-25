@@ -38,7 +38,7 @@ const AdminAnalytics = () => {
 
   const fetchAnalyticsData = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/admin/analytics");
+      const response = await fetch("https://backend-production-cbe2.up.railway.app/api/admin/analytics");
       const data = await response.json();
 
       setRevenueTrends(data.revenueTrends || []);
