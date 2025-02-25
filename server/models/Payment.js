@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 
 const paymentSchema = new mongoose.Schema({
     orderId: { type: String, required: true, unique: true },
+    paymentIntentId: { type: String, default: null }, // ✅ Added paymentIntentId (not unique)
     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     billingEmail: { type: String, required: true },
     amount: { type: Number, required: true },
