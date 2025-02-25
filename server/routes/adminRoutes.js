@@ -1,5 +1,5 @@
 const express = require("express");
-const { loginAdmin, getAdminStats,getAnalytics ,updateUser,deleteUser,getAllUsers,getStripePayments,refundPayment} = require("../controller/adminController");
+const { loginAdmin, getAdminStats,getAnalytics ,updateUser,deleteUser,getAllUsers,getStripePayments,refundPayment,requestAdminPasswordReset, resetAdminPassword} = require("../controller/adminController");
 const { protectAdmin } = require("../middlewares/authMiddleware");
 
 const router = express.Router();
@@ -16,6 +16,11 @@ router.get('/stripe-payments', getStripePayments);
 router.post('/refund-payment', refundPayment);
 // ✅ Delete user
 router.delete('/users/:id', deleteUser);
+// ✅ Route to Request Password Reset (Admin)
+router.post("/request-password-reset", requestAdminPasswordReset);
+
+// ✅ Route to Reset Password (Admin)
+router.post("/reset-password/:token", resetAdminPassword);
 
 
 module.exports = router;

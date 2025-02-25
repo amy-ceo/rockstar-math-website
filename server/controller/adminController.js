@@ -3,6 +3,9 @@ const Register = require("../models/registerModel"); // Correct Model for Users
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY); // Stripe API
+const sendEmail = require("../utils/emailSender"); // ✅ Use existing emailSender module
+const crypto = require("crypto");
+
 // ✅ Generate JWT Token
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "7d" });
@@ -226,3 +229,71 @@ exports.getAdminStats = async (req, res) => {
       res.status(500).json({ message: 'Refund failed', error });
     }
   };
+
+
+// ✅ 1️⃣ Request Password Reset (Admin)
+exports.requestAdminPasswordReset = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // ✅ Check if Admin Exists
+    const admin = await Admin.findOne({ email });
+    if (!admin) {
+      return res.status(404).json({ message: "Admin not found" });
+    }
+
+    // ✅ Generate Reset Token (Hashed)
+    const resetToken = crypto.randomBytes(20).toString("hex");
+    admin.resetPasswordToken = crypto.createHash("sha256").update(resetToken).digest("hex");
+    admin.resetPasswordExpires = Date.now() + 10 * 60 * 1000; // Token expires in 10 min
+    await admin.save();
+
+    // ✅ Send Reset Email using `sendEmail`
+    const resetUrl = `http://localhost:8080/admin/reset-password/${resetToken}`;
+    const subject = "Admin Password Reset Request";
+    const message = `
+      <p>Hello ${admin.name},</p>
+      <p>You requested a password reset. Click the link below to reset:</p>
+      <a href="${resetUrl}" target="_blank">${resetUrl}</a>
+      <p>This link expires in 10 minutes.</p>
+    `;
+
+    await sendEmail(admin.email, subject, "", message);
+    res.json({ message: "Password reset email sent!" });
+
+  } catch (error) {
+    console.error("❌ Error requesting password reset:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// ✅ 2️⃣ Reset Password (Admin)
+exports.resetAdminPassword = async (req, res) => {
+  try {
+      const { token } = req.params;
+      const { newPassword } = req.body;
+
+      if (!newPassword) {
+          return res.status(400).json({ message: "New password is required" });
+      }
+
+      const admin = await Admin.findOne({ resetPasswordToken: token, resetPasswordExpires: { $gt: Date.now() } });
+
+      if (!admin) {
+          return res.status(400).json({ message: "Invalid or expired token" });
+      }
+
+      // Hash new password
+      const salt = await bcrypt.genSalt(10);
+      admin.password = await bcrypt.hash(newPassword, salt);
+      admin.resetPasswordToken = undefined;
+      admin.resetPasswordExpires = undefined;
+
+      await admin.save();
+
+      res.status(200).json({ message: "Password reset successful!" });
+  } catch (error) {
+      console.error("Password Reset Error:", error);
+      res.status(500).json({ message: "Server error", error: error.message });
+  }
+};

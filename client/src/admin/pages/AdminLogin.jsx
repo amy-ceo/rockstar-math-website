@@ -1,8 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa"; // Import Eye Icons
-import { toast } from "react-hot-toast"; // ✅ Import Hot Toast
-import { Toaster } from "react-hot-toast"; // ✅ Toast Container
+import { toast, Toaster } from "react-hot-toast"; // ✅ Import Hot Toast
 
 const AdminLogin = () => {
   const [email, setEmail] = useState("");
@@ -75,6 +74,17 @@ const AdminLogin = () => {
               onClick={() => setShowPassword(!showPassword)}
             >
               {showPassword ? <FaEyeSlash size={20} /> : <FaEye size={20} />}
+            </button>
+          </div>
+
+          {/* ✅ Forgot Password Link */}
+          <div className="text-right mt-2">
+            <button
+              type="button"
+              className="text-blue-600 hover:underline"
+              onClick={() => navigate("/admin/forgot-password")}
+            >
+              Forgot Password?
             </button>
           </div>
 

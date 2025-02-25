@@ -5,6 +5,13 @@ const sendEmail = require("../utils/emailSender");
 const paypalClient = require("../config/paypal");
 
 // 🎯 Create PayPal Order
+const calculateItemTotal = (cartItems) => {
+  return cartItems.reduce(
+    (total, item) => total + parseFloat(item.price) * (item.quantity ? item.quantity : 1),
+    0
+  ).toFixed(2);
+};
+
 exports.createOrder = async (req, res) => {
   try {
     let { userId, amount, cartItems } = req.body;
@@ -13,6 +20,13 @@ exports.createOrder = async (req, res) => {
     if (!userId || isNaN(amount) || !cartItems || cartItems.length === 0 || amount <= 0) {
       console.error("❌ Invalid Request Data:", { userId, amount, cartItems });
       return res.status(400).json({ error: "Invalid request data" });
+    }
+
+    // ✅ Calculate Item Total from Cart
+    const calculatedItemTotal = calculateItemTotal(cartItems);
+    if (parseFloat(calculatedItemTotal) !== parseFloat(amount)) {
+      console.error(`❌ ITEM TOTAL MISMATCH: Expected ${amount}, Got ${calculatedItemTotal}`);
+      return res.status(400).json({ error: `ITEM TOTAL MISMATCH: Expected ${amount}, Got ${calculatedItemTotal}` });
     }
 
     console.log("🛒 Creating PayPal Order:", { userId, amount, cartItems });
@@ -24,9 +38,9 @@ exports.createOrder = async (req, res) => {
         {
           amount: {
             currency_code: "USD",
-            value: amount.toFixed(2),
+            value: calculatedItemTotal,
             breakdown: {
-              item_total: { currency_code: "USD", value: amount.toFixed(2) },
+              item_total: { currency_code: "USD", value: calculatedItemTotal },
             },
           },
           description: "E-commerce Payment",
