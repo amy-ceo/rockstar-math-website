@@ -600,7 +600,7 @@ const RegisterBeforeCheckout = () => {
               <br />
               ● Students must have their webcam turned on during all live sessions.
               <br />
-              ● Failure to comply may result in removal from the session.
+              ● If there’s ever a situation where your student feels uncomfortable, or may be camera shy please don’t hesitate to reach out—we’re here to help and accommodate whenever possible.
               <br />● Exceptions may be granted for documented technical difficulties or special
               accommodations.
             </p>
