@@ -27,7 +27,7 @@ const courses = [
 ];
 
 // ✅ Courses that should open the Waitlist Form instead of redirecting
-const waitlistCourses = ["calculus-1", "calculus-2", "calculus-3", "probability", "discrete-math", "linear-algebra", "differential-equations"];
+const waitlistCourses = [, "calculus-2", "calculus-3", "probability", "discrete-math", "linear-algebra", "differential-equations"];
 
 function RelatedCourses() {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);

@@ -181,51 +181,51 @@ exports.registerUser = async (req, res) => {
     // ✅ Send Welcome Email
     try {
       const subject = `🎉 Welcome to Rockstar Math, ${newUser.username}!`;
-      const htmlContent = `
-      <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
-        
-        <div style="text-align: center; padding-bottom: 20px;">
-          <img src="https://your-logo-url.com/logo.png" alt="Rockstar Math" style="width: 150px; margin-bottom: 10px;">
-          <h2 style="color: #2C3E50;">🎉 Welcome, ${newUser.username}!</h2>
-          <p style="font-size: 16px;">We're thrilled to have you join <b>Rockstar Math</b>! 🚀</p>
-        </div>
+     const htmlContent = `
+  <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
     
-        <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-          <h3 style="color: #007bff;">📢 Your Account is Ready!</h3>
-          <p>Congratulations! Your account has been successfully created. You now have access to personalized math tutoring, expert guidance, and interactive learning resources.</p>
-          <p><b>Username:</b> ${newUser.username}</p>
-          <p><b>Email:</b> ${newUser.email}</p>
-        </div>
-    
-        <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-          <h3 style="color: #007bff;">📌 What's Next?</h3>
-          <p>Start your learning journey today by logging into your dashboard, exploring available sessions, and scheduling your first class!</p>
-          <p><b>Access your dashboard here:</b> <a href="https://your-website.com/login" target="_blank" style="color: #007bff;">Go to Dashboard</a></p>
-        </div>
-    
-        <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-          <h3 style="color: #007bff;">💡 Need Help?</h3>
-          <p>Our team is always here to assist you! If you have any questions, reach out to us at <b>support@rockstarmath.com</b>.</p>
-        </div>
-    
-        <p style="text-align: center; font-size: 16px;">Let's make math learning fun and exciting! We can't wait to see you in class. 🚀</p>
-    
-        <div style="text-align: center; margin-top: 20px;">
-          <a href="https://calendly.com/rockstarmathtutoring" target="_blank"
-            style="display:inline-block; padding:12px 24px; background-color:#007bff; color:#fff; text-decoration:none; border-radius:6px; font-weight:bold; font-size:16px;">
-            📅 Schedule Your First Session
-          </a>
-        </div>
-    
-        <p style="text-align: center; font-size: 14px; color: #555; margin-top: 20px;">
-          Best regards,<br>
-          <b>Amy Gemme</b><br>
-          Rockstar Math Tutoring<br>
-          📞 510-410-4963
-        </p>
-      </div>
-    `;
-    
+    <div style="text-align: center; padding-bottom: 20px;">
+      <img src="https://your-logo-url.com/logo.png" alt="Rockstar Math" style="width: 150px; margin-bottom: 10px;">
+      <h2 style="color: #2C3E50;">🎉 Welcome, ${newUser.username}!</h2>
+      <p style="font-size: 16px;">We're thrilled to have you join <b>Rockstar Math</b>! 🚀</p>
+    </div>
+
+    <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+      <h3 style="color: #007bff;">📢 Your Account is Ready!</h3>
+      <p>Congratulations! Your account has been successfully created. You now have access to personalized math tutoring, expert guidance, and interactive learning resources.</p>
+      <p><b>Username:</b> ${newUser.username}</p>
+      <p><b>Email:</b> ${newUser.email}</p>
+    </div>
+
+    <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+      <h3 style="color: #007bff;">📌 What's Next?</h3>
+      <p>Start your learning journey today by logging into your dashboard, exploring available sessions, and scheduling your first class!</p>
+      <p><b>Access your dashboard here:</b> <a href="https://your-website.com/login" target="_blank" style="color: #007bff;">Go to Dashboard</a></p>
+    </div>
+
+    <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+      <h3 style="color: #007bff;">💡 Need Help?</h3>
+      <p>Our team is always here to assist you! If you have any questions, reach out to us at <b>support@rockstarmath.com</b>.</p>
+    </div>
+
+    <p style="text-align: center; font-size: 16px;">Let's make math learning fun and exciting! We can't wait to see you in class. 🚀</p>
+
+    <div style="text-align: center; margin-top: 20px;">
+      <a href="https://calendly.com/rockstarmathtutoring" target="_blank"
+        style="display:inline-block; padding:12px 24px; background-color:#007bff; color:#fff; text-decoration:none; border-radius:6px; font-weight:bold; font-size:16px;">
+        📅 Schedule Your First Session
+      </a>
+    </div>
+
+    <p style="text-align: center; font-size: 14px; color: #555; margin-top: 20px;">
+      Best regards,<br>
+      <b>Amy Gemme</b><br>
+      Rockstar Math Tutoring<br>
+      📞 510-410-4963
+    </p>
+  </div>
+`;
+
 
       await sendEmail(newUser.billingEmail, subject, '', htmlContent);
       console.log('✅ Welcome email sent successfully!');
@@ -343,42 +343,7 @@ exports.addPurchasedClass = async (req, res) => {
     await user.save();
     console.log('✅ Purchases Updated!');
 
-    // ✅ Send Zoom/Calendly Email + Coupon Code
-    if (zoomCoursesPurchased.length > 0 || servicePurchased.length > 0 || calendlyMeetingLink || couponCode) {
-      console.log(`📧 Sending purchase details email to: ${userEmail}`);
-
-      let emailSubject = '🎉 Welcome! Your Purchase Details';
-      let emailHtml = `<h2>🎉 Hello ${user.username},</h2><p>Thank you for your purchase.</p>`;
-
-      if (zoomCoursesPurchased.length > 0) {
-        emailHtml += `<h3>🔗 Here are your Zoom links:</h3><ul>`;
-        ZOOM_LINKS.forEach((link) => {
-          emailHtml += `<li><a href="${link}" target="_blank">${link}</a></li>`;
-        });
-        emailHtml += `</ul>`;
-      }
-
-      if (servicePurchased.length > 0) {
-        emailHtml += `<h3>📅 Use the links below to book your sessions:</h3><ul>${servicePurchased
-          .map((s) => `<li><a href="${CALENDLY_LINKS[s]}" target="_blank">${CALENDLY_LINKS[s]}</a></li>`)
-          .join('')}</ul>`;
-      }
-
-      // ✅ If Calendly Link Generated, Add to Email
-      if (calendlyMeetingLink) {
-        emailHtml += `<h3>📅 Click below to schedule your session:</h3><p><a href="${calendlyMeetingLink}" target="_blank">${calendlyMeetingLink}</a></p>`;
-      }
-
-      // 🎟 Add Coupon Code to Email
-      if (couponCode) {
-        emailHtml += `<h3>🎟 Your Exclusive Discount Coupon:</h3><p><b>Coupon Code:</b> ${couponCode}</p>`;
-      }
-
-      await sendEmail(userEmail, emailSubject, '', emailHtml);
-      console.log('✅ Purchase details email sent successfully!');
-    }
-
-    // ✅ Send Welcome Email Always
+    // ✅ Send Welcome Email Immediately
     console.log(`📧 Sending Welcome Email to: ${userEmail}`);
     let welcomeSubject = `🎉 Welcome to Rockstar Math, ${user.username}!`;
     let welcomeHtml = `
@@ -388,48 +353,54 @@ exports.addPurchasedClass = async (req, res) => {
         <h2 style="color: #2C3E50;">🎉 Welcome to Rockstar Math, ${user.username}!</h2>
         <p style="font-size: 16px;">Thank you for booking your session with <b>Rockstar Math!</b> I'm excited to work with you. To ensure we make the most of our time together, please review these important tips:</p>
       </div>
-  
-      <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-        <h3 style="color: #007bff;">📌 Stay Focused</h3>
-        <p>In today’s digital world, distractions are everywhere. To help keep us both focused, I kindly ask that you <b>keep your camera on</b> during the session whenever possible.</p>
-      </div>
-  
-      <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-        <h3 style="color: #007bff;">📌 Show Your Work</h3>
-        <p>As your tutor, it’s crucial for me to observe how you’re working through math problems so I can better assist you. Here are a few ways you can share your work:</p>
-        <ul style="padding-left: 20px;">
-          <li>✅ <b>Zoom Whiteboard:</b> If you plan to use the Zoom whiteboard, I recommend a <b>large-screen tablet</b> with a touchscreen or a laptop with a digital pen for natural writing.</li>
-          <li>✅ <b>Document Camera Alternative:</b> If you don’t have a document camera, consider using a <b>phone holder</b> (available for under $20 on Amazon) to point your phone’s camera at your paper while you write.</li>
-        </ul>
-      </div>
-  
-      <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-        <h3 style="color: #007bff;">📌 Homework & Screen Sharing</h3>
-        <p>If your homework is online and you plan to share your screen, please use a <b>touchscreen device (other than a mobile phone)</b> for easier interaction.</p>
-        <p>Having a clear way to share your work is essential for me to provide the best guidance possible.</p>
-      </div>
-  
       <p style="text-align: center; font-size: 16px;">If you have any questions or need further recommendations, feel free to reach out. I look forward to helping you on your math journey!</p>
-  
       <div style="text-align: center; margin-top: 20px;">
         <a href="https://calendly.com/rockstarmathtutoring" target="_blank"
           style="display:inline-block; padding:12px 24px; background-color:#007bff; color:#fff; text-decoration:none; border-radius:6px; font-weight:bold; font-size:16px;">
           📅 Book Your Next Session
         </a>
       </div>
-  
       <p style="text-align: center; font-size: 14px; color: #555; margin-top: 20px;">
         Best regards,<br>
         <b>Amy Gemme</b><br>
         Rockstar Math Tutoring<br>
         📞 510-410-4963
       </p>
-    </div>
-  `;
-  
+    </div>`;
 
     await sendEmail(userEmail, welcomeSubject, '', welcomeHtml);
     console.log('✅ Welcome email sent successfully!');
+
+    // ✅ Send Second Email for Zoom Links & Coupons **Only If They Exist**
+    if (zoomCoursesPurchased.length > 0 || servicePurchased.length > 0 || couponCode) {
+      console.log(`📧 Sending Zoom Links & Coupon Email to: ${userEmail}`);
+
+      let detailsSubject = `📚 Your Rockstar Math Purchase Details`;
+      let detailsHtml = `<h2>🎉 Hello ${user.username},</h2><p>Here are your purchase details:</p>`;
+
+      if (zoomCoursesPurchased.length > 0) {
+        detailsHtml += `<h3>🔗 Your Zoom Links:</h3><ul>`;
+        ZOOM_LINKS.forEach((link) => {
+          detailsHtml += `<li><a href="${link}" target="_blank">${link}</a></li>`;
+        });
+        detailsHtml += `</ul>`;
+      }
+
+      if (servicePurchased.length > 0) {
+        detailsHtml += `<h3>📅 Your Calendly Booking Links:</h3><ul>`;
+        servicePurchased.forEach((s) => {
+          detailsHtml += `<li><a href="${CALENDLY_LINKS[s]}" target="_blank">${CALENDLY_LINKS[s]}</a></li>`;
+        });
+        detailsHtml += `</ul>`;
+      }
+
+      if (couponCode) {
+        detailsHtml += `<h3>🎟 Your Discount Coupon:</h3><p><b>Coupon Code:</b> ${couponCode}</p>`;
+      }
+
+      await sendEmail(userEmail, detailsSubject, '', detailsHtml);
+      console.log("✅ Zoom links & coupon email sent successfully!");
+    }
 
     return res.status(200).json({ message: 'Purchase updated & all emails sent!' });
   } catch (error) {
@@ -437,6 +408,7 @@ exports.addPurchasedClass = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
 
 
 exports.getPurchasedClasses = async (req, res) => {

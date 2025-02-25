@@ -12,11 +12,11 @@ const ClassCard = ({ classData }) => {
   return (
     <div className="relative bg-white border border-gray-200 rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all duration-300">
       {/* Placeholder Image */}
-      <div className="h-44 bg-gray-200 flex items-center justify-center">
+      <div className="h-44 ">
         <img
-          src={classData.image || "https://via.placeholder.com/300"} // Fallback Image
+          src="/images/logo.png" // Fallback Image
           alt={classData.name}
-          className="w-full h-full object-cover"
+          className="w-full h-full"
         />
       </div>
 

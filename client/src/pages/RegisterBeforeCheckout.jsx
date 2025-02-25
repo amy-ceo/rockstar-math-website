@@ -631,7 +631,7 @@ const RegisterBeforeCheckout = () => {
               <strong>Opt-Out Instructions:</strong>
               <br />
               ● To stop SMS notifications, reply STOP to any message.
-              <br />● For further assistance, contact us at x@gmail.com.
+              <br />● For further assistance, contact us at rockstarmathtutoring@gmail.com.
             </p>
             <button
               onClick={handleAgreeSms}
@@ -667,6 +667,13 @@ const RegisterBeforeCheckout = () => {
             >
               VERIFY
             </button>
+
+            <button
+                onClick={() => setIsOtpPopupOpen(false)}
+                className="w-full mt-2 text-gray-600 underline text-sm"
+              >
+                Cancel
+              </button>
           </div>
         </div>
       )}
