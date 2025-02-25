@@ -6,7 +6,6 @@ import { Elements } from '@stripe/react-stripe-js'
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js'
 import toast, { Toaster } from 'react-hot-toast'
 import 'react-toastify/dist/ReactToastify.css'
-import PayPalButton from '../components/PayPalButton'
 
 // Lazy Load Components
 const PaymentForm = lazy(() => import('../components/PaymentForm'))
@@ -100,22 +99,54 @@ const CheckoutPage = () => {
   const handlePayPalSuccess = async (data) => {
     const user = JSON.parse(localStorage.getItem('user'))
 
-    const response = await fetch(`https://backend-production-cbe2.up.railway.app/api/paypal/capture-order`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        orderId: data.orderID,
-        user, // ✅ Send full user object
-      }),
-    })
+    try {
+      const response = await fetch('https://backend-production-cbe2.up.railway.app/api/paypal/capture-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: data.orderID,
+          user, // ✅ Send full user object
+        }),
+      })
 
-    const result = await response.json()
-    if (result.message) {
-      toast.success('Payment Successful! Your classes have been added.')
-      localStorage.removeItem('cartItems') // ✅ Clear cart after successful payment
+      const result = await response.json()
+      console.log('📡 PayPal Capture Response:', result)
+
+      if (!response.ok) {
+        toast.error('❌ Payment failed. Please try again.')
+        throw new Error('PayPal capture failed.')
+      }
+
+      // ✅ Call `addPurchasedClass` API to update user data
+      console.log('📡 Calling addPurchasedClass API...')
+      const purchasedItems = user.cartItems.map((item) => ({
+        name: item.name,
+        description: item.description || 'No description available',
+      }))
+
+      const addPurchasedResponse = await fetch('https://backend-production-cbe2.up.railway.app/api/add-purchased-class', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user._id,
+          purchasedItems,
+          userEmail: user.email,
+        }),
+      })
+
+      const addPurchasedData = await addPurchasedResponse.json()
+      console.log('✅ addPurchasedClass Response:', addPurchasedData)
+
+      if (!addPurchasedResponse.ok) {
+        throw new Error('Error updating purchased classes.')
+      }
+
+      toast.success('🎉 Payment Successful! Your classes have been added.')
+      localStorage.removeItem('cartItems')
       navigate('/dashboard')
-    } else {
-      toast.error('❌ Payment failed. Please try again.')
+    } catch (error) {
+      console.error('❌ Error in Payment Process:', error)
+      toast.error(error.message || 'Payment processing error.')
     }
   }
 
@@ -338,9 +369,43 @@ const CheckoutPage = () => {
                     createOrder={async () => {
                       const orderId = await createPayPalOrder()
                       console.log('🔹 PayPal Order ID:', orderId)
+                      if (!orderId) {
+                        toast.error('❌ PayPal order creation failed.')
+                        return
+                      }
                       return orderId
                     }}
-                    onApprove={handlePayPalSuccess}
+                    onApprove={async (data, actions) => {
+                      console.log('✅ Payment Approved:', data.orderID)
+
+                      try {
+                        const response = await fetch(
+                          'https://backend-production-cbe2.up.railway.app/api/paypal/capture-order',
+                          {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              orderId: data.orderID,
+                              user: JSON.parse(localStorage.getItem('user')),
+                            }),
+                          },
+                        )
+
+                        const result = await response.json()
+                        console.log('📡 Capture Response:', result)
+
+                        if (!response.ok) {
+                          throw new Error('Capture failed')
+                        }
+
+                        toast.success('🎉 Payment Successful! Your classes have been added.')
+                        localStorage.removeItem('cartItems')
+                        navigate('/dashboard')
+                      } catch (error) {
+                        console.error('❌ Capture Error:', error)
+                        toast.error('Payment failed. Please try again.')
+                      }
+                    }}
                   />
                 </PayPalScriptProvider>
               </div>

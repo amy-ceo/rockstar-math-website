@@ -12,12 +12,12 @@ import WaitlistForm from "./WaitlistForm"; // ✅ Import Waitlist Form
 
 // ✅ Courses Array with Tooltip Hover Effects
 const courses = [
-  { id: "algebra", Icon: FaSquareRootAlt, title: "Algebra 1 Tutoring", link: "https://us06web.zoom.us/meeting/register/mZHoQiy9SqqHx69f4dejgg#/registration", tooltip: "⭐ Find Our Group Tutoring For Algebra 1 On Our Subscription Page!  Algebra 2 Tutoring, -" },
-  { id: "trigonometry", Icon: TbGeometry, title: "Calc 1 Tutoring", link: "https://us06web.zoom.us/meeting/register/z2W2vvBHROGK_yEWMTeOrg#/registration", tooltip: "⭐ Calc 1 Tutoring, -" },
-  { id: "math-analysis", Icon: BiAnalyse, title: "Pre Calc and Trig Tutoring, -", link: "https://us06web.zoom.us/meeting/register/jH2N2rfMSXyqX1UDEZAarQ#/registration", tooltip: "⭐ Pre Calc and Trig Tutoring, -" },
-  { id: "precalculus", Icon: TbMath, title: "Geometry Tutoring", link: "https://us06web.zoom.us/meeting/register/Lsd_MFiwQpKRKhMZhPIYPw#/registration", tooltip: "⭐ Geometry Tutoring" },
-  { id: "business-calculus", Icon: TbBusinessplan, title: "Common Core For Parents", link: "https://us06web.zoom.us/meeting/register/XsYhADVmQcK8BIT3Sfbpyg#/registration", tooltip: "⭐ Common Core for Parents" },
-  { id: "calculus-1", Icon: TbMath, title: "Calculus 1", link: "/courses/calculus-1" },
+  { id: "algebra", Icon: FaSquareRootAlt, title: "Algebra 1 Tutoring", link: "https://us06web.zoom.us/meeting/register/mZHoQiy9SqqHx69f4dejgg#/registration", tooltip: "⭐ Join group tutoring for Algebra I on our subscription page" },
+  { id: "trigonometry", Icon: TbGeometry, title: "Calc 1 Tutoring", link: "https://us06web.zoom.us/meeting/register/z2W2vvBHROGK_yEWMTeOrg#/registration", tooltip: "⭐ Join group tutoring for Algebra II on our subscription page" },
+  { id: "math-analysis", Icon: BiAnalyse, title: "Pre Calc and Trig Tutoring, -", link: "https://us06web.zoom.us/meeting/register/jH2N2rfMSXyqX1UDEZAarQ#/registration", tooltip: "⭐ Join group tutoring for Calc  on our subscription page" },
+  { id: "precalculus", Icon: TbMath, title: "Geometry Tutoring", link: "https://us06web.zoom.us/meeting/register/Lsd_MFiwQpKRKhMZhPIYPw#/registration", tooltip: "⭐ Join group tutoring for Geometry on our subscription page" },
+  { id: "business-calculus", Icon: TbBusinessplan, title: "Common Core For Parents", link: "https://us06web.zoom.us/meeting/register/XsYhADVmQcK8BIT3Sfbpyg#/registration", tooltip: "⭐ Join group tutoring for PreCalc and Trig on our subscription page" },
+  { id: "calculus-1", Icon: TbMath, title: "Calculus 1", link: "/courses/calculus-1" ,tooltip: "⭐ Join group tutoring for Common Core For Parents on our subscription page" },
   { id: "calculus-2", Icon: RiFunctionLine, title: "Calculus 2", link: "/courses/calculus-2" },
   { id: "calculus-3", Icon: GiStairs, title: "Calculus 3 (Multivariable)", link: "/courses/calculus-3" },
   { id: "probability", Icon: IoIosStats, title: "Probability and Statistics", link: "/courses/probability" },

@@ -10,15 +10,16 @@ exports.createOrder = async (req, res) => {
     try {
         let { userId, amount, cartItems } = req.body;
 
-        // ✅ Ensure amount is a number
+        // ✅ Ensure amount is a valid number
         amount = parseFloat(amount);
-        if (!userId || isNaN(amount) || !cartItems || amount <= 0) {
+        if (!userId || isNaN(amount) || !cartItems || cartItems.length === 0 || amount <= 0) {
             console.error("❌ Invalid Request Data:", { userId, amount, cartItems });
             return res.status(400).json({ error: "Invalid request data" });
         }
 
         console.log("🛒 Received Order Request:", { userId, amount, cartItems });
 
+        // ✅ Prepare PayPal Order Request
         const request = new paypal.orders.OrdersCreateRequest();
         request.requestBody({
             intent: "CAPTURE",
@@ -36,19 +37,19 @@ exports.createOrder = async (req, res) => {
                         name: item.name,
                         unit_amount: {
                             currency_code: "USD",
-                            value: item.price.toFixed(2), // ✅ Ensure string
+                            value: Number(item.price).toFixed(2), // ✅ Fix: Convert price to number
                         },
-                        quantity: item.quantity.toString(),
+                        quantity: item.quantity ? Number(item.quantity).toString() : "1", // ✅ Ensure quantity is string
                         category: "DIGITAL_GOODS",
                     })),
                 },
             ],
             application_context: {
-                brand_name: "My Store",
+                brand_name: "Rockstar Math",
                 locale: "en-US",
                 user_action: "PAY_NOW",
-                return_url: "https://backend-production-cbe2.up.railway.app/success",
-                cancel_url: "https://backend-production-cbe2.up.railway.app/cancel",
+                return_url: "https://your-frontend.com/success",
+                cancel_url: "https://your-frontend.com/cancel",
             },
         });
 
@@ -157,3 +158,4 @@ exports.captureOrder = async (req, res) => {
         res.status(500).json({ error: "Internal Server Error" });
     }
 };
+
