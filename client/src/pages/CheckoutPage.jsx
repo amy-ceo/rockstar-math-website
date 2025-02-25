@@ -66,43 +66,46 @@ const CheckoutPage = () => {
 
   // ✅ Create PayPal Order
   const createPayPalOrder = async () => {
-    const user = JSON.parse(localStorage.getItem('user'))
+    if (total <= 0) {
+        toast.error("Invalid order: Total cannot be $0.00!");
+        throw new Error("Invalid order amount.");
+    }
+    
+    const user = JSON.parse(localStorage.getItem('user'));
     if (!user || !user._id) {
-      toast.error('User not logged in!')
-      throw new Error('User authentication required.')
+        toast.error('User not logged in!');
+        throw new Error('User authentication required.');
     }
 
     try {
-      const response = await fetch(
-        `https://backend-production-cbe2.up.railway.app/api/paypal/create-order`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId: user._id,
-            amount: Number(total.toFixed(2)), // ✅ Ensure amount is a number
-            cartItems: cartItems.map((item) => ({
-              ...item,
-              price: Number(item.price) || 0, // ✅ Convert price to number
-            })),
-          }),
-        },
-      )
+        const response = await fetch(`https://backend-production-cbe2.up.railway.app/api/paypal/create-order`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                userId: user._id,
+                amount: Number(total.toFixed(2)),
+                cartItems: cartItems.map((item) => ({
+                    name: item.name,
+                    price: (Number(item.price) || 0).toFixed(2),
+                    quantity: item.quantity || 1,
+                })),
+            }),
+        });
 
-      const data = await response.json()
-      console.log('🚀 PayPal Order Response:', data)
+        const data = await response.json();
+        console.log('🚀 PayPal Order Response:', data);
 
-      if (!data.orderId) {
-        toast.error('❌ Failed to create PayPal order.')
-        throw new Error('No orderId returned from backend')
-      }
+        if (!data.orderId) {
+            toast.error('❌ Failed to create PayPal order.');
+            throw new Error('No orderId returned from backend');
+        }
 
-      return data.orderId
+        return data.orderId;
     } catch (error) {
-      console.error('❌ PayPal Order Creation Error:', error)
-      toast.error('PayPal order creation failed.')
+        console.error('❌ PayPal Order Creation Error:', error);
+        toast.error('PayPal order creation failed.');
     }
-  }
+};
 
   const handlePayPalSuccess = async (data) => {
     const user = JSON.parse(localStorage.getItem('user'));
@@ -121,8 +124,13 @@ const CheckoutPage = () => {
                 user: {
                     _id: user._id,
                     username: user.username || 'Unknown User',
-                    billingEmail: user.email || 'No email', // ✅ Ensure email is always included
-                    phone: user.phone || 'No phone' // ✅ Ensure phone is always included
+                    billingEmail: user.email || 'No email',
+                    phone: user.phone || 'No phone',
+                    cartItems: cartItems.map(item => ({
+                        name: item.name,
+                        price: Number(item.price) || 0,
+                        quantity: item.quantity || 1
+                    })) // ✅ Sending cartItems now
                 }
             }),
         });
@@ -142,6 +150,7 @@ const CheckoutPage = () => {
         toast.error(error.message || 'Payment processing error.');
     }
 };
+
 
   // ✅ Function to Apply Coupon
   const applyCoupon = () => {
@@ -375,9 +384,14 @@ const CheckoutPage = () => {
                       return orderId
                     }}
                     onApprove={async (data, actions) => {
-                      console.log('✅ Payment Approved:', data.orderID)
-                      await handlePayPalSuccess(data) // ✅ This function is called here!
-                    }}
+                      console.log('✅ Payment Approved:', data.orderID);
+                      try {
+                          await handlePayPalSuccess(data);
+                      } catch (error) {
+                          console.error("❌ PayPal Payment Error:", error);
+                          toast.error("Payment failed. Please try again.");
+                      }
+                  }}
                   />
                 </PayPalScriptProvider>
               </div>
