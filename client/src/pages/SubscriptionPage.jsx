@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react'
 import { useCart } from '../context/CartContext' // ✅ Import Cart Context
 import { toast, Toaster } from 'react-hot-toast' // ✅ Toast Notifications
 import './ribbon.css' // ✅ Import Ribbon CSS
-
+import Image from "../assets/subcriptionpageimage.png"
 const SubscriptionPage = () => {
   const [plans, setPlans] = useState([])
   const [loading, setLoading] = useState(true)
@@ -81,61 +81,75 @@ const SubscriptionPage = () => {
           </p>
         </div>
         <Toaster position="top-right" /> {/* ✅ Toast Notifications */}
-        {/* ✅ Subscription Plans */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-10 max-w-6xl mx-auto px-4 md:px-0">
-          {loading ? (
-            <p className="text-center text-gray-700 text-lg">Loading plans...</p>
-          ) : plans.length > 0 ? (
-            plans.map((plan, index) => (
-              <div
-                key={index}
-                className="relative bg-white p-8 rounded-lg shadow-lg border border-gray-200 text-center flex flex-col justify-between h-full"
-              >
-                {/* ✅ Dynamically Colored Ribbon */}
-                <div className="ribbon">
-                  <span
-                    className={`${plan.ribbonColor}`}
-                    dangerouslySetInnerHTML={{ __html: plan.ribbonText }} // ✅ This renders <br> as a real line break
-                  ></span>
-                </div>
 
-                {/* ✅ Plan Header */}
-                <div className="flex flex-col items-center mb-4">
-                  <img
-                    src={plan.images || '/default-image.png'}
-                    alt={plan.name}
-                    className="w-24 h-24 object-contain mb-3"
-                  />
-                  <h3 className="text-2xl font-semibold text-gray-800">{plan.name}</h3>
-                </div>
+        {/* ✅ Container for Subscription Plans & Image */}
+        <div className="flex flex-col md:flex-row items-center justify-center mt-10 max-w-6xl mx-auto px-4 md:px-0 gap-10">
+          
+          {/* ✅ Subscription Plans */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+            {loading ? (
+              <p className="text-center text-gray-700 text-lg">Loading plans...</p>
+            ) : plans.length > 0 ? (
+              plans.map((plan, index) => (
+                <div
+                  key={index}
+                  className="relative bg-white p-8 rounded-lg shadow-lg border border-gray-200 text-center flex flex-col justify-between h-full"
+                >
+                  {/* ✅ Dynamically Colored Ribbon */}
+                  <div className="ribbon">
+                    <span
+                      className={`${plan.ribbonColor}`}
+                      dangerouslySetInnerHTML={{ __html: plan.ribbonText }} // ✅ This renders <br> as a real line break
+                    ></span>
+                  </div>
 
-                {/* ✅ Price Section */}
-                <p className="text-3xl font-bold text-gray-900 my-3">
-                  ${plan.price !== 'N/A' ? plan.price : 'Not Available'}
-                  <span className="text-sm text-gray-500">/ {plan.currency}</span>
-                </p>
+                  {/* ✅ Plan Header */}
+                  <div className="flex flex-col items-center mb-4">
+                    <img
+                      src={plan.images || '/default-image.png'}
+                      alt={plan.name}
+                      className="w-24 h-24 object-contain mb-3"
+                    />
+                    <h3 className="text-2xl font-semibold text-gray-800">{plan.name}</h3>
+                  </div>
 
-                {/* ✅ Description */}
-                <p className="text-sm text-gray-600 my-4 flex-grow">{plan.description}</p>
-
-                {/* ✅ Subscribe Button */}
-                {plan.name.toLowerCase() === 'learn' ? (
-                  <p className="mt-auto bg-gray-300 text-gray-700 w-full py-3 rounded-lg font-medium cursor-not-allowed">
-                    Coming Soon
+                  {/* ✅ Price Section */}
+                  <p className="text-3xl font-bold text-gray-900 my-3">
+                    ${plan.price !== 'N/A' ? plan.price : 'Not Available'}
+                    <span className="text-sm text-gray-500">/ {plan.currency}</span>
                   </p>
-                ) : (
-                  <button
-                    className="mt-auto bg-blue-600 text-white w-full py-3 rounded-lg font-medium hover:bg-blue-700 transition-all"
-                    onClick={() => handleSubscribe(plan)}
-                  >
-                    Subscribe
-                  </button>
-                )}
-              </div>
-            ))
-          ) : (
-            <p className="text-center text-gray-700 text-lg">No plans available.</p>
-          )}
+
+                  {/* ✅ Description */}
+                  <p className="text-sm text-gray-600 my-4 flex-grow">{plan.description}</p>
+
+                  {/* ✅ Subscribe Button */}
+                  {plan.name.toLowerCase() === 'learn' ? (
+                    <p className="mt-auto bg-gray-300 text-gray-700 w-full py-3 rounded-lg font-medium cursor-not-allowed">
+                      Coming Soon
+                    </p>
+                  ) : (
+                    <button
+                      className="mt-auto bg-blue-600 text-white w-full py-3 rounded-lg font-medium hover:bg-blue-700 transition-all"
+                      onClick={() => handleSubscribe(plan)}
+                    >
+                      Subscribe
+                    </button>
+                  )}
+                </div>
+              ))
+            ) : (
+              <p className="text-center text-gray-700 text-lg">No plans available.</p>
+            )}
+          </div>
+
+          <div className="hidden md:block w-96">
+            <img
+              src={Image} // ✅ Replace with the actual image path
+              alt="Subscription Benefits"
+              className="w-full h-auto rounded-lg shadow-lg"
+            />
+          </div>
+          {/* ✅ Image on the Right Side */}
         </div>
       </div>
     </>

@@ -10,6 +10,58 @@ const sendEmail = require('../utils/emailSender')
 // ✅ Define Zoom Course Names
 const ZOOM_COURSES = ['Learn', 'Achieve', 'Excel']
 
+// ✅ Define Service Packages and Their Booking Limits
+const SERVICE_PACKAGES = {
+  '3x30': 3,
+  '5x30': 5,
+  '8x30': 8,
+}
+
+// ✅ Define Static Zoom Links for Courses
+const ZOOM_LINKS = [
+  'https://us06web.zoom.us/meeting/register/mZHoQiy9SqqHx69f4dejgg#/registration',
+  'https://us06web.zoom.us/meeting/register/kejThKqpTpetwaMNI33bAQ#/registration',
+  'https://us06web.zoom.us/meeting/register/jH2N2rfMSXyqX1UDEZAarQ#/registration',
+  'https://us06web.zoom.us/meeting/register/Lsd_MFiwQpKRKhMZhPIYPw#/registration',
+]
+
+// ✅ Specific Zoom Link for "CommonCore"
+const COMMONCORE_ZOOM_LINK = 'https://us06web.zoom.us/meeting/register/XsYhADVmQcK8BIT3Sfbpyg#/registration';
+
+// ✅ Define Calendly Booking Links
+const CALENDLY_LINKS = {
+  '3x30': 'https://calendly.com/rockstarmathtutoring/30-minute-session',
+  '5x30': 'https://calendly.com/rockstarmathtutoring/60min',
+  '8x30': 'https://calendly.com/rockstarmathtutoring/90-minute-sessions',
+}
+
+// ✅ Function to Generate Calendly Link with Booking Limits
+const generateCalendlyLink = async (userId, sessionType) => {
+  try {
+    const user = await Register.findById(userId);
+    if (!user) return null;
+
+    user.calendlyBookingsCount = user.calendlyBookingsCount || {}; // Ensure field exists
+    const currentBookings = user.calendlyBookingsCount[sessionType] || 0;
+    const maxBookings = SERVICE_PACKAGES[sessionType];
+
+    // ✅ Prevent Overbooking
+    if (currentBookings >= maxBookings) {
+      console.warn(`⚠️ User ${userId} exceeded booking limit for ${sessionType}`);
+      return null;
+    }
+
+    user.calendlyBookingsCount[sessionType] = currentBookings + 1;
+    await user.save();
+
+    console.log(`✅ Calendly Link Generated for ${sessionType}: ${CALENDLY_LINKS[sessionType]}`);
+    return CALENDLY_LINKS[sessionType];
+  } catch (error) {
+    console.error("❌ Calendly Link Generation Failed:", error);
+    return null;
+  }
+};
+
 // ✅ Function to Automatically Archive Expired Classes
 const archiveExpiredCalendlySessions = async () => {
   try {
@@ -44,57 +96,6 @@ const archiveExpiredCalendlySessions = async () => {
 // ✅ Schedule the function to run daily at midnight
 cron.schedule("0 0 * * *", archiveExpiredCalendlySessions);
 
-
-// ✅ Define Service Packages and Their Booking Limits
-const SERVICE_PACKAGES = {
-  '3x30': 3,
-  '5x30': 5,
-  '8x30': 8,
-}
-
-// ✅ Define Zoom Links (Static Links for Courses)
-const ZOOM_LINKS = [
-  'https://us06web.zoom.us/meeting/register/mZHoQiy9SqqHx69f4dejgg#/registration',
-  'https://us06web.zoom.us/meeting/register/kejThKqpTpetwaMNI33bAQ#/registration',
-  'https://us06web.zoom.us/meeting/register/jH2N2rfMSXyqX1UDEZAarQ#/registration',
-  'https://us06web.zoom.us/meeting/register/Lsd_MFiwQpKRKhMZhPIYPw#/registration',
-  'https://us06web.zoom.us/meeting/register/XsYhADVmQcK8BIT3Sfbpyg#/registration',
-]
-
-// ✅ Define Calendly Booking Links for Services (Updated from Image)
-const CALENDLY_LINKS = {
-  '3x30': 'https://calendly.com/rockstarmathtutoring/30-minute-session',
-  '5x30': '60 minutes: https://calendly.com/rockstarmathtutoring/60min',
-  '8x30': 'https://calendly.com/rockstarmathtutoring/90-minute-sessions',
-}
-
-// ✅ Function to Generate Calendly Scheduling Link (If Needed)
-// ✅ Function to Generate Calendly Link with Booking Limits
-const generateCalendlyLink = async (userId, sessionType) => {
-  try {
-    const user = await Register.findById(userId);
-    if (!user) return null;
-
-    user.calendlyBookingsCount = user.calendlyBookingsCount || {}; // Ensure field exists
-    const currentBookings = user.calendlyBookingsCount[sessionType] || 0;
-    const maxBookings = SERVICE_PACKAGES[sessionType];
-
-    // ✅ Prevent Overbooking
-    if (currentBookings >= maxBookings) {
-      console.warn(`⚠️ User ${userId} exceeded booking limit for ${sessionType}`);
-      return null;
-    }
-
-    user.calendlyBookingsCount[sessionType] = currentBookings + 1;
-    await user.save();
-
-    console.log(`✅ Calendly Link Generated for ${sessionType}: ${CALENDLY_LINKS[sessionType]}`);
-    return CALENDLY_LINKS[sessionType];
-  } catch (error) {
-    console.error("❌ Calendly Link Generation Failed:", error);
-    return null;
-  }
-};
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' }) // Token valid for 7 days
@@ -252,7 +253,6 @@ exports.registerUser = async (req, res) => {
 };
 
 // 🎯 Function to Handle Purchase
-// 🎯 **Updated Purchase Function with Calendly Integration**
 exports.addPurchasedClass = async (req, res) => {
   try {
     const { userId, purchasedItems, userEmail } = req.body;
@@ -263,8 +263,10 @@ exports.addPurchasedClass = async (req, res) => {
       return res.status(400).json({ message: 'Invalid request. Missing data.' });
     }
 
-    let couponCode = null;
-    let discountPercent = 0;
+    let zoomLinks = [];
+    let couponCodes = []; // Store multiple coupons
+    let commonCorePurchased = false;
+    let calendlyMeetingLink = null;
 
     // ✅ Find User
     console.log(`🔎 Finding User: ${userId}`);
@@ -275,9 +277,6 @@ exports.addPurchasedClass = async (req, res) => {
     }
 
     let newPurchases = [];
-    let zoomCoursesPurchased = [];
-    let servicePurchased = [];
-    let calendlyMeetingLink = null; // Store Calendly link if required
 
     console.log('🛒 Processing Purchased Items...');
     for (const item of purchasedItems) {
@@ -292,115 +291,96 @@ exports.addPurchasedClass = async (req, res) => {
         purchaseDate: new Date(),
       };
 
-      if (ZOOM_COURSES.includes(item.name)) {
-        zoomCoursesPurchased.push(item.name);
+      // 🎟 Assign Coupons
+      if (item.name === 'Learn') {
+        couponCodes.push({ code: 'URem36bx', percent_off: 10 });
+      } else if (item.name === 'Achieve') {
+        couponCodes.push({ code: 'G4R1If1p', percent_off: 30 });
+      } else if (item.name === 'Excel') {
+        couponCodes.push({ code: 'mZybTHmQ', percent_off: 20 });
       }
 
-      if (SERVICE_PACKAGES[item.name]) {
-        newPurchase.sessionCount = SERVICE_PACKAGES[item.name];
-        newPurchase.remainingSessions = SERVICE_PACKAGES[item.name];
-
-        // 🎯 Generate Calendly Link if it's `5x30` or `8x30`
-        if (item.name === '5x30' || item.name === '8x30') {
-          console.log(`📅 Assigning Calendly Link for: ${item.name}`);
-          calendlyMeetingLink = await generateCalendlyLink(userId, item.name);
-          if (calendlyMeetingLink) {
-            newPurchase.bookingLink = calendlyMeetingLink;
-          } else {
-            console.warn(`❌ Booking Limit Exceeded for ${item.name}`);
-            return res.status(400).json({
-              message: `You have reached the booking limit for ${item.name}.`,
-            });
-          }
-        }
-
-        servicePurchased.push(item.name);
+      // ✅ Assign Zoom Links for Learn, Achieve, and Excel
+      if (['Learn', 'Achieve', 'Excel'].includes(item.name)) {
+        zoomLinks = [...ZOOM_LINKS]; // Fetch all predefined Zoom links
       }
 
-      // 🎟 Assign Coupon Based on Purchased Plan
-      if (purchasedItems.some((item) => item.name === 'Learn')) {
-        couponCode = 'URem36bx';
-        discountPercent = 10;
-      } else if (purchasedItems.some((item) => item.name === 'Achieve')) {
-        couponCode = 'G4R1If1p';
-        discountPercent = 30;
-      } else if (purchasedItems.some((item) => item.name === 'Excel')) {
-        couponCode = 'mZybTHmQ';
-        discountPercent = 20;
-      }
-
-      // ✅ Store Coupon Inside User's Register Model
-      if (couponCode) {
-        user.coupons.push({ code: couponCode, percent_off: discountPercent });
-        await user.save();
+      // ✅ Assign CommonCore Zoom Link
+      if (item.name === 'CommonCore') {
+        commonCorePurchased = true;
       }
 
       newPurchases.push(newPurchase);
     }
 
-    console.log('📝 Updating User Purchases...');
     user.purchasedClasses.push(...newPurchases);
+    user.coupons.push(...couponCodes); // Save all coupons
     await user.save();
-    console.log('✅ Purchases Updated!');
 
-    // ✅ Send Welcome Email Immediately
+    // ✅ Send Welcome Email (Always Sent)
     console.log(`📧 Sending Welcome Email to: ${userEmail}`);
     let welcomeSubject = `🎉 Welcome to Rockstar Math, ${user.username}!`;
     let welcomeHtml = `
-    <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
-      <div style="text-align: center; padding-bottom: 20px;">
-        <img src="https://your-logo-url.com/logo.png" alt="Rockstar Math" style="width: 150px; margin-bottom: 10px;">
+      <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
         <h2 style="color: #2C3E50;">🎉 Welcome to Rockstar Math, ${user.username}!</h2>
-        <p style="font-size: 16px;">Thank you for booking your session with <b>Rockstar Math!</b> I'm excited to work with you. To ensure we make the most of our time together, please review these important tips:</p>
-      </div>
-      <p style="text-align: center; font-size: 16px;">If you have any questions or need further recommendations, feel free to reach out. I look forward to helping you on your math journey!</p>
-      <div style="text-align: center; margin-top: 20px;">
-        <a href="https://calendly.com/rockstarmathtutoring" target="_blank"
-          style="display:inline-block; padding:12px 24px; background-color:#007bff; color:#fff; text-decoration:none; border-radius:6px; font-weight:bold; font-size:16px;">
-          📅 Book Your Next Session
-        </a>
-      </div>
-      <p style="text-align: center; font-size: 14px; color: #555; margin-top: 20px;">
-        Best regards,<br>
-        <b>Amy Gemme</b><br>
-        Rockstar Math Tutoring<br>
-        📞 510-410-4963
-      </p>
-    </div>`;
+        <p>Thank you for booking your session with <b>Rockstar Math!</b> I'm excited to work with you.</p>
+        <p style="text-align: center;"><a href="https://calendly.com/rockstarmathtutoring" style="background-color:#007bff; padding:12px 24px; color:white; text-decoration:none; border-radius:6px; font-weight:bold;">📅 Book Your Next Session</a></p>
+        <p>Best regards,<br><b>Amy Gemme</b><br>Rockstar Math Tutoring<br>📞 510-410-4963</p>
+      </div>`;
 
     await sendEmail(userEmail, welcomeSubject, '', welcomeHtml);
-    console.log('✅ Welcome email sent successfully!');
 
-    // ✅ Send Second Email for Zoom Links & Coupons **Only If They Exist**
-    if (zoomCoursesPurchased.length > 0 || servicePurchased.length > 0 || couponCode) {
-      console.log(`📧 Sending Zoom Links & Coupon Email to: ${userEmail}`);
+    // ✅ Send Zoom & Coupon Email (Always Sent)
+    console.log(`📧 Sending Zoom Links & Coupon Email to: ${userEmail}`);
 
-      let detailsSubject = `📚 Your Rockstar Math Purchase Details`;
-      let detailsHtml = `<h2>🎉 Hello ${user.username},</h2><p>Here are your purchase details:</p>`;
+    let detailsSubject = `📚 Your Rockstar Math Purchase Details`;
 
-      if (zoomCoursesPurchased.length > 0) {
-        detailsHtml += `<h3>🔗 Your Zoom Links:</h3><ul>`;
-        ZOOM_LINKS.forEach((link) => {
-          detailsHtml += `<li><a href="${link}" target="_blank">${link}</a></li>`;
-        });
-        detailsHtml += `</ul>`;
-      }
+    let detailsHtml = `
+      <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
+        <h2 style="color: #2C3E50;">🎉 Hello ${user.username}!</h2>
+        <p>We're excited to have you on board! 🚀 Below are your registration details.</p>
 
-      if (servicePurchased.length > 0) {
-        detailsHtml += `<h3>📅 Your Calendly Booking Links:</h3><ul>`;
-        servicePurchased.forEach((s) => {
-          detailsHtml += `<li><a href="${CALENDLY_LINKS[s]}" target="_blank">${CALENDLY_LINKS[s]}</a></li>`;
-        });
-        detailsHtml += `</ul>`;
-      }
+        <h3 style="color: #007bff;">🔗 Available Courses & Registration Links:</h3>
+        <ul style="list-style-type: none; padding: 0;">
+    `;
 
-      if (couponCode) {
-        detailsHtml += `<h3>🎟 Your Discount Coupon:</h3><p><b>Coupon Code:</b> ${couponCode}</p>`;
-      }
-
-      await sendEmail(userEmail, detailsSubject, '', detailsHtml);
-      console.log("✅ Zoom links & coupon email sent successfully!");
+    // ✅ Include Zoom Links (if available)
+    if (zoomLinks.length > 0) {
+      zoomLinks.forEach((link, index) => {
+        detailsHtml += `<li style="margin-bottom: 10px;">📚 Course ${index + 1} – <a href="${link}" target="_blank" style="color: #007bff;">Register Here</a></li>`;
+      });
     }
+
+    // ✅ Include CommonCore Zoom Link
+    if (commonCorePurchased) {
+      detailsHtml += `<li style="margin-bottom: 10px;">📚 Common Core for Parents – <a href="${COMMONCORE_ZOOM_LINK}" target="_blank" style="color: #007bff;">Register Here</a></li>`;
+    }
+
+    detailsHtml += `</ul>`;
+
+    // ✅ Include Coupons (if available)
+    if (couponCodes.length > 0) {
+      detailsHtml += `<h3 style="color: #d9534f;">🎟 Your Exclusive Discount Coupons:</h3>`;
+      couponCodes.forEach((coupon) => {
+        detailsHtml += `<p><b>Coupon Code:</b> ${coupon.code} - ${coupon.percent_off}% off</p>`;
+      });
+    } else {
+      detailsHtml += `<h3 style="color: #d9534f;">🎟 No Discount Coupons Available</h3>`;
+    }
+
+    detailsHtml += `
+        <h3 style="color: #5bc0de;">📌 Next Steps:</h3>
+        <ol>
+          <li>✅ Select one course from the list above and complete your registration.</li>
+          <li>📩 Check your email for confirmation details.</li>
+          <li>🖥 Log in to your Dashboard at <a href="https://rockstarmathtutoring.com" target="_blank" style="color: #007bff;">rockstarmathtutoring.com</a> to view your upcoming scheduled tutoring sessions.</li>
+        </ol>
+
+        <p style="text-align: center; font-size: 16px; font-weight: bold;">We can’t wait to see you in class! 🎉</p>
+      </div>`;
+
+    await sendEmail(userEmail, detailsSubject, '', detailsHtml);
+    console.log("✅ Zoom links & coupon email sent successfully!");
 
     return res.status(200).json({ message: 'Purchase updated & all emails sent!' });
   } catch (error) {
@@ -408,6 +388,7 @@ exports.addPurchasedClass = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
 
 
 
