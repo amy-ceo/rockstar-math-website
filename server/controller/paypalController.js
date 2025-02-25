@@ -72,115 +72,70 @@ exports.createOrder = async (req, res) => {
 // 🎯 Capture PayPal Order & Send Email
 // 🎯 Capture PayPal Order & Update Purchase
 exports.captureOrder = async (req, res) => {
-  try {
-    const { orderId, user } = req.body
-
-    if (
-      !orderId ||
-      !user ||
-      !user._id ||
-      !user.billingEmail ||
-      !Array.isArray(user.cartItems) ||
-      user.cartItems.length === 0
-    ) {
-      console.error('❌ Missing required fields:', { orderId, user })
-      return res.status(400).json({ error: 'Missing required fields or empty cart items' })
-    }
-
-    console.log('🛒 Capturing PayPal Order:', orderId)
-
-    // ✅ Capture PayPal Payment
-    const captureRequest = new paypal.orders.OrdersCaptureRequest(orderId)
-    captureRequest.requestBody({})
-    const captureResponse = await paypalClient.execute(captureRequest)
-
-    console.log('✅ Capture Response:', captureResponse.result)
-
-    const validStatuses = ['COMPLETED', 'APPROVED', 'CAPTURED']
-    if (!captureResponse.result || !validStatuses.includes(captureResponse.result.status)) {
-      console.error('❌ PayPal Capture Failed:', captureResponse.result)
-      return res.status(400).json({
-        error: 'Payment capture failed',
-        status: captureResponse.result.status,
-        details: captureResponse.result,
-      })
-    }
-
-    const capturedPayment = captureResponse.result // ✅ Define capturedPayment properly
-    const purchaseUnit = capturedPayment.purchase_units[0]
-    const captureDetails = purchaseUnit.payments?.captures?.[0]
-
-    if (!captureDetails) {
-      console.error('❌ Capture Details Missing:', capturedPayment)
-      return res.status(400).json({ error: 'Capture details missing from PayPal response' })
-    }
-
-    const amount = captureDetails.amount.value
-    const currency = captureDetails.amount.currency_code
-
-    // ✅ Save Payment Details First
     try {
-      const newPayment = new Payment({
-        orderId,
-        userId: user._id,
-        billingEmail: user.billingEmail,
-        amount,
-        currency,
-        status: 'Completed',
-        paymentMethod: 'PayPal',
-        cartItems: user.cartItems,
-      })
-
-      await newPayment.save()
-      console.log('✅ Payment Record Saved')
-    } catch (err) {
-      console.error('❌ Failed to Save Payment Record:', err)
-      return res
-        .status(500)
-        .json({ error: 'Failed to save payment, but PayPal capture was successful.' })
+      const { orderId, user } = req.body;
+  
+      if (!orderId || !user || !user._id || !user.billingEmail) {
+        console.error("❌ Missing required fields:", { orderId, user });
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+  
+      console.log("🛒 Capturing PayPal Order:", orderId);
+  
+      // ✅ Capture PayPal Payment
+      const captureRequest = new paypal.orders.OrdersCaptureRequest(orderId);
+      captureRequest.requestBody({});
+      const captureResponse = await paypalClient.execute(captureRequest);
+  
+      console.log("✅ Capture Response:", captureResponse.result);
+  
+      if (!captureResponse.result || captureResponse.result.status !== "COMPLETED") {
+        console.error("❌ PayPal Capture Failed:", captureResponse.result);
+        return res.status(400).json({ error: "Payment capture failed" });
+      }
+  
+      const purchaseUnit = captureResponse.result.purchase_units[0];
+      const captureDetails = purchaseUnit.payments?.captures?.[0];
+  
+      if (!captureDetails) {
+        console.error("❌ Capture Details Missing:", captureResponse.result);
+        return res.status(400).json({ error: "Capture details missing from PayPal response" });
+      }
+  
+      const amount = captureDetails.amount.value;
+      const currency = captureDetails.amount.currency_code;
+  
+      // ✅ Fix: Ensure userEmail is included
+      const userEmail = user.email || user.billingEmail || "no-email@unknown.com";
+  
+      // ✅ Save Payment Details First
+      try {
+        const newPayment = new Payment({
+          orderId,
+          userId: user._id,
+          userEmail, // ✅ Ensure userEmail is provided
+          amount,
+          currency,
+          status: "Completed",
+          paymentMethod: "PayPal",
+          cartItems: user.cartItems || [],
+        });
+  
+        await newPayment.save();
+        console.log("✅ Payment Record Saved");
+      } catch (err) {
+        console.error("❌ Failed to Save Payment Record:", err);
+        return res.status(500).json({ error: "Failed to save payment, but PayPal capture was successful." });
+      }
+  
+      res.json({ message: "Payment captured successfully", payment: captureResponse.result });
+  
+    } catch (error) {
+      console.error("❌ Error Capturing PayPal Payment:", error);
+      res.status(500).json({ error: "Internal Server Error", details: error.message || error });
     }
-
-    // ✅ Find and Update User
-    const existingUser = await Register.findById(user._id)
-    if (!existingUser) {
-      console.warn('⚠️ User not found in database, but payment was captured.')
-    } else {
-      const newPurchases = user.cartItems.map((item) => ({
-        name: item.name,
-        description: item.description || 'No description available',
-        purchaseDate: new Date(),
-        sessionCount: 0,
-        remainingSessions: 0,
-        bookingLink: null,
-      }))
-
-      existingUser.purchasedClasses = [...existingUser.purchasedClasses, ...newPurchases]
-      await existingUser.save()
-      console.log("✅ User's Purchased Classes Updated")
-    }
-
-    // ✅ Send Confirmation Email
-    try {
-      await sendEmail(
-        user.billingEmail,
-        `Order Confirmation - Your Purchase is Successful!`,
-        `Your order ${orderId} was successful.`,
-        '<h3>Thank you!</h3>',
-      )
-      console.log('✅ Confirmation Email Sent')
-    } catch (emailError) {
-      console.error('❌ Email Sending Failed:', emailError)
-    }
-
-    res.json({
-      message: 'Payment captured & records updated successfully.',
-      payment: capturedPayment,
-    })
-  } catch (error) {
-    console.error('❌ Error Capturing PayPal Payment:', error)
-    res.status(500).json({ error: 'Internal Server Error', details: error.message || error })
-  }
-}
+  };
+  
 
 exports.paypalWebhook = async (req, res) => {
     try {

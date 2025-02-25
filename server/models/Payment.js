@@ -6,7 +6,12 @@ const paymentSchema = new mongoose.Schema({
     userEmail: { type: String, required: true },
     amount: { type: Number, required: true },
     currency: { type: String, default: "USD" },
-    status: { type: String, default: "Pending" }, // ✅ Payment Status
+    status: { 
+        type: String, 
+        enum: ["Pending", "Processing", "Completed", "Failed", "Refunded"], 
+        default: "Pending"
+      },
+      
     paymentMethod: { type: String, default: "PayPal" },
     cartItems: { type: Array, required: true },
     createdAt: { type: Date, default: Date.now },
