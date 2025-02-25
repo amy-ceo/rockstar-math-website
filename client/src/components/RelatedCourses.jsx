@@ -12,11 +12,11 @@ import WaitlistForm from "./WaitlistForm"; // ✅ Import Waitlist Form
 
 // ✅ Courses Array with Tooltip Hover Effects
 const courses = [
-  { id: "algebra", Icon: FaSquareRootAlt, title: "Algebra 1 Tutoring", link: "/subscription", tooltip: "⭐ Join Us For Our Algebra 1 Study Group On Tuesday's from 7-8 pm." },
-  { id: "trigonometry", Icon: TbGeometry, title: "Calc 1 Tutoring", link: "/subscription", tooltip: "⭐ Join Us For Our Calc 1 Study Group On Tuesday's from 8-9 pm." },
-  { id: "math-analysis", Icon: BiAnalyse, title: "Pre Calc and Trig Tutoring", link: "/subscription", tooltip: "⭐ Join Us For Our PreCalc and Trig Study Group On Monday's from 8-9 pm." },
-  { id: "precalculus", Icon: TbMath, title: "Geometry Tutoring", link: "/subscription", tooltip: "⭐ Join Us For Our Geometry Study Group On Wednesday's from 8-9 pm." },
-  { id: "business-calculus", Icon: TbBusinessplan, title: "Common Core For Parents", link: "/subscription", tooltip: "⭐ Join Us For Our Common Core For Parents Study Group On Sunday's from 8-9 pm." },
+  { id: "algebra", Icon: FaSquareRootAlt, title: "Algebra 1 Tutoring", link: "https://us06web.zoom.us/meeting/register/mZHoQiy9SqqHx69f4dejgg#/registration", tooltip: "⭐ Find Our Group Tutoring For Algebra 1 On Our Subscription Page!  Algebra 2 Tutoring, -" },
+  { id: "trigonometry", Icon: TbGeometry, title: "Calc 1 Tutoring", link: "https://us06web.zoom.us/meeting/register/z2W2vvBHROGK_yEWMTeOrg#/registration", tooltip: "⭐ Calc 1 Tutoring, -" },
+  { id: "math-analysis", Icon: BiAnalyse, title: "Pre Calc and Trig Tutoring, -", link: "https://us06web.zoom.us/meeting/register/jH2N2rfMSXyqX1UDEZAarQ#/registration", tooltip: "⭐ Pre Calc and Trig Tutoring, -" },
+  { id: "precalculus", Icon: TbMath, title: "Geometry Tutoring", link: "https://us06web.zoom.us/meeting/register/Lsd_MFiwQpKRKhMZhPIYPw#/registration", tooltip: "⭐ Geometry Tutoring" },
+  { id: "business-calculus", Icon: TbBusinessplan, title: "Common Core For Parents", link: "https://us06web.zoom.us/meeting/register/XsYhADVmQcK8BIT3Sfbpyg#/registration", tooltip: "⭐ Common Core for Parents" },
   { id: "calculus-1", Icon: TbMath, title: "Calculus 1", link: "/courses/calculus-1" },
   { id: "calculus-2", Icon: RiFunctionLine, title: "Calculus 2", link: "/courses/calculus-2" },
   { id: "calculus-3", Icon: GiStairs, title: "Calculus 3 (Multivariable)", link: "/courses/calculus-3" },

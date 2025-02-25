@@ -197,58 +197,54 @@ exports.registerUser = async (req, res) => {
 // 🎯 **Updated Purchase Function with Calendly Integration**
 exports.addPurchasedClass = async (req, res) => {
   try {
-    const { userId, purchasedItems, userEmail } = req.body
+    const { userId, purchasedItems, userEmail } = req.body;
 
-    console.log('🔄 Processing Purchase Request...')
+    console.log('🔄 Processing Purchase Request...');
 
-    if (
-      !userId ||
-      !purchasedItems ||
-      !Array.isArray(purchasedItems) ||
-      purchasedItems.length === 0
-    ) {
-      return res.status(400).json({ message: 'Invalid request. Missing data.' })
+    if (!userId || !purchasedItems || !Array.isArray(purchasedItems) || purchasedItems.length === 0) {
+      return res.status(400).json({ message: 'Invalid request. Missing data.' });
     }
 
     let couponCode = null;
     let discountPercent = 0;
+
     // ✅ Find User
-    console.log(`🔎 Finding User: ${userId}`)
-    const user = await Register.findById(userId)
+    console.log(`🔎 Finding User: ${userId}`);
+    const user = await Register.findById(userId);
     if (!user) {
-      console.error('❌ User Not Found')
-      return res.status(404).json({ message: 'User not found.' })
+      console.error('❌ User Not Found');
+      return res.status(404).json({ message: 'User not found.' });
     }
 
-    let newPurchases = []
-    let zoomCoursesPurchased = []
-    let servicePurchased = []
-    let calendlyMeetingLink = null // Store Calendly link if required
+    let newPurchases = [];
+    let zoomCoursesPurchased = [];
+    let servicePurchased = [];
+    let calendlyMeetingLink = null; // Store Calendly link if required
 
-    console.log('🛒 Processing Purchased Items...')
+    console.log('🛒 Processing Purchased Items...');
     for (const item of purchasedItems) {
       if (user.purchasedClasses.some((pc) => pc.name === item.name)) {
-        console.log(`⚠️ ${item.name} is already purchased, skipping...`)
-        continue
+        console.log(`⚠️ ${item.name} is already purchased, skipping...`);
+        continue;
       }
 
       let newPurchase = {
         name: item.name,
         description: item.description || 'No description available',
         purchaseDate: new Date(),
-      }
+      };
 
       if (ZOOM_COURSES.includes(item.name)) {
-        zoomCoursesPurchased.push(item.name)
+        zoomCoursesPurchased.push(item.name);
       }
 
       if (SERVICE_PACKAGES[item.name]) {
-        newPurchase.sessionCount = SERVICE_PACKAGES[item.name]
-        newPurchase.remainingSessions = SERVICE_PACKAGES[item.name]
+        newPurchase.sessionCount = SERVICE_PACKAGES[item.name];
+        newPurchase.remainingSessions = SERVICE_PACKAGES[item.name];
 
         // 🎯 Generate Calendly Link if it's `5x30` or `8x30`
         if (item.name === '5x30' || item.name === '8x30') {
-          console.log(`📅 Assigning Calendly Link for: ${item.name}`)
+          console.log(`📅 Assigning Calendly Link for: ${item.name}`);
           calendlyMeetingLink = await generateCalendlyLink(userId, item.name);
           if (calendlyMeetingLink) {
             newPurchase.bookingLink = calendlyMeetingLink;
@@ -260,86 +256,130 @@ exports.addPurchasedClass = async (req, res) => {
           }
         }
 
-        servicePurchased.push(item.name)
+        servicePurchased.push(item.name);
       }
 
-     // 🎟 Assign Coupon Based on Purchased Plan
-    if (purchasedItems.some(item => item.name === "Learn")) {
-      couponCode = "URem36bx"; 
-      discountPercent = 10;
-    } else if (purchasedItems.some(item => item.name === "Achieve")) {
-      couponCode = "G4R1If1p"; 
-      discountPercent = 30;
-    } else if (purchasedItems.some(item => item.name === "Excel")) {
-      couponCode = "mZybTHmQ"; 
-      discountPercent = 20;
+      // 🎟 Assign Coupon Based on Purchased Plan
+      if (purchasedItems.some((item) => item.name === 'Learn')) {
+        couponCode = 'URem36bx';
+        discountPercent = 10;
+      } else if (purchasedItems.some((item) => item.name === 'Achieve')) {
+        couponCode = 'G4R1If1p';
+        discountPercent = 30;
+      } else if (purchasedItems.some((item) => item.name === 'Excel')) {
+        couponCode = 'mZybTHmQ';
+        discountPercent = 20;
+      }
+
+      // ✅ Store Coupon Inside User's Register Model
+      if (couponCode) {
+        user.coupons.push({ code: couponCode, percent_off: discountPercent });
+        await user.save();
+      }
+
+      newPurchases.push(newPurchase);
     }
 
-    // ✅ Store Coupon Inside User's Register Model
-    if (couponCode) {
-      user.coupons.push({ code: couponCode, percent_off: discountPercent });
-      await user.save();
-    }
-
-      newPurchases.push(newPurchase)
-    }
-
-    console.log('📝 Updating User Purchases...')
-    user.purchasedClasses.push(...newPurchases)
-    await user.save()
-    console.log('✅ Purchases Updated!')
+    console.log('📝 Updating User Purchases...');
+    user.purchasedClasses.push(...newPurchases);
+    await user.save();
+    console.log('✅ Purchases Updated!');
 
     // ✅ Send Zoom/Calendly Email + Coupon Code
-    if (
-      zoomCoursesPurchased.length > 0 ||
-      servicePurchased.length > 0 ||
-      calendlyMeetingLink ||
-      couponCode
-    ) {
-      console.log(`📧 Sending purchase details email to: ${userEmail}`)
+    if (zoomCoursesPurchased.length > 0 || servicePurchased.length > 0 || calendlyMeetingLink || couponCode) {
+      console.log(`📧 Sending purchase details email to: ${userEmail}`);
 
-      let emailSubject = '🎉 Welcome! Your Purchase Details'
-      let emailHtml = `<h2>🎉 Hello ${user.username},</h2><p>Thank you for your purchase.</p>`
+      let emailSubject = '🎉 Welcome! Your Purchase Details';
+      let emailHtml = `<h2>🎉 Hello ${user.username},</h2><p>Thank you for your purchase.</p>`;
 
       if (zoomCoursesPurchased.length > 0) {
-        emailHtml += `<h3>🔗 Here are your Zoom links:</h3><ul>`
+        emailHtml += `<h3>🔗 Here are your Zoom links:</h3><ul>`;
         ZOOM_LINKS.forEach((link) => {
-          emailHtml += `<li><a href="${link}" target="_blank">${link}</a></li>`
-        })
-        emailHtml += `</ul>`
+          emailHtml += `<li><a href="${link}" target="_blank">${link}</a></li>`;
+        });
+        emailHtml += `</ul>`;
       }
 
       if (servicePurchased.length > 0) {
         emailHtml += `<h3>📅 Use the links below to book your sessions:</h3><ul>${servicePurchased
-          .map(
-            (s) =>
-              `<li><a href="${CALENDLY_LINKS[s]}" target="_blank">${CALENDLY_LINKS[s]}</a></li>`,
-          )
-          .join('')}</ul>`
+          .map((s) => `<li><a href="${CALENDLY_LINKS[s]}" target="_blank">${CALENDLY_LINKS[s]}</a></li>`)
+          .join('')}</ul>`;
       }
 
       // ✅ If Calendly Link Generated, Add to Email
       if (calendlyMeetingLink) {
-        emailHtml += `<h3>📅 Click below to schedule your session:</h3><p><a href="${calendlyMeetingLink}" target="_blank">${calendlyMeetingLink}</a></p>`
+        emailHtml += `<h3>📅 Click below to schedule your session:</h3><p><a href="${calendlyMeetingLink}" target="_blank">${calendlyMeetingLink}</a></p>`;
       }
 
       // 🎟 Add Coupon Code to Email
       if (couponCode) {
-        emailHtml += `<h3>🎟 Your Exclusive Discount Coupon:</h3><p><b>Coupon Code:</b> ${couponCode}</p>`
+        emailHtml += `<h3>🎟 Your Exclusive Discount Coupon:</h3><p><b>Coupon Code:</b> ${couponCode}</p>`;
       }
 
-      
-
-      await sendEmail(userEmail, emailSubject, '', emailHtml)
-      console.log('✅ Purchase details email sent successfully!')
+      await sendEmail(userEmail, emailSubject, '', emailHtml);
+      console.log('✅ Purchase details email sent successfully!');
     }
 
-    return res.status(200).json({ message: 'Purchase updated & all emails sent!' })
+    // ✅ Send Welcome Email Always
+    console.log(`📧 Sending Welcome Email to: ${userEmail}`);
+    let welcomeSubject = `🎉 Welcome to Rockstar Math, ${user.username}!`;
+    let welcomeHtml = `
+    <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
+      <div style="text-align: center; padding-bottom: 20px;">
+        <img src="https://your-logo-url.com/logo.png" alt="Rockstar Math" style="width: 150px; margin-bottom: 10px;">
+        <h2 style="color: #2C3E50;">🎉 Welcome to Rockstar Math, ${user.username}!</h2>
+        <p style="font-size: 16px;">Thank you for booking your session with <b>Rockstar Math!</b> I'm excited to work with you. To ensure we make the most of our time together, please review these important tips:</p>
+      </div>
+  
+      <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+        <h3 style="color: #007bff;">📌 Stay Focused</h3>
+        <p>In today’s digital world, distractions are everywhere. To help keep us both focused, I kindly ask that you <b>keep your camera on</b> during the session whenever possible.</p>
+      </div>
+  
+      <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+        <h3 style="color: #007bff;">📌 Show Your Work</h3>
+        <p>As your tutor, it’s crucial for me to observe how you’re working through math problems so I can better assist you. Here are a few ways you can share your work:</p>
+        <ul style="padding-left: 20px;">
+          <li>✅ <b>Zoom Whiteboard:</b> If you plan to use the Zoom whiteboard, I recommend a <b>large-screen tablet</b> with a touchscreen or a laptop with a digital pen for natural writing.</li>
+          <li>✅ <b>Document Camera Alternative:</b> If you don’t have a document camera, consider using a <b>phone holder</b> (available for under $20 on Amazon) to point your phone’s camera at your paper while you write.</li>
+        </ul>
+      </div>
+  
+      <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+        <h3 style="color: #007bff;">📌 Homework & Screen Sharing</h3>
+        <p>If your homework is online and you plan to share your screen, please use a <b>touchscreen device (other than a mobile phone)</b> for easier interaction.</p>
+        <p>Having a clear way to share your work is essential for me to provide the best guidance possible.</p>
+      </div>
+  
+      <p style="text-align: center; font-size: 16px;">If you have any questions or need further recommendations, feel free to reach out. I look forward to helping you on your math journey!</p>
+  
+      <div style="text-align: center; margin-top: 20px;">
+        <a href="https://calendly.com/rockstarmathtutoring" target="_blank"
+          style="display:inline-block; padding:12px 24px; background-color:#007bff; color:#fff; text-decoration:none; border-radius:6px; font-weight:bold; font-size:16px;">
+          📅 Book Your Next Session
+        </a>
+      </div>
+  
+      <p style="text-align: center; font-size: 14px; color: #555; margin-top: 20px;">
+        Best regards,<br>
+        <b>Amy Gemme</b><br>
+        Rockstar Math Tutoring<br>
+        📞 510-410-4963
+      </p>
+    </div>
+  `;
+  
+
+    await sendEmail(userEmail, welcomeSubject, '', welcomeHtml);
+    console.log('✅ Welcome email sent successfully!');
+
+    return res.status(200).json({ message: 'Purchase updated & all emails sent!' });
   } catch (error) {
-    console.error('❌ Error processing purchase:', error)
-    res.status(500).json({ message: 'Server error' })
+    console.error('❌ Error processing purchase:', error);
+    res.status(500).json({ message: 'Server error' });
   }
-}
+};
+
 
 exports.getPurchasedClasses = async (req, res) => {
   try {

@@ -63,6 +63,62 @@ const CheckoutPage = () => {
     }
   }, [navigate])
 
+  // ✅ Create PayPal Order
+  const createPayPalOrder = async () => {
+    const user = JSON.parse(localStorage.getItem('user'))
+    if (!user || !user._id) {
+      toast.error('User not logged in!')
+      throw new Error('User authentication required.')
+    }
+
+    try {
+      const response = await fetch(`https://backend-production-cbe2.up.railway.app/api/paypal/create-order`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user._id,
+          amount: total.toFixed(2),
+          cartItems: cartItems,
+        }),
+      })
+
+      const data = await response.json()
+      console.log('🚀 PayPal Order Response:', data) // ✅ Debugging step
+
+      if (!data.orderId) {
+        toast.error('❌ Failed to create PayPal order.')
+        throw new Error('No orderId returned from backend')
+      }
+
+      return data.orderId
+    } catch (error) {
+      console.error('❌ PayPal Order Creation Error:', error)
+      toast.error('PayPal order creation failed.')
+    }
+  }
+
+  const handlePayPalSuccess = async (data) => {
+    const user = JSON.parse(localStorage.getItem('user'))
+
+    const response = await fetch(`https://backend-production-cbe2.up.railway.app/api/paypal/capture-order`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        orderId: data.orderID,
+        user, // ✅ Send full user object
+      }),
+    })
+
+    const result = await response.json()
+    if (result.message) {
+      toast.success('Payment Successful! Your classes have been added.')
+      localStorage.removeItem('cartItems') // ✅ Clear cart after successful payment
+      navigate('/dashboard')
+    } else {
+      toast.error('❌ Payment failed. Please try again.')
+    }
+  }
+
   // ✅ Function to Apply Coupon
   const applyCoupon = () => {
     console.log('🔍 Entered Coupon Code:', couponCode)
@@ -104,25 +160,29 @@ const CheckoutPage = () => {
       const orderId = `order_${Date.now()}`
       const currency = 'usd'
 
-      console.log('🔹 Sending Payment Request:', { amount: total, currency, userId, orderId, userName, userEmail })
+      console.log('🔹 Sending Payment Request:', {
+        amount: total,
+        currency,
+        userId,
+        orderId,
+        userName,
+        userEmail,
+      })
 
-      const response = await fetch(
-        'https://backend-production-cbe2.up.railway.app/api/stripe/create-payment-intent',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            amount: total, 
-            currency, 
-            userId, 
-            orderId, 
-            metadata: { 
-              customer_name: userName, // ✅ Store User Name in Metadata
-              customer_email: userEmail // ✅ Store User Email in Metadata
-            } 
-          }),
-        }
-      )
+      const response = await fetch('https://backend-production-cbe2.up.railway.app/api/stripe/create-payment-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: total,
+          currency,
+          userId,
+          orderId,
+          metadata: {
+            customer_name: userName, // ✅ Store User Name in Metadata
+            customer_email: userEmail, // ✅ Store User Email in Metadata
+          },
+        }),
+      })
 
       if (!response.ok) {
         console.error('❌ Failed to create payment intent. Status:', response.status)
@@ -139,46 +199,6 @@ const CheckoutPage = () => {
       console.error('❌ Payment Intent Error:', error)
       toast.error(`Payment Error: ${error.message}`)
       return null
-    }
-}
-
-
-  const startCheckout = async () => {
-    try {
-      const user = JSON.parse(localStorage.getItem('user'))
-      if (!user || !user._id) {
-        toast.error('User not logged in!')
-        return
-      }
-
-      console.log('🔹 Sending Payment Request:', { userId: user._id, cartItems })
-
-      const response = await fetch(
-        'https://backend-production-cbe2.up.railway.app/api/create-checkout-session',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId: user._id, // ✅ Fix applied: Ensure user ID is sent
-            cartItems: cartItems,
-          }),
-        },
-      )
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to create checkout session')
-      }
-
-      console.log('✅ Stripe Checkout Session:', data)
-
-      // ✅ Redirect User to Stripe Checkout Page
-      const stripe = await loadStripe('pk_live_51QKwhUE4sPC5ms3x...')
-      await stripe.redirectToCheckout({ sessionId: data.sessionId })
-    } catch (error) {
-      console.error('❌ Checkout Error:', error)
-      toast.error(error.message || 'Checkout failed')
     }
   }
 
@@ -202,17 +222,14 @@ const CheckoutPage = () => {
         purchasedClasses: formattedClasses,
       })
 
-      const response = await fetch(
-        'https://backend-production-cbe2.up.railway.app/api/add-purchased-class',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId: user._id, // ✅ Fix applied
-            purchasedClasses: formattedClasses,
-          }),
-        },
-      )
+      const response = await fetch('https://backend-production-cbe2.up.railway.app/api/add-purchased-class', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user._id, // ✅ Fix applied
+          purchasedClasses: formattedClasses,
+        }),
+      })
 
       const data = await response.json()
       console.log('📡 API Response:', data)
@@ -312,23 +329,19 @@ const CheckoutPage = () => {
                   options={{
                     'client-id':
                       'AaZbEygWpyKJsxxTXfZ5gSpgfm2rzf_mCanmJb80kbNg1wvj6e0ktu3jzxxjKYjBOLSkFTeMSqDLAv4L',
+                    intent: 'capture',
+                    commit: true,
                   }}
                 >
-                  <div className="relative z-20">
-                    <PayPalButtons
-                      style={{ layout: 'vertical', color: 'blue', shape: 'pill', label: 'paypal' }}
-                      createOrder={(data, actions) => {
-                        return actions.order.create({
-                          purchase_units: [{ amount: { value: total.toFixed(2) } }],
-                        })
-                      }}
-                      onApprove={(data, actions) => {
-                        return actions.order.capture().then(() => {
-                          handlePaymentSuccess()
-                        })
-                      }}
-                    />
-                  </div>
+                  <PayPalButtons
+                    style={{ layout: 'vertical', color: 'blue', shape: 'pill', label: 'paypal' }}
+                    createOrder={async () => {
+                      const orderId = await createPayPalOrder()
+                      console.log('🔹 PayPal Order ID:', orderId)
+                      return orderId
+                    }}
+                    onApprove={handlePayPalSuccess}
+                  />
                 </PayPalScriptProvider>
               </div>
             </>
@@ -350,14 +363,13 @@ const CheckoutPage = () => {
                     createPaymentIntent={createPaymentIntent}
                     onSuccess={handlePaymentSuccess}
                   />
-                  
                 </Elements>
                 <button
-                    onClick={() => setShowPaymentForm(false)} // ✅ Go Back to Coupon Form
-                    className="w-full flex justify-center underline mt-5"
-                  >
-                   Go Back
-                  </button>
+                  onClick={() => setShowPaymentForm(false)} // ✅ Go Back to Coupon Form
+                  className="w-full flex justify-center underline mt-5"
+                >
+                  Go Back
+                </button>
               </div>
             </Suspense>
           )}

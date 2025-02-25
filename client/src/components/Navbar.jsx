@@ -89,13 +89,13 @@ export function Navbar() {
           </div>
 
           <NavLink to="/services" onClick={handleLinkClick} className="text-gray-700 hover:text-sky-600 transition-all">
-            Services
+            Tutoring
           </NavLink>
           <NavLink to="/cart" onClick={handleLinkClick} className="text-gray-700 hover:text-sky-600 transition-all">
             Cart
           </NavLink>
            <NavLink to="/subscription" onClick={handleLinkClick} className="block  py-2 text-gray-700  hover:text-sky-600">
-                  Subscription
+           Group Tutoring
                 </NavLink>
 
           {/* Auth Buttons */}

@@ -13,7 +13,7 @@ function PayPal() {
 
     // Load PayPal SDK dynamically
     const script = document.createElement("script");
-    script.src = "https://www.paypal.com/sdk/js?client-id=AeomWj4L8mlq-ezy4Uv0He0-zb4HV5rYqv-qPDczww0pqQAirAxpF-kv33JYwDvn9ChImPjuu5eB&currency=USD";
+    script.src = "https://www.paypal.com/sdk/js?client-id=AaZbEygWpyKJsxxTXfZ5gSpgfm2rzf_mCanmJb80kbNg1wvj6e0ktu3jzxxjKYjBOLSkFTeMSqDLAv4L&currency=USD";
     script.async = true;
     script.onload = () => {
       setSdkLoaded(true);
@@ -40,12 +40,22 @@ function PayPal() {
           return data.orderId;
         },
         onApprove: async (data) => {
-          await fetch('/api/paypal/capture-order', {
+          const response = await fetch(`https://backend-production-cbe2.up.railway.app/api/paypal/capture-order`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orderId: data.orderID }),
+            body: JSON.stringify({
+              orderId: data.orderID,
+              user, // ✅ Send full user object
+            }),
           });
-          alert('Payment Successful!');
+
+          const result = await response.json();
+          if (result.message) {
+            alert('✅ Payment Successful! Your classes have been added.');
+            localStorage.removeItem('cartItems'); // ✅ Clear cart after successful payment
+          } else {
+            alert('❌ Payment failed. Please try again.');
+          }
         },
       }).render(paypalRef.current);
     }

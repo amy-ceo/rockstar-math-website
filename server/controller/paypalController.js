@@ -8,13 +8,17 @@ const paypalClient = require("../config/paypal");
 // 🎯 Create PayPal Order
 exports.createOrder = async (req, res) => {
     try {
-        const { userId, amount, cartItems } = req.body;
+        let { userId, amount, cartItems } = req.body;
 
-        if (!userId || !amount || !cartItems || amount <= 0) {
+        // ✅ Ensure amount is a number
+        amount = parseFloat(amount);
+        if (!userId || isNaN(amount) || !cartItems || amount <= 0) {
+            console.error("❌ Invalid Request Data:", { userId, amount, cartItems });
             return res.status(400).json({ error: "Invalid request data" });
         }
 
-        // ✅ Create Order Request
+        console.log("🛒 Received Order Request:", { userId, amount, cartItems });
+
         const request = new paypal.orders.OrdersCreateRequest();
         request.requestBody({
             intent: "CAPTURE",
@@ -22,40 +26,56 @@ exports.createOrder = async (req, res) => {
                 {
                     amount: {
                         currency_code: "USD",
-                        value: amount.toFixed(2).toString(),
+                        value: amount.toFixed(2), // ✅ Ensure it is a string
+                        breakdown: {
+                            item_total: { currency_code: "USD", value: amount.toFixed(2) } // ✅ Fix required
+                        },
                     },
                     description: "E-commerce Payment",
                     items: cartItems.map((item) => ({
                         name: item.name,
                         unit_amount: {
                             currency_code: "USD",
-                            value: item.price.toFixed(2).toString(),
+                            value: item.price.toFixed(2), // ✅ Ensure string
                         },
                         quantity: item.quantity.toString(),
+                        category: "DIGITAL_GOODS",
                     })),
                 },
             ],
             application_context: {
+                brand_name: "My Store",
+                locale: "en-US",
+                user_action: "PAY_NOW",
                 return_url: "https://backend-production-cbe2.up.railway.app/success",
                 cancel_url: "https://backend-production-cbe2.up.railway.app/cancel",
             },
         });
 
-        // ✅ Create Order in PayPal
+        // ✅ Execute PayPal Order
         const order = await paypalClient.execute(request);
+        console.log("✅ PayPal Order Response:", order.result);
+
+        if (!order.result || !order.result.id) {
+            console.error("❌ PayPal Order Creation Failed - No ID Returned");
+            return res.status(500).json({ error: "PayPal order creation failed" });
+        }
+
         res.json({ orderId: order.result.id });
+
     } catch (error) {
-        console.error("❌ Error Creating PayPal Order:", error);
-        res.status(500).json({ error: "Internal Server Error" });
+        console.error("❌ PayPal Order Error:", error.message || error);
+        res.status(500).json({ error: "Internal Server Error", details: error.message || error });
     }
 };
+
 
 // 🎯 Capture PayPal Order & Send Email
 exports.captureOrder = async (req, res) => {
     try {
         const { orderId, user } = req.body;
 
-        if (!orderId || !user || !user.billingEmail) {
+        if (!orderId || !user || !user._id || !user.billingEmail || !user.cartItems) {
             return res.status(400).json({ error: "Missing required fields" });
         }
 
@@ -68,7 +88,32 @@ exports.captureOrder = async (req, res) => {
         const amount = capturedPayment.purchase_units[0].payments.captures[0].amount.value;
         const currency = capturedPayment.purchase_units[0].payments.captures[0].amount.currency_code;
 
-        // ✅ Save Payment to Database
+        // ✅ Find and Update the User in the Database
+        const existingUser = await Register.findById(user._id);
+        if (!existingUser) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        console.log("✅ Existing User Found:", existingUser);
+
+        // ✅ Format Purchased Classes
+        const newPurchases = user.cartItems.map(item => ({
+            name: item.name,
+            description: item.description || "No description available",
+            purchaseDate: new Date(),
+            sessionCount: 0,
+            remainingSessions: 0,
+            bookingLink: null,
+        }));
+
+        // ✅ Append New Purchases to Existing `purchasedClasses` Array
+        existingUser.purchasedClasses = [...existingUser.purchasedClasses, ...newPurchases];
+
+        // ✅ Save the Updated User Document
+        await existingUser.save();
+        console.log("✅ User's Purchased Classes Updated");
+
+        // ✅ Save Payment Details to Database
         const newPayment = new Payment({
             orderId,
             userId: user._id,
@@ -77,10 +122,11 @@ exports.captureOrder = async (req, res) => {
             currency,
             status: "Completed",
             paymentMethod: "PayPal",
-            cartItems: user.cartItems, // Store the purchased products
+            cartItems: user.cartItems,
         });
 
         await newPayment.save();
+        console.log("✅ Payment Record Saved");
 
         // ✅ Send Confirmation Email
         const subject = "Order Confirmation - Your Purchase is Successful!";
@@ -88,7 +134,7 @@ exports.captureOrder = async (req, res) => {
         - Order ID: ${orderId}
         - Amount: $${amount} ${currency}
         - Purchased Items: ${user.cartItems.map(item => item.name).join(", ")}
-        \n\nBest regards,\nYour Store Team`;
+        \n\nYour purchased classes have been added to your account.\nBest regards,\nYour Store Team`;
 
         const html = `
             <h3>Thank You, ${user.username}!</h3>
@@ -98,12 +144,14 @@ exports.captureOrder = async (req, res) => {
             <ul>
                 ${user.cartItems.map(item => `<li>${item.name} (x${item.quantity}) - $${item.price}</li>`).join("")}
             </ul>
-            <p>We appreciate your business!</p>
+            <p>Your purchased classes have been added to your account.</p>
         `;
 
         await sendEmail(user.billingEmail, subject, text, html);
+        console.log("✅ Confirmation Email Sent");
 
-        res.json({ message: "Payment captured & email sent successfully", payment: capturedPayment });
+        res.json({ message: "Payment captured, purchased classes updated & email sent successfully", payment: capturedPayment });
+
     } catch (error) {
         console.error("❌ Error Capturing PayPal Payment:", error);
         res.status(500).json({ error: "Internal Server Error" });

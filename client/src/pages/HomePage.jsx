@@ -23,10 +23,10 @@ function HomePage() {
       <Suspense fallback={<div className="text-center py-10 text-gray-500">Loading Hero Section...</div>}>
         <Hero />
       </Suspense>
-
+{/* 
       <Suspense fallback={<div className="text-center py-10 text-gray-500">Loading Popular Topics...</div>}>
         <PopTopic />
-      </Suspense>
+      </Suspense> */}
 
       <Suspense fallback={<div className="text-center py-10 text-gray-500">Loading Related Courses...</div>}>
         <RelatedCourses />
