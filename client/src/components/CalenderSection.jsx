@@ -6,31 +6,37 @@ const CalenderSection = () => {
     {
       time: "3 - 6 pm",
       days: [
-        { name: "Individual Lessons", type: "individual" },
-        { name: "Individual Lessons", type: "individual" },
-        { name: "Individual Lessons", type: "individual" },
-        { name: "Individual Lessons", type: "individual" },
-        { name: "Seasonal Course (TBD)", type: "gold" }, // ✅ Updated
+        { name: "Opening Tutoring", type: "individual" },
+        { name: "Opening Tutoring", type: "individual" },
+        { name: "Opening Tutoring", type: "individual" },
+        { name: "Opening Tutoring", type: "individual" },
+        { name: "", type: "gold" }, // ✅ Updated
+        { name: "", type: "gold" }, // ✅ Updated
+
       ],
     },
     {
       time: "7 - 8 pm",
       days: [
-        { name: "Individual Lessons", type: "individual" },
-        { name: "Middle School Study Group", type: "studyGroup" },
-        { name: "Algebra I Study Group", type: "studyGroup" },
-        { name: "Middle School Study Group", type: "studyGroup" },
-        { name: "TBD", type: "gold" }, // ✅ Updated
+        { name: "Opening Tutoring", type: "individual" },
+        { name: "Geometry", type: "studyGroup" },
+        { name: "Algebra I", type: "studyGroup" },
+        { name: "Algebra II", type: "studyGroup" },
+        { name: "", type: "gold" }, // ✅ Updated
+        { name: "", type: "gold" }, // ✅ Updated
+
       ],
     },
     {
       time: "8 - 9 pm",
       days: [
-        { name: "Common Core Drop In for Parents", type: "commonCore" },
-        { name: "Trigonometry and Precalculus", type: "studyGroup" },
-        { name: "Calculus Drop In Group (1.5 hours)", type: "studyGroup" },
-        { name: "Geometry Study Group", type: "studyGroup" },
-        { name: "TBD", type: "gold" }, // ✅ Updated
+        { name: "Common Core", type: "commonCore" },
+        { name: "PreCal/Trig", type: "studyGroup" },
+        { name: "Calc 1", type: "studyGroup" },
+        { name: "Calc 2", type: "studyGroup" },
+        { name: "", type: "gold" }, // ✅ Updated
+        { name: "", type: "gold" }, // ✅ Updated
+
       ],
     },
   ];
@@ -41,6 +47,8 @@ const CalenderSection = () => {
     commonCore: "text-green-500 font-semibold", // 🟢 Common Core
     studyGroup: "text-purple-500 font-semibold", // 🟣 Study Groups
     gold: "text-yellow-500 font-semibold", // 🟡 All of Thursday (Updated)
+    gold: "text-yellow-500 font-semibold", // 🟡 All of Thursday (Updated)
+
   };
 
   return (
@@ -59,6 +67,8 @@ const CalenderSection = () => {
               <th className="border  border-black p-4 text-left text-lg">Tuesday</th>
               <th className="border  border-black p-4 text-left text-lg">Wednesday</th>
               <th className="border  border-black p-4 text-left text-lg">Thursday</th>
+              <th className="border  border-black p-4 text-left text-lg">Friday</th>
+
             </tr>
           </thead>
           <tbody>

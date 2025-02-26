@@ -67,150 +67,150 @@ const CheckoutPage = () => {
   // ✅ Create PayPal Order
   const createPayPalOrder = async () => {
     if (total <= 0) {
-        toast.error('Invalid order: Total cannot be $0.00!');
-        throw new Error('Invalid order amount.');
+      toast.error('Invalid order: Total cannot be $0.00!')
+      throw new Error('Invalid order amount.')
     }
 
-    const user = JSON.parse(localStorage.getItem('user'));
+    const user = JSON.parse(localStorage.getItem('user'))
     if (!user || !user._id) {
-        toast.error('User not logged in!');
-        throw new Error('User authentication required.');
+      toast.error('User not logged in!')
+      throw new Error('User authentication required.')
     }
 
     try {
-        console.log("📡 Creating PayPal Order...");
-        const response = await fetch(
-            `https://backend-production-cbe2.up.railway.app/api/paypal/create-order`,
-            {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    userId: user._id,
-                    amount: Number(total.toFixed(2)),
-                    cartItems: cartItems.map((item) => ({
-                        name: item.name,
-                        price: (Number(item.price) || 0).toFixed(2),
-                        quantity: item.quantity || 1,
-                    })),
-                }),
-            }
-        );
-
-        if (!response.ok) {
-            toast.error('❌ Failed to create PayPal order.');
-            throw new Error('PayPal order creation failed.');
-        }
-
-        const data = await response.json();
-        console.log('🚀 PayPal Order Response:', data);
-
-        if (!data.orderId) {
-            toast.error('❌ No orderId returned from backend.');
-            throw new Error('No orderId returned.');
-        }
-
-        return data.orderId;
-    } catch (error) {
-        console.error('❌ PayPal Order Creation Error:', error);
-        toast.error('PayPal order creation failed.');
-        return null;
-    }
-};
-
-
-const handlePayPalSuccess = async (data) => {
-  const user = JSON.parse(localStorage.getItem("user"));
-
-  if (!user || !user._id) {
-      toast.error("User authentication required.");
-      throw new Error("User authentication required.");
-  }
-
-  try {
-      console.log("📡 Capturing PayPal Order...");
+      console.log('📡 Creating PayPal Order...')
       const response = await fetch(
-          "https://backend-production-cbe2.up.railway.app/api/paypal/capture-order",
-          {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                  orderId: data.orderID,
-                  user: {
-                      _id: user._id,
-                      username: user.username || "Unknown User",
-                      billingEmail: user.billingEmail || "No email",
-                      phone: user.phone || "No phone",
-                      cartItems: cartItems.map((item) => ({
-                          name: item.name,
-                          price: Number(item.price) || 0,
-                          quantity: item.quantity || 1,
-                      })),
-                  },
-              }),
-          }
-      );
-
-      const result = await response.json();
-      console.log("📡 PayPal Capture Response:", result);
+        `https://backend-production-cbe2.up.railway.app/api/paypal/create-order`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user._id,
+            amount: Number(total.toFixed(2)),
+            cartItems: cartItems.map((item) => ({
+              name: item.name,
+              price: (Number(item.price) || 0).toFixed(2),
+              quantity: item.quantity || 1,
+            })),
+          }),
+        },
+      )
 
       if (!response.ok) {
-          throw new Error(result.error || "PayPal capture failed.");
+        toast.error('❌ Failed to create PayPal order.')
+        throw new Error('PayPal order creation failed.')
+      }
+
+      const data = await response.json()
+      console.log('🚀 PayPal Order Response:', data)
+
+      if (!data.orderId) {
+        toast.error('❌ No orderId returned from backend.')
+        throw new Error('No orderId returned.')
+      }
+
+      return data.orderId
+    } catch (error) {
+      console.error('❌ PayPal Order Creation Error:', error)
+      toast.error('PayPal order creation failed.')
+      return null
+    }
+  }
+
+  const handlePayPalSuccess = async (data) => {
+    const user = JSON.parse(localStorage.getItem('user'))
+
+    if (!user || !user._id) {
+      toast.error('User authentication required.')
+      throw new Error('User authentication required.')
+    }
+
+    try {
+      console.log('📡 Capturing PayPal Order...')
+      const response = await fetch(
+        'https://backend-production-cbe2.up.railway.app/api/paypal/capture-order',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId: data.orderID,
+            user: {
+              _id: user._id,
+              username: user.username || 'Unknown User',
+              billingEmail: user.billingEmail || 'No email',
+              phone: user.phone || 'No phone',
+              cartItems: cartItems.map((item) => ({
+                name: item.name,
+                price: Number(item.price) || 0,
+                quantity: item.quantity || 1,
+              })),
+            },
+          }),
+        },
+      )
+
+      const result = await response.json()
+      console.log('📡 PayPal Capture Response:', result)
+
+      if (!response.ok) {
+        throw new Error(result.error || 'PayPal capture failed.')
       }
 
       // ✅ Step 2: Call `addPurchasedClass` API to update user purchases
-      console.log("📡 Calling addPurchasedClass API...");
+      console.log('📡 Calling addPurchasedClass API...')
       const purchaseResponse = await fetch(
-          "https://backend-production-cbe2.up.railway.app/api/add-purchased-class",
-          {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                  userId: user._id,
-                  purchasedItems: cartItems.map((item) => ({
-                      name: item.name,
-                      description: item.description || "No description available",
-                  })),
-                  userEmail: user.billingEmail || "No email",
-              }),
-          }
-      );
+        'https://backend-production-cbe2.up.railway.app/api/add-purchased-class',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user._id,
+            purchasedItems: cartItems.map((item) => ({
+              name: item.name,
+              description: item.description || 'No description available',
+            })),
+            userEmail: user.billingEmail || 'No email',
+          }),
+        },
+      )
 
-      const purchaseResult = await purchaseResponse.json();
-      console.log("✅ Purchased Classes API Response:", purchaseResult);
+      const purchaseResult = await purchaseResponse.json()
+      console.log('✅ Purchased Classes API Response:', purchaseResult)
 
       if (!purchaseResponse.ok) {
-          console.warn("⚠️ Issue updating purchased classes:", purchaseResult.message);
+        console.warn('⚠️ Issue updating purchased classes:', purchaseResult.message)
       }
 
       // ✅ Step 3: Fetch Updated User Data
-      console.log("📡 Fetching updated user data...");
+      console.log('📡 Fetching updated user data...')
       const userResponse = await fetch(
-          `https://backend-production-cbe2.up.railway.app/api/user/${user._id}`
-      );
+        `https://backend-production-cbe2.up.railway.app/api/user/${user._id}`,
+      )
 
       if (!userResponse.ok) {
-          console.warn("⚠️ Failed to fetch updated user data.");
+        console.warn('⚠️ Failed to fetch updated user data.')
       } else {
-          const updatedUser = await userResponse.json();
-          console.log("✅ Updated User Data:", updatedUser);
+        const updatedUser = await userResponse.json()
+        console.log('✅ Updated User Data:', updatedUser)
 
-          // ✅ Step 4: Update Local Storage with New Purchased Classes
-          localStorage.setItem("user", JSON.stringify(updatedUser));
+        // ✅ Step 4: Update Local Storage with New Purchased Classes
+        localStorage.setItem('user', JSON.stringify(updatedUser))
       }
 
-      // ✅ Step 5: Clear Cart & Redirect
-      toast.success("🎉 Payment Successful! Your classes have been added.");
-       localStorage.removeItem("cartItems");
-       setCartItems([]);
-      navigate("/dashboard");
+      // ✅ **Clear Cart Properly**
+      localStorage.removeItem('cartItems')
+      setCartItems([])
+      window.dispatchEvent(new Event('storage'))
 
-  } catch (error) {
-      console.error("❌ Error in Payment Process:", error);
-      toast.error(error.message || "Payment processing error.");
+      toast.success('🎉 Payment Successful! Redirecting...')
+      setTimeout(() => {
+        window.location.href = '/dashboard'
+      }, 1000)
+    } catch (error) {
+      console.error('❌ Error in Payment Process:', error)
+      toast.error(error.message || 'Payment processing error.')
+    }
   }
-};
-
-
 
   // ✅ Function to Apply Coupon
   const applyCoupon = () => {
@@ -340,10 +340,16 @@ const handlePayPalSuccess = async (data) => {
       console.log('✅ Server Response:', data)
 
       toast.success('Payment Successful! Class added to your account.')
+      // ✅ Check if Backend Sent `clearCart`
+      if (result.clearCart) {
+        console.log('🛒 Backend Cleared Cart, Updating Frontend...')
+        localStorage.removeItem('cartItems')
+        setCartItems([])
+        window.dispatchEvent(new Event('storage'))
+      }
 
-      localStorage.removeItem('cartItems')
-
-      setTimeout(() => navigate('/dashboard'), 2000)
+      toast.success('🎉 Payment Successful! Redirecting...')
+      setTimeout(() => (window.location.href = '/dashboard'), 1000)
     } catch (error) {
       console.error('❌ Error saving purchased class:', error)
       toast.error(error.message || 'Error saving purchased class.')

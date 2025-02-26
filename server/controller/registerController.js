@@ -8,7 +8,6 @@ const sendEmail = require('../utils/emailSender')
 // ✅ Function to Generate JWT Token
 
 // ✅ Define Zoom Course Names
-const ZOOM_COURSES = ['Learn', 'Achieve', 'Excel']
 
 // ✅ Define Service Packages and Their Booking Limits
 const SERVICE_PACKAGES = {
@@ -17,23 +16,41 @@ const SERVICE_PACKAGES = {
   '8x30': 8,
 }
 
-// ✅ Define Static Zoom Links for Courses
-const ZOOM_LINKS = [
-  'https://us06web.zoom.us/meeting/register/mZHoQiy9SqqHx69f4dejgg#/registration',
-  'https://us06web.zoom.us/meeting/register/kejThKqpTpetwaMNI33bAQ#/registration',
-  'https://us06web.zoom.us/meeting/register/jH2N2rfMSXyqX1UDEZAarQ#/registration',
-  'https://us06web.zoom.us/meeting/register/Lsd_MFiwQpKRKhMZhPIYPw#/registration',
+// ✅ Map Each Zoom Link to a Custom Course Name
+const zoomCourseMapping = [
+  {
+    name: '📘 Algebra 1 Tutoring',
+    link: 'https://us06web.zoom.us/meeting/register/mZHoQiy9SqqHx69f4dejgg#/registration',
+  },
+  {
+    name: '📗 Algebra 2 Tutoring',
+    link: 'https://us06web.zoom.us/meeting/register/z2W2vvBHRQK_yEWMTteOrg#/registration',
+  },
+  {
+    name: '📕 Calculus 1 Tutoring',
+    link: 'https://us06web.zoom.us/meeting/register/kejTnKqpTpteWaMN13BAb0#/registration',
+  },
+  {
+    name: '📙 Pre-Calculus & Trigonometry Tutoring ',
+    link: 'https://us06web.zoom.us/meeting/register/jH2N2rFMSXyqX1UDEZAarQ#/registration',
+  },
+  {
+    name: '📒 Geometry Tutoring',
+    link: 'https://us06web.zoom.us/meeting/register/Lsd_MFiwQpKRKhMZhPIVPw#/registration',
+  },
 ]
 
-// ✅ Specific Zoom Link for "CommonCore"
-const COMMONCORE_ZOOM_LINK =
-  'https://us06web.zoom.us/meeting/register/XsYhADVmQcK8BIT3Sfbpyg#/registration'
+// ✅ Specific Zoom Link for Common Core
+const COMMONCORE_ZOOM_LINK = {
+  name: '📚  Common Core for Parents',
+  link: 'https://us06web.zoom.us/meeting/register/XsYhADVmQcK8BIIT3Sfbpyg#/registration',
+}
 
 // ✅ Define Calendly Booking Links
 const CALENDLY_LINKS = {
-  '3x30': 'https://calendly.com/rockstarmathtutoring/30-minute-session',
-  '5x30': 'https://calendly.com/rockstarmathtutoring/60min',
-  '8x30': 'https://calendly.com/rockstarmathtutoring/90-minute-sessions',
+  '3 x 30': 'https://calendly.com/rockstarmathtutoring/30-minute-session',
+  '5 - 30': 'https://calendly.com/rockstarmathtutoring/60min',
+  '8 x 30': 'https://calendly.com/rockstarmathtutoring/90-minute-sessions',
 }
 
 // ✅ Function to Generate Calendly Link with Booking Limits
@@ -297,17 +314,22 @@ exports.addPurchasedClass = async (req, res) => {
       }
 
       if (item.name === 'Learn') {
-        couponCodes.push({ code: 'URem36bx', percent_off: 10 });
-    } else if (item.name === 'Achieve') {
-        couponCodes.push({ code: 'G4R1If1p', percent_off: 30 });
-    } else if (item.name === 'Excel') {
-        couponCodes.push({ code: 'mZybTHmQ', percent_off: 20 });
-    }
-    
-    if (['Learn', 'Achieve', 'Excel'].includes(item.name)) {
-      console.log(`✅ Adding Zoom Links for ${item.name}`);
-      zoomLinks.push(...ZOOM_LINKS); // ✅ Fix: Properly add links
-  }
+        couponCodes.push({ code: 'URem36bx', percent_off: 10 })
+      } else if (item.name === 'Achieve') {
+        couponCodes.push({ code: 'G4R1If1p', percent_off: 30 })
+      } else if (item.name === 'Excel') {
+        couponCodes.push({ code: 'mZybTHmQ', percent_off: 20 })
+      }
+
+      if (['Learn', 'Achieve', 'Excel'].includes(item.name)) {
+        console.log(`✅ User purchased ${item.name}, adding ALL Zoom links with names`)
+
+        zoomCourseMapping.forEach((course) => {
+          if (!zoomLinks.some((z) => z.link === course.link)) {
+            zoomLinks.push(course) // ✅ Push full object with name & link
+          }
+        })
+      }
 
       // ✅ Assign CommonCore Zoom Link
       if (item.name === 'CommonCore') {
@@ -320,15 +342,20 @@ exports.addPurchasedClass = async (req, res) => {
     user.purchasedClasses.push(...newPurchases)
     user.coupons.push(...couponCodes) // Save all coupons
     await user.save()
-    console.log("📡 Zoom Links Before Sending Email:", zoomLinks);
-    console.log("🎟 Coupon Codes Before Sending Email:", couponCodes);
-    
+    console.log('📡 Zoom Links Before Sending Email:', zoomLinks)
+    console.log('🎟 Coupon Codes Before Sending Email:', couponCodes)
+
+    // ✅ Add Amazon Product Link & Image
+
     // ✅ Send Welcome Email (Always Sent)
     console.log(`📧 Sending Welcome Email to: ${userEmail}`)
     let welcomeSubject = `🎉 Welcome to Rockstar Math, ${user.username}!`
     let welcomeHtml = `
       <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
         <h2 style="color: #2C3E50;">🎉 Welcome to Rockstar Math, ${user.username}!</h2>
+        <h3 style="color: #5bc0de;">🛍 Special Offer for You:</h3>
+<p>Check out this recommended product:</p>
+<p><a href="https://www.amazon.com/dp/B0D44R3SL5/ref=sspa_dk_detail_3?psc=1&pd_rd_i=B0D44R3SL5&pd_rd_w=K0MXw&content-id=amzn1.sym.8c2f9165-8e93-42a1-8313-73d3809141a2&pf_rd_p=8c2f9165-8e93-42a1-8313-73d3809141a2&pf_rd_r=CNH7E1SA4NWVVVB5YM4N&pd_rd_wg=9ugAn&pd_rd_r=27af69a2-618d-4241-b284-91a4973d56f2&s=electronics&sp_csd=d2lkZ2V0TmFtZT1zcF9kZXRhaWw" target="_blank" style="color: #007bff;">View on Amazon</a></p>
         <p>Thank you for booking your session with <b>Rockstar Math!</b> I'm excited to work with you.</p>
         <p style="text-align: center;"><a href="https://calendly.com/rockstarmathtutoring" style="background-color:#007bff; padding:12px 24px; color:white; text-decoration:none; border-radius:6px; font-weight:bold;">📅 Book Your Next Session</a></p>
         <p>Best regards,<br><b>Amy Gemme</b><br>Rockstar Math Tutoring<br>📞 510-410-4963</p>
@@ -350,13 +377,16 @@ exports.addPurchasedClass = async (req, res) => {
         <ul style="list-style-type: none; padding: 0;">
     `
 
-    // ✅ Include Zoom Links (if available)
+    // ✅ Show Proper Course Names & Their Correct Zoom Links
     if (zoomLinks.length > 0) {
-      zoomLinks.forEach((link, index) => {
-        detailsHtml += `<li style="margin-bottom: 10px;">📚 Course ${
-          index + 1
-        } – <a href="${link}" target="_blank" style="color: #007bff;">Register Here</a></li>`
+      detailsHtml += `<h3>🔗 Your Course Zoom Links:</h3><ul>`
+
+      zoomLinks.forEach((course) => {
+        detailsHtml += `<li>📚 <b>${course.name}</b> – 
+          <a href="${course.link}" target="_blank">Register Here</a></li>`
       })
+
+      detailsHtml += `</ul>`
     }
 
     // ✅ Include CommonCore Zoom Link
@@ -376,13 +406,6 @@ exports.addPurchasedClass = async (req, res) => {
       detailsHtml += `<h3 style="color: #d9534f;">🎟 No Discount Coupons Available</h3>`
     }
 
-    // ✅ Add Amazon Product Link & Image
-    detailsHtml += `
-<h3 style="color: #5bc0de;">🛍 Special Offer for You:</h3>
-<p>Check out this recommended product:</p>
-
-<p><a href="https://www.amazon.com/dp/B0D44R3SL5/ref=sspa_dk_detail_3?psc=1&pd_rd_i=B0D44R3SL5&pd_rd_w=K0MXw&content-id=amzn1.sym.8c2f9165-8e93-42a1-8313-73d3809141a2&pf_rd_p=8c2f9165-8e93-42a1-8313-73d3809141a2&pf_rd_r=CNH7E1SA4NWVVVB5YM4N&pd_rd_wg=9ugAn&pd_rd_r=27af69a2-618d-4241-b284-91a4973d56f2&s=electronics&sp_csd=d2lkZ2V0TmFtZT1zcF9kZXRhaWw" target="_blank" style="color: #007bff;">View on Amazon</a></p>`
-
     detailsHtml += `
         <h3 style="color: #5bc0de;">📌 Next Steps:</h3>
         <ol>
@@ -394,9 +417,9 @@ exports.addPurchasedClass = async (req, res) => {
         <p style="text-align: center; font-size: 16px; font-weight: bold;">We can’t wait to see you in class! 🎉</p>
       </div>`
 
-      if (!ZOOM_LINKS || ZOOM_LINKS.length === 0) {
-        console.error("❌ ZOOM_LINKS is empty or undefined!");
-    }
+    // if (!ZOOM_LINKS || ZOOM_LINKS.length === 0) {
+    //   console.error('❌ ZOOM_LINKS is empty or undefined!')
+    // }
 
     await sendEmail(userEmail, detailsSubject, '', detailsHtml)
     console.log('✅ Zoom links & coupon email sent successfully!')

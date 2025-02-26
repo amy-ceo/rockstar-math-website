@@ -82,7 +82,7 @@ const Services = () => {
     ),
     "Recommended for Student up to Algebra I": services.filter(
       (service) =>
-        /(\b8 x 30 minutes\b|\b5 x 30 minutes\b|\b3 x 30 minutes\b)/i.test(service.name)
+        /(\b8 x 30 minutes\b|\b5 - 30 minutes\b|\b3 x 30 minutes\b)/i.test(service.name)
     ),
     "60 Minute Sessions - Standard": services.filter((service) =>
       /(\b8 x 60 minutes\b|\b5 x 60 minutes\b|\b3 x 60 minutes\b)/i.test(service.name)
@@ -93,6 +93,9 @@ const Services = () => {
     ),
     "Seasonal - AP Calc 13 Sessions": services.filter((service) =>
       /(\b13 x 30 minutes\b|\b13 x 60 minutes\b|\b13 x 90 minutes\b)/i.test(service.name)
+    ),
+    "Sessions": services.filter((service) =>
+      /(\b90 Minute Tutoring Session\b|\b30 Minute Tutoring Session\b|\b60 Minute Tutoring Session\b)/i.test(service.name)
     ),
   };
 
