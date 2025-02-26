@@ -346,8 +346,8 @@ router.post('/create-checkout-session', async (req, res) => {
       payment_method_types: ['card'],
       line_items: lineItems,
       mode: 'payment',
-      success_url: 'http://localhost:8080/payment-success',
-      cancel_url: 'http://localhost:8080/payment-cancel',
+      success_url: 'https://frontend-production-9912.up.railway.app/payment-success',
+      cancel_url: 'https://frontend-production-9912.up.railway.app/payment-cancel',
       client_reference_id: userId,
       metadata: {
         userId: userId,
