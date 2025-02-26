@@ -4,9 +4,29 @@ const jwt = require('jsonwebtoken')
 const crypto = require('crypto')
 const cron = require('node-cron')
 const sendEmail = require('../utils/emailSender')
+const stripe = require('stripe')('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'); // 🛑 Replace with your actual Stripe Secret Key
 
-// ✅ Function to Generate JWT Token
+// ✅ Coupans
+async function getActiveCoupons() {
+  try {
+    const coupons = await stripe.coupons.list({ limit: 100 }); // Fetch latest coupons
 
+    let activeCoupons = coupons.data
+      .filter(coupon => coupon.percent_off) // Ensure it has a discount
+      .map(coupon => ({
+        id: coupon.id,
+        code: coupon.id, // Use ID as the coupon code
+        percent_off: coupon.percent_off,
+        expires: coupon.redeem_by ? new Date(coupon.redeem_by * 1000) : 'Forever',
+      }));
+
+    console.log('✅ Active Coupons:', activeCoupons);
+    return activeCoupons;
+  } catch (error) {
+    console.error('❌ Error Fetching Coupons:', error.message);
+    return [];
+  }
+}
 // ✅ Define Zoom Course Names
 
 // ✅ Define Service Packages and Their Booking Limits
@@ -284,7 +304,7 @@ exports.addPurchasedClass = async (req, res) => {
     ) {
       return res.status(400).json({ message: 'Invalid request. Missing data.' })
     }
-
+    const activeCoupons = await getActiveCoupons();
     let zoomLinks = []
     let couponCodes = [] // Store multiple coupons
     let commonCorePurchased = false
@@ -313,14 +333,21 @@ exports.addPurchasedClass = async (req, res) => {
         purchaseDate: new Date(),
       }
 
-      if (item.name === 'Learn') {
-        couponCodes.push({ code: 'URem36bx', percent_off: 10 })
-      } else if (item.name === 'Achieve') {
-        couponCodes.push({ code: 'G4R1If1p', percent_off: 30 })
-      } else if (item.name === 'Excel') {
-        couponCodes.push({ code: 'mZybTHmQ', percent_off: 20 })
-      }
+      // ✅ Assign Coupons Based on Course Name
+      let matchedCoupon = activeCoupons.find(coupon => {
+        if (item.name === 'Learn' && coupon.percent_off === 10) return true;
+        if (item.name === 'Achieve' && coupon.percent_off === 30) return true;
+        if (item.name === 'Excel' && coupon.percent_off === 20) return true;
+        return false;
+      });
 
+      if (matchedCoupon) {
+        couponCodes.push({
+          code: matchedCoupon.code,
+          percent_off: matchedCoupon.percent_off,
+          expires: matchedCoupon.expires,
+        });
+      }
       if (['Learn', 'Achieve', 'Excel'].includes(item.name)) {
         console.log(`✅ User purchased ${item.name}, adding ALL Zoom links with names`)
 
@@ -396,15 +423,17 @@ exports.addPurchasedClass = async (req, res) => {
 
     detailsHtml += `</ul>`
 
-    // ✅ Include Coupons (if available)
-    if (couponCodes.length > 0) {
-      detailsHtml += `<h3 style="color: #d9534f;">🎟 Your Exclusive Discount Coupons:</h3>`
-      couponCodes.forEach((coupon) => {
-        detailsHtml += `<p><b>Coupon Code:</b> ${coupon.code} - ${coupon.percent_off}% off</p>`
-      })
-    } else {
-      detailsHtml += `<h3 style="color: #d9534f;">🎟 No Discount Coupons Available</h3>`
-    }
+   // ✅ Include Coupons (if available)
+   if (couponCodes.length > 0) {
+    detailsHtml += `<h3 style="color: #d9534f;">🎟 Your Exclusive Discount Coupons:</h3>`;
+    couponCodes.forEach(coupon => {
+      detailsHtml += `<p><b>Coupon Code:</b> ${coupon.code} - ${coupon.percent_off}% off 
+      (Expires on: ${coupon.expires})</p>`;
+    });
+  } else {
+    detailsHtml += `<h3 style="color: #d9534f;">🎟 No Discount Coupons Available</h3>`;
+  }
+
 
     detailsHtml += `
         <h3 style="color: #5bc0de;">📌 Next Steps:</h3>

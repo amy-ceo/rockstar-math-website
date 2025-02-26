@@ -2,7 +2,7 @@ const stripe = require('stripe')('sk_live_51QKwhUE4sPC5ms3xPpZyyZsz61q4FD1A4x9qo
 
 async function getAllCoupons() {
   try {
-    const coupons = await stripe.coupons.list({ limit: 10 }); // Fetch last 10 coupons
+    const coupons = await stripe.coupons.list({ limit: 100 }); // Fetch last 10 coupons
     console.log("🎟 Available Coupons:");
     coupons.data.forEach(coupon => {
       console.log(`🆔 ${coupon.id} | 💰 ${coupon.percent_off}% Off | 📆 ${coupon.duration}`);
