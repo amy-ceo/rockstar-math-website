@@ -147,9 +147,9 @@ router.post('/create-payment-intent', async (req, res) => {
 
     console.log('🔹 Received Payment Request:', { amount, currency, userId, orderId, cartItems });
 
-    if (!userId || !orderId || !cartItems || cartItems.length === 0) {
-      console.error('❌ Missing required fields.');
-      return res.status(400).json({ error: 'Invalid request. Missing userId, orderId, or cart items.' });
+    if (!userId || !orderId) {
+      console.error('❌ Missing userId or orderId.');
+      return res.status(400).json({ error: 'Missing userId or orderId.' });
     }
 
     if (!amount || isNaN(amount) || amount <= 0) {
@@ -159,23 +159,26 @@ router.post('/create-payment-intent', async (req, res) => {
 
     amount = Math.round(amount * 100); // Convert to cents
 
-    // ✅ Ensure Currency is Supported
     const supportedCurrencies = ['usd', 'eur', 'gbp', 'cad', 'aud'];
     if (!currency || !supportedCurrencies.includes(currency.toLowerCase())) {
       console.error('❌ Unsupported currency:', currency);
       return res.status(400).json({ error: 'Unsupported currency. Use USD, EUR, GBP, etc.' });
     }
 
-    // ✅ Create Stripe Payment Intent
+    // ✅ Fix: Convert metadata values to STRING only
+    const metadata = {
+      userId: String(userId),
+      orderId: String(orderId),
+      cartItems: JSON.stringify(cartItems), // ✅ Convert array to string
+    };
+
+    console.log('📡 Sending Payment Intent with Metadata:', metadata);
+
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amount,
       currency: currency.toLowerCase(),
       payment_method_types: ['card'],
-      metadata: {
-        userId,
-        orderId,
-        cartItems: JSON.stringify(cartItems), // ✅ Store Cart Items for Backend Processing
-      },
+      metadata, // ✅ Correct metadata format
     });
 
     if (!paymentIntent.client_secret) {
@@ -191,6 +194,7 @@ router.post('/create-payment-intent', async (req, res) => {
     res.status(500).json({ error: 'Payment creation failed. Please try again later.' });
   }
 });
+
 
 
 router.post("/capture-stripe-payment", async (req, res) => {
