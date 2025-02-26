@@ -8,7 +8,7 @@ const authRoutes = require('./routes/authRoutes');
 const registerRoutes = require("./routes/registerRoutes");
 // const otpRoutes = require("./routes/otpRoutes");
 const classRoutes = require("./routes/classRoutes");
-
+const StripeWebhookRoutes = require("./routes/stripeWebhook"); // ✅ Import Webhook Route
 const subscribeRoute = require("./routes/subscribeRoute");
 const contactRoutes = require('./routes/contactRoutes');
 const stripeRoutes = require("./routes/stripe"); // Import the Stripe route
@@ -25,9 +25,9 @@ const blogRoutes = require('./routes/blogRoutes');
 const webhookRoutes = require("./routes/webhookRoutes.js")
 connectDB();
 const app = express();
+// ✅ JSON Middleware for Other Routes (Not Webhook)
 app.use(express.json());
-app.use(express.urlencoded({ extended: true })); // Support form-urlencoded bodies
-app.use(bodyParser.json()); // Ensure JSON body parsing
+app.use(express.urlencoded({ extended: true }));
 const allowedOrigins = [
   "http://localhost:8080", // Local Development
   "https://frontend-production-9912.up.railway.app", // Production URL
@@ -122,6 +122,8 @@ app.use("/api/stripe", stripeRoutes); // Set up route
 app.use("/api", registerRoutes);
 app.use("/api/classes", classRoutes);
 
+// ✅ **Use Webhook Route Properly**
+app.use("/api/webhook", StripeWebhookRoutes); // 🔥 Fix: Properly Include Webhook Route
 // app.use("/api/otp", otpRoutes);
 app.use("/api/admin", adminRoutes);
 app.use('/api/blogs', blogRoutes);
