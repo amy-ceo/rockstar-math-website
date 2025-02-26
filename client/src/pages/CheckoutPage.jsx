@@ -323,32 +323,82 @@ const CheckoutPage = () => {
               paymentIntentId,
               user: {
                 _id: user._id,
+                username: user.username || "Unknown User",
                 billingEmail: user.billingEmail || "No email",
-                cartItems, // ✅ Ensure cartItems are included
+                phone: user.phone || "No phone",
+                cartItems: cartItems.map((item) => ({
+                  name: item.name,
+                  price: Number(item.price) || 0,
+                  quantity: item.quantity || 1,
+                })),
               },
             }),
           }
         );
     
         const result = await response.json();
-        console.log("✅ Stripe Payment Capture Response:", result);
+        console.log("📡 Stripe Capture Response:", result);
     
         if (!response.ok) {
           throw new Error(result.error || "Stripe payment capture failed.");
         }
     
-        // ✅ Clear Cart & Update UI
+        // ✅ **Step 2: Call `addPurchasedClass` API to update user purchases**
+        console.log("📡 Calling addPurchasedClass API...");
+        const purchaseResponse = await fetch(
+          "https://backend-production-cbe2.up.railway.app/api/add-purchased-class",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              userId: user._id,
+              purchasedItems: cartItems.map((item) => ({
+                name: item.name,
+                description: item.description || "No description available",
+              })),
+              userEmail: user.billingEmail || "No email",
+            }),
+          }
+        );
+    
+        const purchaseResult = await purchaseResponse.json();
+        console.log("✅ Purchased Classes API Response:", purchaseResult);
+    
+        if (!purchaseResponse.ok) {
+          console.warn("⚠️ Issue updating purchased classes:", purchaseResult.message);
+        }
+    
+        // ✅ **Step 3: Fetch Updated User Data**
+        console.log("📡 Fetching updated user data...");
+        const userResponse = await fetch(
+          `https://backend-production-cbe2.up.railway.app/api/user/${user._id}`
+        );
+    
+        if (!userResponse.ok) {
+          console.warn("⚠️ Failed to fetch updated user data.");
+        } else {
+          const updatedUser = await userResponse.json();
+          console.log("✅ Updated User Data:", updatedUser);
+    
+          // ✅ **Step 4: Update Local Storage with New Purchased Classes**
+          localStorage.setItem("user", JSON.stringify(updatedUser));
+        }
+    
+        // ✅ **Clear Cart Properly**
         localStorage.removeItem("cartItems");
         setCartItems([]);
         window.dispatchEvent(new Event("storage"));
     
         toast.success("🎉 Payment Successful! Redirecting...");
-        setTimeout(() => (window.location.href = "/dashboard"), 1000);
+        setTimeout(() => {
+          window.location.href = "/dashboard";
+        }, 1000);
       } catch (error) {
         console.error("❌ Error in Payment Process:", error);
         toast.error(error.message || "Payment processing error.");
       }
     };
+    
     
 
   return (

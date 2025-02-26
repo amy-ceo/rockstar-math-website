@@ -216,7 +216,7 @@ router.post("/capture-stripe-payment", async (req, res) => {
 
     console.log("✅ Stripe Payment Successful:", paymentIntentId);
 
-    // ✅ Save Payment in Database
+    // ✅ **Step 1: Save Payment in Database**
     try {
       const newPayment = new Payment({
         orderId: `stripe_${Date.now()}`,
@@ -237,18 +237,9 @@ router.post("/capture-stripe-payment", async (req, res) => {
       return res.status(500).json({ error: "Database error while saving payment." });
     }
 
-    // ✅ Call `addPurchasedClass` to update user purchases
+    // ✅ **Step 2: Call `addPurchasedClass` API**
     try {
       console.log("📡 Calling addPurchasedClass API...");
-      console.log("🔹 Payload:", {
-        userId: user._id,
-        purchasedItems: user.cartItems.map((item) => ({
-          name: item.name,
-          description: item.description || "No description available",
-        })),
-        userEmail: user.billingEmail || "No email",
-      });
-
       const purchaseResponse = await fetch(
         "https://backend-production-cbe2.up.railway.app/api/add-purchased-class",
         {
@@ -271,12 +262,11 @@ router.post("/capture-stripe-payment", async (req, res) => {
       if (!purchaseResponse.ok) {
         console.warn("⚠️ Issue updating purchased classes:", purchaseResult.message);
       }
-
     } catch (purchaseError) {
       console.error("❌ Error calling addPurchasedClass API:", purchaseError);
     }
 
-    // ✅ Send Success Response
+    // ✅ **Step 3: Send Response to Frontend**
     res.json({ message: "Payment captured & records updated successfully.", clearCart: true });
 
   } catch (error) {
@@ -284,6 +274,7 @@ router.post("/capture-stripe-payment", async (req, res) => {
     res.status(500).json({ error: "Internal Server Error", details: error.message || error });
   }
 });
+
 
 
 
