@@ -147,9 +147,9 @@ router.post('/create-payment-intent', async (req, res) => {
 
     console.log('🔹 Received Payment Request:', { amount, currency, userId, orderId, cartItems });
 
-    if (!userId || !orderId) {
-      console.error('❌ Missing userId or orderId.');
-      return res.status(400).json({ error: 'Missing userId or orderId.' });
+    if (!userId || !orderId || !cartItems || cartItems.length === 0) {
+      console.error('❌ Missing required fields:', { userId, orderId, cartItems });
+      return res.status(400).json({ error: 'Missing required fields: userId, orderId, cartItems.' });
     }
 
     if (!amount || isNaN(amount) || amount <= 0) {
@@ -177,7 +177,7 @@ router.post('/create-payment-intent', async (req, res) => {
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amount,
       currency: currency.toLowerCase(),
-      payment_method_types: ['card'],
+      payment_method_types: ['card'], // ✅ Ensure "card" is set properly
       metadata, // ✅ Correct metadata format
     });
 

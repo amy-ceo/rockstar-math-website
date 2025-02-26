@@ -242,50 +242,60 @@ const CheckoutPage = () => {
     // ✅ Create Stripe Payment Intent
     const createPaymentIntent = async () => {
       if (total <= 0) {
-        toast.error("Cannot process a payment of $0.00!");
+        handleZeroAmount();
         return null;
       }
-  
+    
       try {
         const user = JSON.parse(localStorage.getItem("user"));
-        const userId = user && user._id ? user._id : "guest_user";
-        const userEmail = user && user.billingEmail ? user.billingEmail : "guest@example.com";
+        if (!user || !user._id) {
+          toast.error("User authentication required!");
+          return;
+        }
+    
         const orderId = `order_${Date.now()}`;
-  
+        const currency = "usd";
+    
+        // ✅ Convert Cart Items to Proper Format
+        const formattedCartItems = cartItems.map(item => ({
+          id: item.id,
+          name: item.name,
+          description: item.description || "No description available",
+          price: String(item.price), // Ensure price is a string
+          currency: item.currency || "USD"
+        }));
+    
         console.log("🔹 Sending Payment Request:", {
           amount: total,
-          currency: "usd",
-          userId,
+          currency,
+          userId: user._id,
           orderId,
-          userEmail,
-          cartItems, // ✅ Ensure cartItems is sent
+          cartItems: formattedCartItems, // ✅ Send formatted cart items
         });
-  
-        const response = await fetch(
-          "https://backend-production-cbe2.up.railway.app/api/stripe/create-payment-intent",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              amount: total,
-              currency: "usd",
-              userId,
-              orderId,
-              cartItems, // ✅ Ensure cartItems is included in request
-            }),
-          }
-        );
-  
+    
+        const response = await fetch("http://localhost:5000/api/stripe/create-payment-intent", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            amount: total,
+            currency,
+            userId: user._id,
+            orderId,
+            cartItems: formattedCartItems, // ✅ Fix data format
+          }),
+        });
+    
         if (!response.ok) {
-          throw new Error(`Payment Intent creation failed.`);
+          console.error("❌ Failed to create payment intent. Status:", response.status);
+          throw new Error(`Payment Intent creation failed. Server responded with ${response.status}`);
         }
-  
+    
         const data = await response.json();
         console.log("✅ Payment Intent Created:", data);
-  
+    
         setPaymentIntentId(data.id);
         setClientSecret(data.clientSecret);
-  
+    
         return data.clientSecret;
       } catch (error) {
         console.error("❌ Payment Intent Error:", error);
@@ -293,7 +303,7 @@ const CheckoutPage = () => {
         return null;
       }
     };
-  
+    
 
     const handlePaymentSuccess = async () => {
       try {
