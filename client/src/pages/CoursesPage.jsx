@@ -3,15 +3,11 @@ import { IoMdPlay, IoMdClose } from 'react-icons/io'
 import axios from 'axios'
 import toast, { Toaster } from 'react-hot-toast'
 import { Link } from 'react-router-dom'
-import Image1 from "../assets/math-image.jpg"
-import Image2 from "../assets/math-image2.jpg"
-import Image3 from "../assets/math-image3.jpg"
-import Image4 from "../assets/math-image4.jpg"
-import Image5 from "../assets/math-image5.jpg"
-
-
-
-
+import Image1 from '../assets/math-image.jpg'
+import Image2 from '../assets/math-image2.jpg'
+import Image3 from '../assets/math-image3.jpg'
+import Image4 from '../assets/math-image4.jpg'
+import Image5 from '../assets/math-image5.jpg'
 
 // Lazy Load Components
 const WaitlistForm = lazy(() => import('../components/WaitlistForm'))
@@ -43,31 +39,92 @@ const CoursesPage = () => {
     },
   ]
 
+  // const courses = [
+
+  //   // {
+  //   //   courseName: 'Mathematics Mastery',
+  //   //   videoUrl: '/videos/video.mp4',
+  //   //   thumbnailUrl: '/images/teacher1.png',
+  //   //   points: [
+  //   //     'Learn from basic algebra to advanced calculus.',
+  //   //     'Expert instructors with years of experience.',
+  //   //     'Interactive lessons with real-world applications.',
+  //   //     'Practice tests to track your progress.',
+  //   //   ],
+  //   // },
+  //   // {
+  //   //   courseName: 'Physics for Beginners',
+  //   //   videoUrl: '/videos/video.mp4',
+  //   //   thumbnailUrl: '/images/teacher2.png',
+  //   //   points: [
+  //   //     'Simplified concepts for easy understanding.',
+  //   //     'Hands-on experiments to solidify learning.',
+  //   //     'Comprehensive coverage of Newtonian mechanics.',
+  //   //     'Visual aids for enhanced grasp of topics.',
+  //   //   ],
+  //   // },
+  //   {
+  //     courseName: 'Sacred Geometry (10+)',
+  //     videoUrl: '/videos/video.mp4',
+  //     thumbnailUrl: Image1,
+  //     points: [
+  //       'Explore the mathematical beauty behind nature’s patterns and ancient symbols.',
+  //       'Learn about the Golden Ratio, Fibonacci sequence, and their real-world applications.',
+  //       'Discover the significance of geometric shapes in art, architecture, and spirituality.',
+  //       'Engage in hands-on activities to create and analyze sacred geometric designs.',
+  //     ],
+  //   },
+  //   {
+  //     courseName: 'Euclid’s Elements (10+)',
+  //     videoUrl: '/videos/video.mp4',
+  //     thumbnailUrl: Image2,
+  //     points: [
+  //       'Dive into the foundations of geometry as taught by the ancient mathematician Euclid.',
+  //       'Understand the logic behind axioms, theorems, and geometric proofs.',
+  //       'Explore how Euclidean principles shape modern mathematics and engineering.',
+  //       'Solve interactive problems inspired by Euclid’s timeless work.',
+  //     ],
+  //   },
+  //   {
+  //     courseName: 'Number Ninjas (7-12)',
+  //     videoUrl: '/videos/video.mp4',
+  //     thumbnailUrl: Image3,
+  //     points: [
+  //       'Master math fundamentals with fun, engaging challenges and games.',
+  //       'Develop problem-solving skills through real-world math puzzles.',
+  //       'Strengthen arithmetic, fractions, and algebraic thinking with hands-on activities.',
+  //       'Earn ninja ranks as you progress through different levels of math mastery.',
+  //     ],
+  //   },
+  //   {
+  //     courseName: 'Misinformation Detective (10+)',
+  //     videoUrl: '/videos/video.mp4',
+  //     thumbnailUrl: Image4,
+  //     points: [
+  //       'Learn how to identify misleading statistics and debunk math-related myths.',
+  //       'Develop critical thinking skills to analyze data and recognize false claims.',
+  //       'Explore real-world examples of misinformation in media, finance, and science.',
+  //       'Use mathematical reasoning to uncover the truth behind deceptive numbers.',
+  //     ],
+  //   },
+  //   {
+  //     courseName: 'Math For Trades (14-18)',
+  //     videoUrl: '/videos/video.mp4',
+  //     thumbnailUrl: Image5,
+  //     points: [
+  //       'Apply practical math skills for careers in construction, carpentry, and other trades.',
+  //       'Learn measurements, angles, and ratios used in real-world projects.',
+  //       'Understand budgeting, material estimation, and blueprint reading.',
+  //       'Gain confidence in using math for hands-on problem-solving in skilled trades.',
+  //     ],
+  //   },
+  // ]
+
+  // ✅ Open Video Modal
+
   const courses = [
-    // {
-    //   courseName: 'Mathematics Mastery',
-    //   videoUrl: '/videos/video.mp4',
-    //   thumbnailUrl: '/images/teacher1.png',
-    //   points: [
-    //     'Learn from basic algebra to advanced calculus.',
-    //     'Expert instructors with years of experience.',
-    //     'Interactive lessons with real-world applications.',
-    //     'Practice tests to track your progress.',
-    //   ],
-    // },
-    // {
-    //   courseName: 'Physics for Beginners',
-    //   videoUrl: '/videos/video.mp4',
-    //   thumbnailUrl: '/images/teacher2.png',
-    //   points: [
-    //     'Simplified concepts for easy understanding.',
-    //     'Hands-on experiments to solidify learning.',
-    //     'Comprehensive coverage of Newtonian mechanics.',
-    //     'Visual aids for enhanced grasp of topics.',
-    //   ],
-    // },
     {
-      courseName: 'Sacred Geometry (10+)',
+      courseName: 'Sacred Geometry (10+)', // LEFT
       videoUrl: '/videos/video.mp4',
       thumbnailUrl: Image1,
       points: [
@@ -78,7 +135,7 @@ const CoursesPage = () => {
       ],
     },
     {
-      courseName: 'Euclid’s Elements (10+)',
+      courseName: 'Euclid’s Elements (10+)', // RIGHT
       videoUrl: '/videos/video.mp4',
       thumbnailUrl: Image2,
       points: [
@@ -89,7 +146,7 @@ const CoursesPage = () => {
       ],
     },
     {
-      courseName: 'Number Ninjas (7-12)',
+      courseName: 'Number Ninjas (7-12)', // LEFT
       videoUrl: '/videos/video.mp4',
       thumbnailUrl: Image3,
       points: [
@@ -100,7 +157,7 @@ const CoursesPage = () => {
       ],
     },
     {
-      courseName: 'Misinformation Detective (10+)',
+      courseName: 'Misinformation Detective (10+)', // RIGHT
       videoUrl: '/videos/video.mp4',
       thumbnailUrl: Image4,
       points: [
@@ -111,7 +168,7 @@ const CoursesPage = () => {
       ],
     },
     {
-      courseName: 'Math For Trades (14-18)',
+      courseName: 'Math For Trades (14-18)', // LEFT
       videoUrl: '/videos/video.mp4',
       thumbnailUrl: Image5,
       points: [
@@ -123,7 +180,14 @@ const CoursesPage = () => {
     },
   ]
 
-  // ✅ Open Video Modal
+  console.log(
+    courses.map((c, i) => ({
+      index: i,
+      name: c.courseName,
+      classApplied: i % 2 !== 0 ? 'md:flex-row-reverse' : 'md:flex-row',
+    })),
+  )
+
   const openModal = (videoUrl) => {
     setCurrentVideo(videoUrl)
     setIsModalOpen(true)
@@ -223,9 +287,9 @@ const CoursesPage = () => {
             {courses.map((course, index) => (
               <div
                 key={index}
-                className={`flex flex-col md:flex-row items-center gap-10 ${
-                  index % 2 !== 0 ? 'md:flex-row-reverse' : ''
-                }`}
+                className={`flex flex-col md:flex-row ${
+                  index % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'
+                } items-center gap-10`}
               >
                 {/* ✅ Course Info Section (Left) */}
                 <div className="flex-1 p-6 rounded-lg flex flex-col justify-between h-full">

@@ -71,7 +71,7 @@ const SubscriptionPage = () => {
 
   return (
     <>
-      <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center py-16">
+      <div className="w-full min-h-screen bg-gray-100 flex flex-col items-center justify-center py-16">
         <div className="text-center py-24 bg-deepBlue w-full text-white">
           <h2 className="text-3xl font-bold">Your Path to Math Mastery Starts Here</h2>
           <p className="max-w-2xl mx-auto mt-2">
