@@ -18,11 +18,11 @@ const courses = [
   { id: "precalculus", Icon: TbMath, title: "Geometry Tutoring", link: "/subscription", tooltip: "⭐ Join group tutoring for Geometry on our subscription page" },
   { id: "business-calculus", Icon: TbBusinessplan, title: "Common Core For Parents", link: "/subscription", tooltip: "⭐ oin group tutoring for Common Core For Parents on our subscription page" },
   { id: "calculus-1", Icon: TbMath, title: "PreCalc and Trig", link: "/subscription" ,tooltip: "⭐ Join group tutoring for PreCalc and Trig on our subscription page" },
-  { id: "calculus-2", Icon: RiFunctionLine, title: "Calculus 2", link: "/courses/calculus-2" },
-  { id: "calculus-3", Icon: GiStairs, title: "Calculus 3 (Multivariable)", link: "/courses/calculus-3" },
-  { id: "probability", Icon: IoIosStats, title: "Probability and Statistics", link: "/courses/probability" },
-  { id: "discrete-math", Icon: MdOutlineBarChart, title: "Discrete Math", link: "/courses/discrete-math" },
-  { id: "linear-algebra", Icon: MdOutlineMultilineChart, title: "Linear Algebra", link: "/courses/linear-algebra" },
+  { id: "calculus-2", Icon: RiFunctionLine, title: "Sacred Geometry (10+)", link: "/courses/calculus-2" },
+  { id: "calculus-3", Icon: GiStairs, title: "Euclid Elements (10+)", link: "/courses/calculus-3" },
+  { id: "probability", Icon: IoIosStats, title: "Number Ninjas (7-12) ", link: "/courses/probability" },
+  { id: "discrete-math", Icon: MdOutlineBarChart, title: "Misinformation Detective (10+)", link: "/courses/discrete-math" },
+  { id: "linear-algebra", Icon: MdOutlineMultilineChart, title: "Math For Trades (14-18) ", link: "/courses/linear-algebra" },
   { id: "differential-equations", Icon: RiFunctionLine, title: "Differential Equations", link: "/courses/differential-equations" },
 ];
 

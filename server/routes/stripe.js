@@ -10,13 +10,7 @@ const stripe = require('stripe')(
   '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',
 )
 
-const ZOOM_LINKS = [
-  'https://us06web.zoom.us/meeting/register/mZHoQiy9SqqHx69f4dejgg#/registration',
-  'https://us06web.zoom.us/meeting/register/kejThKqpTpetwaMNI33bAQ#/registration',
-  'https://us06web.zoom.us/meeting/register/jH2N2rfMSXyqX1UDEZAarQ#/registration',
-  'https://us06web.zoom.us/meeting/register/Lsd_MFiwQpKRKhMZhPIYPw#/registration',
-  'https://us06web.zoom.us/meeting/register/XsYhADVmQcK8BIT3Sfbpyg#/registration',
-]
+
 
 router.get('/test-products', async (req, res) => {
   try {
@@ -61,7 +55,7 @@ router.get('/get-plans', async (req, res) => {
     }
 
     // ✅ Fix Filtering Logic (Trim & Case-Insensitive)
-    const allowedNames = ['learn', 'achieve', 'excel', 'common core- parents']
+    const allowedNames = ['learn', 'achieve', 'excel', 'common core- parents', ]
     const filteredProducts = allProducts.filter((product) =>
       allowedNames.includes(product.name.trim().toLowerCase()),
     )
@@ -108,7 +102,7 @@ router.get('/get-products', async (req, res) => {
     while (hasMore) {
       const params = {
         active: true,
-        limit: 10, // Fetch 10 at a time to avoid overload
+        limit: 100, // Fetch 10 at a time to avoid overload
         expand: ['data.default_price'], // Expand price for frontend
       }
 

@@ -94,9 +94,9 @@ const Services = () => {
     "Seasonal - AP Calc 13 Sessions": services.filter((service) =>
       /(\b13 x 30 minutes\b|\b13 x 60 minutes\b|\b13 x 90 minutes\b)/i.test(service.name)
     ),
-    "Sessions": services.filter((service) =>
-      /(\b90 Minute Tutoring Session\b|\b30 Minute Tutoring Session\b|\b60 Minute Tutoring Session\b)/i.test(service.name)
-    ),
+      "Sessions": services.filter((service) =>
+        /(\b90 Minute Tutoring Session\b|\b30 Minute Tutoring Session\b|\b60 Minute Tutoring Session\b)/i.test(service.name)
+      ),
   };
 
   return (
