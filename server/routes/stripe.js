@@ -363,11 +363,13 @@ router.post('/create-checkout-session', async (req, res) => {
   }
 })
 
-router.post("/webhook", express.raw({ type: "application/json" }), async (req, res) => {
+// ✅ Middleware to parse raw body for webhook only
+router.post("/webhook", bodyParser.raw({ type: "application/json" }), async (req, res) => {
   let event;
+
   try {
     const sig = req.headers["stripe-signature"];
-    const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    const endpointSecret = 'whsec_HMjLUntxRgqLxy6MjeeX47AcDcDC0hw9'; // ✅ Ensure it's set in .env
 
     event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
   } catch (err) {
@@ -397,17 +399,28 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
 
     try {
       console.log("📡 Calling addPurchasedClass API...");
-      await fetch("https://backend-production-cbe2.up.railway.app/api/add-purchased-class", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: userId,
-          purchasedItems: cartItems,
-          userEmail: "No email provided",
-        }),
-      });
+      const purchaseResponse = await fetch(
+        "https://backend-production-cbe2.up.railway.app/api/add-purchased-class",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: userId,
+            purchasedItems: cartItems.map((item) => ({
+              name: item.name,
+              description: item.description || "No description available",
+            })),
+            userEmail: "No email provided",
+          }),
+        }
+      );
 
-      console.log("✅ Purchased Classes Updated!");
+      const purchaseResult = await purchaseResponse.json();
+      console.log("✅ Purchased Classes API Response:", purchaseResult);
+
+      if (!purchaseResponse.ok) {
+        console.warn("⚠️ Issue updating purchased classes:", purchaseResult.message);
+      }
     } catch (error) {
       console.error("❌ Error calling addPurchasedClass API:", error);
     }
