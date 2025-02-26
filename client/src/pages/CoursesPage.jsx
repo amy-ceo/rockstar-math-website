@@ -35,28 +35,28 @@ const CoursesPage = () => {
   ]
 
   const courses = [
-    {
-      courseName: 'Mathematics Mastery',
-      videoUrl: '/videos/video.mp4',
-      thumbnailUrl: '/images/teacher1.png',
-      points: [
-        'Learn from basic algebra to advanced calculus.',
-        'Expert instructors with years of experience.',
-        'Interactive lessons with real-world applications.',
-        'Practice tests to track your progress.',
-      ],
-    },
-    {
-      courseName: 'Physics for Beginners',
-      videoUrl: '/videos/video.mp4',
-      thumbnailUrl: '/images/teacher2.png',
-      points: [
-        'Simplified concepts for easy understanding.',
-        'Hands-on experiments to solidify learning.',
-        'Comprehensive coverage of Newtonian mechanics.',
-        'Visual aids for enhanced grasp of topics.',
-      ],
-    },
+    // {
+    //   courseName: 'Mathematics Mastery',
+    //   videoUrl: '/videos/video.mp4',
+    //   thumbnailUrl: '/images/teacher1.png',
+    //   points: [
+    //     'Learn from basic algebra to advanced calculus.',
+    //     'Expert instructors with years of experience.',
+    //     'Interactive lessons with real-world applications.',
+    //     'Practice tests to track your progress.',
+    //   ],
+    // },
+    // {
+    //   courseName: 'Physics for Beginners',
+    //   videoUrl: '/videos/video.mp4',
+    //   thumbnailUrl: '/images/teacher2.png',
+    //   points: [
+    //     'Simplified concepts for easy understanding.',
+    //     'Hands-on experiments to solidify learning.',
+    //     'Comprehensive coverage of Newtonian mechanics.',
+    //     'Visual aids for enhanced grasp of topics.',
+    //   ],
+    // },
     {
       courseName: 'Sacred Geometry (10+)',
       videoUrl: '/videos/video.mp4',
