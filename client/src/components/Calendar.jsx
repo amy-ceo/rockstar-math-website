@@ -5,29 +5,34 @@ const Calendar = () => {
   // 🛠 Event Data with Categories
   const eventData = {
     Sunday: [
-      { name: "3-6pm: Individual Classes", type: "individual" },
-      { name: "7-8pm: Individual Classes", type: "individual" },
-      { name: "8-9pm: Common Core Drop-In For Parents", type: "math" },
+      { name: "3-6pm: Opening Tutoring", type: "individual" },
+      { name: "7-8pm: Opening Tutoring", type: "individual" },
+      { name: "8-9pm: Common Core", type: "math" },
     ],
     Monday: [
-      { name: "3-6pm: Individual Classes", type: "individual" },
-      { name: "7-8pm: Middle School Study Group", type: "study" },
-      { name: "8-9pm: Trigonometry & Precalculus", type: "math" },
+      { name: "3-6pm: Opening Tutoring", type: "individual" },
+      { name: "7-8pm: Geometry", type: "study" },
+      { name: "8-9pm: PreCal/Trig", type: "math" },
     ],
     Tuesday: [
-      { name: "3-6pm: Individual Classes", type: "individual" },
-      { name: "7-8pm: Algebra I Study Group", type: "study" },
-      { name: "8-9pm: Calculus Drop-In Group (1.5 Hours)", type: "study" },
+      { name: "3-6pm: Opening Tutoring", type: "individual" },
+      { name: "7-8pm: Algebra I", type: "study" },
+      { name: "8-9pm: Calc 1", type: "study" },
     ],
     Wednesday: [
-      { name: "3-6pm: Individual Classes", type: "individual" },
-      { name: "7-8pm: Middle School Study Group", type: "study" },
-      { name: "8-9pm: Geometry Study Group", type: "study" },
+      { name: "3-6pm: Opening Tutoring", type: "individual" },
+      { name: "7-8pm: Algebra II", type: "study" },
+      { name: "8-9pm: Calc 2", type: "study" },
     ],
     Thursday: [
-      { name: "3-6pm: Seasonal Course (TBD)", type: "seasonal" },
-      { name: "7-8pm: TBD", type: "seasonal" },
-      { name: "8-9pm: TBD", type: "seasonal" },
+      { name: "3-6pm: ", type: "seasonal" },
+      { name: "7-8pm: ", type: "seasonal" },
+      { name: "8-9pm: ", type: "seasonal" },
+    ],
+    Friday: [
+      { name: "3-6pm: ", type: "seasonal" },
+      { name: "7-8pm: ", type: "seasonal" },
+      { name: "8-9pm: ", type: "seasonal" },
     ],
   };
 
