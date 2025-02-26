@@ -125,7 +125,6 @@ app.use("/api/classes", classRoutes);
 // app.use("/api/otp", otpRoutes);
 app.use("/api/admin", adminRoutes);
 app.use('/api/blogs', blogRoutes);
-app.use("/api/webhook", webhookRoutes);
 app.use("/api/paypal", paypalRoutes);
 app.use("/api/consultation", consultationRoutes);
 app.use("/api", waitlist);
