@@ -201,6 +201,8 @@ router.post("/capture-stripe-payment", async (req, res) => {
   try {
     const { paymentIntentId, user } = req.body;
 
+    console.log("📡 Received Stripe Payment Capture Request:", { paymentIntentId, user });
+
     if (!paymentIntentId || !user || !user._id || !Array.isArray(user.cartItems) || user.cartItems.length === 0) {
       console.error("❌ Missing required fields in Stripe Capture:", { paymentIntentId, user });
       return res.status(400).json({ error: "Missing required fields or empty cart items" });
@@ -218,6 +220,7 @@ router.post("/capture-stripe-payment", async (req, res) => {
 
     // ✅ **Step 1: Save Payment in Database**
     try {
+      console.log("🔹 Saving Payment Record to DB...");
       const newPayment = new Payment({
         orderId: `stripe_${Date.now()}`,
         paymentIntentId,
@@ -239,7 +242,15 @@ router.post("/capture-stripe-payment", async (req, res) => {
 
     // ✅ **Step 2: Call `addPurchasedClass` API**
     try {
-      console.log("📡 Calling addPurchasedClass API...");
+      console.log("📡 Calling addPurchasedClass API with Data:", {
+        userId: user._id,
+        purchasedItems: user.cartItems.map((item) => ({
+          name: item.name,
+          description: item.description || "No description available",
+        })),
+        userEmail: user.billingEmail || "No email",
+      });
+
       const purchaseResponse = await fetch(
         "https://backend-production-cbe2.up.railway.app/api/add-purchased-class",
         {
@@ -274,9 +285,6 @@ router.post("/capture-stripe-payment", async (req, res) => {
     res.status(500).json({ error: "Internal Server Error", details: error.message || error });
   }
 });
-
-
-
 
 // ✅ Fetch Payment Details (Test Mode)
 router.get('/payment-details/:paymentIntentId', async (req, res) => {
@@ -357,26 +365,23 @@ router.post('/create-checkout-session', async (req, res) => {
 
 router.post("/webhook", express.raw({ type: "application/json" }), async (req, res) => {
   let event;
-
   try {
     const sig = req.headers["stripe-signature"];
-    const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET; // ✅ Ensure it's set in .env
+    const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-    // ✅ Verify Webhook Signature
     event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
   } catch (err) {
     console.error("❌ Webhook signature verification failed:", err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  console.log("🔔 Received Webhook Event:", event.type);
+  console.log("🔔 Received Stripe Webhook Event:", event.type);
 
   if (event.type === "payment_intent.succeeded") {
     console.log("✅ Payment Intent Succeeded Event Triggered");
     const paymentIntent = event.data.object;
 
     console.log("🔹 Payment Intent ID:", paymentIntent.id);
-    console.log("🔹 Amount:", paymentIntent.amount / 100);
     console.log("🔹 Metadata:", paymentIntent.metadata);
 
     if (!paymentIntent.metadata || !paymentIntent.metadata.userId) {
@@ -384,44 +389,27 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
       return res.status(400).json({ error: "Missing metadata in payment intent" });
     }
 
-    // ✅ Extract User & Cart Items
     const userId = paymentIntent.metadata.userId;
-    const orderId = paymentIntent.metadata.orderId;
+    const cartItems = JSON.parse(paymentIntent.metadata.cartItems || "[]");
 
     console.log("🔹 User ID:", userId);
-    console.log("🔹 Order ID:", orderId);
+    console.log("🔹 Cart Items:", cartItems);
 
     try {
-      console.log("📡 Fetching User Data...");
-      const user = await Register.findById(userId);
-      if (!user) {
-        console.error("❌ User not found in database!");
-        return res.status(404).json({ error: "User not found." });
-      }
-
-      // ✅ Construct Purchased Items
-      const purchasedItems = paymentIntent.metadata.cartItems
-        ? JSON.parse(paymentIntent.metadata.cartItems)
-        : [];
-
-      console.log("🛒 Purchased Items:", purchasedItems);
-
-      if (!Array.isArray(purchasedItems) || purchasedItems.length === 0) {
-        console.error("❌ No valid purchased items found in metadata!");
-        return res.status(400).json({ error: "No valid purchased items found" });
-      }
-
-      // ✅ Save Purchased Classes
-      console.log("📡 Updating Purchased Classes...");
-      user.purchasedClasses.push(...purchasedItems);
-      await user.save();
+      console.log("📡 Calling addPurchasedClass API...");
+      await fetch("https://backend-production-cbe2.up.railway.app/api/add-purchased-class", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: userId,
+          purchasedItems: cartItems,
+          userEmail: "No email provided",
+        }),
+      });
 
       console.log("✅ Purchased Classes Updated!");
-
-      res.json({ message: "Payment captured & records updated successfully." });
     } catch (error) {
-      console.error("❌ Error processing webhook:", error);
-      res.status(500).json({ error: "Internal server error" });
+      console.error("❌ Error calling addPurchasedClass API:", error);
     }
   } else {
     console.log("⚠️ Webhook received but not a payment event:", event.type);
@@ -429,5 +417,6 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
 
   res.sendStatus(200);
 });
+
 
 module.exports = router
