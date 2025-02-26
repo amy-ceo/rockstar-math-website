@@ -78,7 +78,7 @@ const Services = () => {
   // ✅ Group Services into Categories
   const categorizedServices = {
     "Seasonal - AP Calc Review": services.filter((service) =>
-      /(\bAP Calc Review 20 hours\b)/i.test(service.name)
+      /(\bAP Calc - 20 Hours\b)/i.test(service.name)
     ),
     "Recommended for Student up to Algebra I": services.filter(
       (service) =>

@@ -3,6 +3,15 @@ import { IoMdPlay, IoMdClose } from 'react-icons/io'
 import axios from 'axios'
 import toast, { Toaster } from 'react-hot-toast'
 import { Link } from 'react-router-dom'
+import Image1 from "../assets/math-image.jpg"
+import Image2 from "../assets/math-image2.jpg"
+import Image3 from "../assets/math-image3.jpg"
+import Image4 from "../assets/math-image4.jpg"
+import Image5 from "../assets/math-image5.jpg"
+
+
+
+
 
 // Lazy Load Components
 const WaitlistForm = lazy(() => import('../components/WaitlistForm'))
@@ -60,7 +69,7 @@ const CoursesPage = () => {
     {
       courseName: 'Sacred Geometry (10+)',
       videoUrl: '/videos/video.mp4',
-      thumbnailUrl: '/images/teacher2.png',
+      thumbnailUrl: Image1,
       points: [
         'Explore the mathematical beauty behind nature’s patterns and ancient symbols.',
         'Learn about the Golden Ratio, Fibonacci sequence, and their real-world applications.',
@@ -71,7 +80,7 @@ const CoursesPage = () => {
     {
       courseName: 'Euclid’s Elements (10+)',
       videoUrl: '/videos/video.mp4',
-      thumbnailUrl: '/images/teacher2.png',
+      thumbnailUrl: Image2,
       points: [
         'Dive into the foundations of geometry as taught by the ancient mathematician Euclid.',
         'Understand the logic behind axioms, theorems, and geometric proofs.',
@@ -82,7 +91,7 @@ const CoursesPage = () => {
     {
       courseName: 'Number Ninjas (7-12)',
       videoUrl: '/videos/video.mp4',
-      thumbnailUrl: '/images/teacher2.png',
+      thumbnailUrl: Image3,
       points: [
         'Master math fundamentals with fun, engaging challenges and games.',
         'Develop problem-solving skills through real-world math puzzles.',
@@ -93,7 +102,7 @@ const CoursesPage = () => {
     {
       courseName: 'Misinformation Detective (10+)',
       videoUrl: '/videos/video.mp4',
-      thumbnailUrl: '/images/teacher2.png',
+      thumbnailUrl: Image4,
       points: [
         'Learn how to identify misleading statistics and debunk math-related myths.',
         'Develop critical thinking skills to analyze data and recognize false claims.',
@@ -104,7 +113,7 @@ const CoursesPage = () => {
     {
       courseName: 'Math For Trades (14-18)',
       videoUrl: '/videos/video.mp4',
-      thumbnailUrl: '/images/teacher2.png',
+      thumbnailUrl: Image5,
       points: [
         'Apply practical math skills for careers in construction, carpentry, and other trades.',
         'Learn measurements, angles, and ratios used in real-world projects.',

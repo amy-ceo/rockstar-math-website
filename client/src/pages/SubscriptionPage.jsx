@@ -86,7 +86,7 @@ const SubscriptionPage = () => {
         <div className="flex flex-col md:flex-row items-center justify-center mt-10 max-w-6xl mx-auto px-4 md:px-0 gap-10">
           
           {/* ✅ Subscription Plans */}
-          <div className="grid grid-cols-2 md:grid-cols-2 gap-6 w-full">
+          <div className="grid grid-cols-3 md:grid-cols-3 gap-6 w-full">
             {loading ? (
               <p className="text-center text-gray-700 text-lg">Loading plans...</p>
             ) : plans.length > 0 ? (
@@ -142,11 +142,11 @@ const SubscriptionPage = () => {
             )}
           </div>
 
-          <div className="hidden md:block w-96">
+          <div className="hidden md:block w-96 mb-96">
             <img
               src={Image} // ✅ Replace with the actual image path
               alt="Subscription Benefits"
-              className="w-full h-auto rounded-lg shadow-lg"
+              className="w-[880px]  h-full rounded-lg shadow-lg"
             />
           </div>
           {/* ✅ Image on the Right Side */}
