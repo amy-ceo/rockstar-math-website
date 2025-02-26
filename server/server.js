@@ -22,7 +22,6 @@ const ordersRoute = require("./routes/order.js"); // ✅ Import Orders Route
 const paypalRoutes = require("./routes/paypalRoutes.js")
 const adminRoutes = require("./routes/adminRoutes");
 const blogRoutes = require('./routes/blogRoutes');
-const webhookRoutes = require("./routes/webhookRoutes.js")
 connectDB();
 const app = express();
 // ✅ JSON Middleware for Other Routes (Not Webhook)
@@ -123,7 +122,6 @@ app.use("/api", registerRoutes);
 app.use("/api/classes", classRoutes);
 
 // ✅ **Use Webhook Route Properly**
-app.use("/api/webhook", StripeWebhookRoutes); // 🔥 Fix: Properly Include Webhook Route
 // app.use("/api/otp", otpRoutes);
 app.use("/api/admin", adminRoutes);
 app.use('/api/blogs', blogRoutes);
