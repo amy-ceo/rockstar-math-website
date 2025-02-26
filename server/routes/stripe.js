@@ -1,6 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const sendEmail = require('../utils/emailSender')
+const Payment = require("../models/Payment");
 require('dotenv').config() // Ensure environment variables are loaded
 // const { updatePaymentStatus } = require("../controller/paymentController");
 const bodyParser = require('body-parser') // Ensure body-parser is imported
@@ -12,21 +13,27 @@ const stripe = require('stripe')(
 
 
 
-router.get('/test-products', async (req, res) => {
+// ✅ Fetch all products from Stripe
+router.get("/test-products", async (req, res) => {
   try {
-    console.log('🔹 Fetching Products from Stripe Test Mode...')
-    const allProducts = await stripe.products.list({
-      active: true,
-      expand: ['data.default_price'], // ✅ Expand price details
-    })
-
-    console.log('✅ Products with Prices:', allProducts.data)
-    res.status(200).json(allProducts.data)
+    const products = await stripe.products.list({ limit: 100 });
+    res.json(products.data);
   } catch (error) {
-    console.error('❌ Error fetching products from Stripe:', error)
-    res.status(500).json({ message: 'Failed to fetch products' })
+    console.error("❌ Error fetching products:", error);
+    res.status(500).json({ error: error.message });
   }
-})
+});
+
+// ✅ Fetch all prices from Stripe
+router.get("/test-prices", async (req, res) => {
+  try {
+    const prices = await stripe.prices.list({ limit: 100 });
+    res.json(prices.data);
+  } catch (error) {
+    console.error("❌ Error fetching prices:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
 router.get('/get-plans', async (req, res) => {
   try {
@@ -136,54 +143,145 @@ router.get('/get-products', async (req, res) => {
 
 router.post('/create-payment-intent', async (req, res) => {
   try {
-    let { amount, currency, userId, orderId } = req.body
+    let { amount, currency, userId, orderId, cartItems } = req.body;
 
-    console.log('🔹 Received Payment Request:', { amount, currency, userId, orderId })
+    console.log('🔹 Received Payment Request:', { amount, currency, userId, orderId, cartItems });
 
-    if (!userId || !orderId) {
-      console.error('❌ Missing userId or orderId.')
-      return res.status(400).json({ error: 'Missing userId or orderId.' })
+    if (!userId || !orderId || !cartItems || cartItems.length === 0) {
+      console.error('❌ Missing required fields.');
+      return res.status(400).json({ error: 'Invalid request. Missing userId, orderId, or cart items.' });
     }
 
     if (!amount || isNaN(amount) || amount <= 0) {
-      console.error('❌ Invalid amount received:', amount)
-      return res.status(400).json({ error: 'Invalid amount. Must be greater than 0.' })
+      console.error('❌ Invalid amount received:', amount);
+      return res.status(400).json({ error: 'Invalid amount. Must be greater than 0.' });
     }
 
-    amount = Math.round(amount * 100) // Convert to cents
+    amount = Math.round(amount * 100); // Convert to cents
 
-    const supportedCurrencies = ['usd', 'eur', 'gbp', 'cad', 'aud']
+    // ✅ Ensure Currency is Supported
+    const supportedCurrencies = ['usd', 'eur', 'gbp', 'cad', 'aud'];
     if (!currency || !supportedCurrencies.includes(currency.toLowerCase())) {
-      console.error('❌ Unsupported currency:', currency)
-      return res.status(400).json({ error: 'Unsupported currency. Use USD, EUR, GBP, etc.' })
+      console.error('❌ Unsupported currency:', currency);
+      return res.status(400).json({ error: 'Unsupported currency. Use USD, EUR, GBP, etc.' });
     }
 
-    // ✅ FIXED: Use correct payment_method_types
+    // ✅ Create Stripe Payment Intent
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amount,
       currency: currency.toLowerCase(),
-      payment_method_types: ['card'], // ✅ Ensure "card" is used (no Apple Pay, Google Pay unless enabled)
+      payment_method_types: ['card'],
       metadata: {
         userId,
         orderId,
+        cartItems: JSON.stringify(cartItems), // ✅ Store Cart Items for Backend Processing
       },
-    })
+    });
 
     if (!paymentIntent.client_secret) {
-      console.error('❌ Missing client_secret in response:', paymentIntent)
-      return res
-        .status(500)
-        .json({ error: 'Payment Intent creation failed. No client_secret returned.' })
+      console.error('❌ Missing client_secret in response:', paymentIntent);
+      return res.status(500).json({ error: 'Payment Intent creation failed. No client_secret returned.' });
     }
 
-    console.log(`✅ PaymentIntent Created: ${paymentIntent.id} for User: ${userId}`)
+    console.log(`✅ PaymentIntent Created: ${paymentIntent.id} for User: ${userId}`);
 
-    res.json({ clientSecret: paymentIntent.client_secret, id: paymentIntent.id })
+    res.json({ clientSecret: paymentIntent.client_secret, id: paymentIntent.id });
   } catch (error) {
-    console.error('❌ Stripe Payment Intent Error:', error)
-    res.status(500).json({ error: 'Payment creation failed. Please try again later.' })
+    console.error('❌ Stripe Payment Intent Error:', error);
+    res.status(500).json({ error: 'Payment creation failed. Please try again later.' });
   }
-})
+});
+
+
+router.post("/capture-stripe-payment", async (req, res) => {
+  try {
+    const { paymentIntentId, user } = req.body;
+
+    if (!paymentIntentId || !user || !user._id || !Array.isArray(user.cartItems) || user.cartItems.length === 0) {
+      console.error("❌ Missing required fields in Stripe Capture:", { paymentIntentId, user });
+      return res.status(400).json({ error: "Missing required fields or empty cart items" });
+    }
+
+    console.log("📡 Capturing Stripe Payment:", paymentIntentId);
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+
+    if (!paymentIntent || paymentIntent.status !== "succeeded") {
+      console.error("❌ Payment Intent Failed or Incomplete:", paymentIntent.status);
+      return res.status(400).json({ error: "Payment not completed" });
+    }
+
+    console.log("✅ Stripe Payment Successful:", paymentIntentId);
+
+    // ✅ Save Payment in Database
+    try {
+      const newPayment = new Payment({
+        orderId: `stripe_${Date.now()}`,
+        paymentIntentId,
+        userId: user._id,
+        billingEmail: user.billingEmail || "No email",
+        amount: paymentIntent.amount / 100,
+        currency: paymentIntent.currency.toUpperCase(),
+        status: "Completed",
+        paymentMethod: "Stripe",
+        cartItems: user.cartItems || [],
+      });
+
+      await newPayment.save();
+      console.log("✅ Payment Record Saved in Database!");
+    } catch (saveError) {
+      console.error("❌ Error Saving Payment:", saveError);
+      return res.status(500).json({ error: "Database error while saving payment." });
+    }
+
+    // ✅ Call `addPurchasedClass` to update user purchases
+    try {
+      console.log("📡 Calling addPurchasedClass API...");
+      console.log("🔹 Payload:", {
+        userId: user._id,
+        purchasedItems: user.cartItems.map((item) => ({
+          name: item.name,
+          description: item.description || "No description available",
+        })),
+        userEmail: user.billingEmail || "No email",
+      });
+
+      const purchaseResponse = await fetch(
+        "https://backend-production-cbe2.up.railway.app/api/add-purchased-class",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: user._id,
+            purchasedItems: user.cartItems.map((item) => ({
+              name: item.name,
+              description: item.description || "No description available",
+            })),
+            userEmail: user.billingEmail || "No email",
+          }),
+        }
+      );
+
+      const purchaseResult = await purchaseResponse.json();
+      console.log("✅ Purchased Classes API Response:", purchaseResult);
+
+      if (!purchaseResponse.ok) {
+        console.warn("⚠️ Issue updating purchased classes:", purchaseResult.message);
+      }
+
+    } catch (purchaseError) {
+      console.error("❌ Error calling addPurchasedClass API:", purchaseError);
+    }
+
+    // ✅ Send Success Response
+    res.json({ message: "Payment captured & records updated successfully.", clearCart: true });
+
+  } catch (error) {
+    console.error("❌ Error Capturing Stripe Payment:", error);
+    res.status(500).json({ error: "Internal Server Error", details: error.message || error });
+  }
+});
+
+
 
 // ✅ Fetch Payment Details (Test Mode)
 router.get('/payment-details/:paymentIntentId', async (req, res) => {
@@ -262,33 +360,79 @@ router.post('/create-checkout-session', async (req, res) => {
   }
 })
 
-// ✅ Stripe Webhook for Handling Successful Subscriptions
-// ✅ Stripe Webhook for Handling Successful Payments
-// router.post(
-//     "/webhook",
-//     express.raw({ type: "application/json" }), // Ensure raw body is used
-//     (req, res) => {
-//         const sig = req.headers["stripe-signature"];
-//         const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+router.post("/webhook", express.raw({ type: "application/json" }), async (req, res) => {
+  let event;
 
-//         let event;
-//         try {
-//             event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
-//         } catch (err) {
-//             console.error("❌ Webhook signature verification failed:", err.message);
-//             return res.status(400).send(`Webhook Error: ${err.message}`);
-//         }
+  try {
+    const sig = req.headers["stripe-signature"];
+    const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET; // ✅ Ensure it's set in .env
 
-//         // ✅ Successfully verified
-//         console.log("✅ Webhook verified:", event.type);
+    // ✅ Verify Webhook Signature
+    event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+  } catch (err) {
+    console.error("❌ Webhook signature verification failed:", err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
 
-//         if (event.type === "checkout.session.completed") {
-//             const session = event.data.object;
-//             console.log("💰 Payment Successful:", session);
-//             // Handle successful payment (update database, send email, etc.)
-//         }
+  console.log("🔔 Received Webhook Event:", event.type);
 
-//         res.json({ received: true });
-//     }
-// );
+  if (event.type === "payment_intent.succeeded") {
+    console.log("✅ Payment Intent Succeeded Event Triggered");
+    const paymentIntent = event.data.object;
+
+    console.log("🔹 Payment Intent ID:", paymentIntent.id);
+    console.log("🔹 Amount:", paymentIntent.amount / 100);
+    console.log("🔹 Metadata:", paymentIntent.metadata);
+
+    if (!paymentIntent.metadata || !paymentIntent.metadata.userId) {
+      console.error("❌ Missing metadata in payment intent!");
+      return res.status(400).json({ error: "Missing metadata in payment intent" });
+    }
+
+    // ✅ Extract User & Cart Items
+    const userId = paymentIntent.metadata.userId;
+    const orderId = paymentIntent.metadata.orderId;
+
+    console.log("🔹 User ID:", userId);
+    console.log("🔹 Order ID:", orderId);
+
+    try {
+      console.log("📡 Fetching User Data...");
+      const user = await Register.findById(userId);
+      if (!user) {
+        console.error("❌ User not found in database!");
+        return res.status(404).json({ error: "User not found." });
+      }
+
+      // ✅ Construct Purchased Items
+      const purchasedItems = paymentIntent.metadata.cartItems
+        ? JSON.parse(paymentIntent.metadata.cartItems)
+        : [];
+
+      console.log("🛒 Purchased Items:", purchasedItems);
+
+      if (!Array.isArray(purchasedItems) || purchasedItems.length === 0) {
+        console.error("❌ No valid purchased items found in metadata!");
+        return res.status(400).json({ error: "No valid purchased items found" });
+      }
+
+      // ✅ Save Purchased Classes
+      console.log("📡 Updating Purchased Classes...");
+      user.purchasedClasses.push(...purchasedItems);
+      await user.save();
+
+      console.log("✅ Purchased Classes Updated!");
+
+      res.json({ message: "Payment captured & records updated successfully." });
+    } catch (error) {
+      console.error("❌ Error processing webhook:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  } else {
+    console.log("⚠️ Webhook received but not a payment event:", event.type);
+  }
+
+  res.sendStatus(200);
+});
+
 module.exports = router

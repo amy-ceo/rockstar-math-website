@@ -239,122 +239,107 @@ const CheckoutPage = () => {
   }
 
   // ✅ Create Stripe Payment Intent
-  const createPaymentIntent = async () => {
-    if (total <= 0) {
-      handleZeroAmount()
-      return null
-    }
-
-    try {
-      const user = JSON.parse(localStorage.getItem('user'))
-      const userId = user && user._id ? user._id : 'guest_user' // ✅ Fix applied
-      const userName = user && user.name ? user.name : 'Guest User' // ✅ Add User Name
-      const userEmail = user && user.billingEmail ? user.billingEmail : 'guest@example.com' // ✅ Add User Email
-      const orderId = `order_${Date.now()}`
-      const currency = 'usd'
-
-      console.log('🔹 Sending Payment Request:', {
-        amount: total,
-        currency,
-        userId,
-        orderId,
-        userName,
-        userEmail,
-      })
-
-      const response = await fetch(
-        'https://backend-production-cbe2.up.railway.app/api/stripe/create-payment-intent',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            amount: total,
-            currency,
-            userId,
-            orderId,
-            metadata: {
-              customer_name: userName, // ✅ Store User Name in Metadata
-              customer_email: userEmail, // ✅ Store User Email in Metadata
-            },
-          }),
-        },
-      )
-
-      if (!response.ok) {
-        console.error('❌ Failed to create payment intent. Status:', response.status)
-        throw new Error(`Payment Intent creation failed. Server responded with ${response.status}`)
+    // ✅ Create Stripe Payment Intent
+    const createPaymentIntent = async () => {
+      if (total <= 0) {
+        toast.error("Cannot process a payment of $0.00!");
+        return null;
       }
-
-      const data = await response.json()
-      console.log('✅ Payment Intent Created:', data)
-
-      setPaymentIntentId(data.id)
-      setClientSecret(data.clientSecret)
-      return data.clientSecret
-    } catch (error) {
-      console.error('❌ Payment Intent Error:', error)
-      toast.error(`Payment Error: ${error.message}`)
-      return null
-    }
-  }
-
-  const handlePaymentSuccess = async () => {
-    try {
-      const user = JSON.parse(localStorage.getItem('user'))
-      if (!user || !user._id) {
-        // ✅ Fix applied
-        toast.error('User not logged in!')
-        return
+  
+      try {
+        const user = JSON.parse(localStorage.getItem("user"));
+        const userId = user && user._id ? user._id : "guest_user";
+        const userEmail = user && user.billingEmail ? user.billingEmail : "guest@example.com";
+        const orderId = `order_${Date.now()}`;
+  
+        console.log("🔹 Sending Payment Request:", {
+          amount: total,
+          currency: "usd",
+          userId,
+          orderId,
+          userEmail,
+          cartItems, // ✅ Ensure cartItems is sent
+        });
+  
+        const response = await fetch(
+          "https://backend-production-cbe2.up.railway.app/api/stripe/create-payment-intent",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              amount: total,
+              currency: "usd",
+              userId,
+              orderId,
+              cartItems, // ✅ Ensure cartItems is included in request
+            }),
+          }
+        );
+  
+        if (!response.ok) {
+          throw new Error(`Payment Intent creation failed.`);
+        }
+  
+        const data = await response.json();
+        console.log("✅ Payment Intent Created:", data);
+  
+        setPaymentIntentId(data.id);
+        setClientSecret(data.clientSecret);
+  
+        return data.clientSecret;
+      } catch (error) {
+        console.error("❌ Payment Intent Error:", error);
+        toast.error(`Payment Error: ${error.message}`);
+        return null;
       }
+    };
+  
 
-      const formattedClasses = cartItems.map((item) => ({
-        name: item.name || item.title,
-        description: item.description || 'No description available',
-        purchaseDate: new Date().toISOString(),
-      }))
-
-      console.log('🛒 Sending Purchased Classes Data:', {
-        userId: user._id, // ✅ Fix applied
-        purchasedClasses: formattedClasses,
-      })
-
-      const response = await fetch(
-        'https://backend-production-cbe2.up.railway.app/api/add-purchased-class',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId: user._id, // ✅ Fix applied
-            purchasedClasses: formattedClasses,
-          }),
-        },
-      )
-
-      const data = await response.json()
-      console.log('📡 API Response:', data)
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to save purchased class')
+    const handlePaymentSuccess = async () => {
+      try {
+        const user = JSON.parse(localStorage.getItem("user"));
+        if (!user || !user._id) {
+          toast.error("User authentication required!");
+          return;
+        }
+    
+        console.log("📡 Capturing Stripe Payment...");
+        const response = await fetch(
+          "https://backend-production-cbe2.up.railway.app/api/stripe/capture-stripe-payment",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              paymentIntentId,
+              user: {
+                _id: user._id,
+                billingEmail: user.billingEmail || "No email",
+                cartItems, // ✅ Ensure cartItems are included
+              },
+            }),
+          }
+        );
+    
+        const result = await response.json();
+        console.log("✅ Stripe Payment Capture Response:", result);
+    
+        if (!response.ok) {
+          throw new Error(result.error || "Stripe payment capture failed.");
+        }
+    
+        // ✅ Clear Cart & Update UI
+        localStorage.removeItem("cartItems");
+        setCartItems([]);
+        window.dispatchEvent(new Event("storage"));
+    
+        toast.success("🎉 Payment Successful! Redirecting...");
+        setTimeout(() => (window.location.href = "/dashboard"), 1000);
+      } catch (error) {
+        console.error("❌ Error in Payment Process:", error);
+        toast.error(error.message || "Payment processing error.");
       }
-
-      console.log('✅ Server Response:', data)
-
-      toast.success('Payment Successful! Class added to your account.')
-      // ✅ Check if Backend Sent `clearCart`
-      if (result.clearCart) {
-        console.log('🛒 Backend Cleared Cart, Updating Frontend...')
-        localStorage.removeItem('cartItems')
-        setCartItems([])
-        window.dispatchEvent(new Event('storage'))
-      }
-
-      toast.success('🎉 Payment Successful! Redirecting...')
-      setTimeout(() => (window.location.href = '/dashboard'), 1000)
-    } catch (error) {
-      console.error('❌ Error saving purchased class:', error)
-      toast.error(error.message || 'Error saving purchased class.')
-    }
-  }
+    };
+    
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-32">

@@ -294,6 +294,12 @@ exports.addPurchasedClass = async (req, res) => {
   try {
     const { userId, purchasedItems, userEmail } = req.body
 
+    console.log("📡 Received Request in addPurchasedClass API");
+    console.log("🔹 User ID:", userId);
+    console.log("🔹 Purchased Items:", purchasedItems);
+    console.log("🔹 User Email:", userEmail);
+
+
     console.log('🔄 Processing Purchase Request...')
 
     if (
