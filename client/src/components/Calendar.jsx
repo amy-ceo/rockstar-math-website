@@ -29,11 +29,11 @@ const Calendar = () => {
       { name: "7-8pm: ", type: "seasonal" },
       { name: "8-9pm: ", type: "seasonal" },
     ],
-    Friday: [
-      { name: "3-6pm: ", type: "seasonal" },
-      { name: "7-8pm: ", type: "seasonal" },
-      { name: "8-9pm: ", type: "seasonal" },
-    ],
+    // Friday: [
+    //   { name: "3-6pm: ", type: "seasonal" },
+    //   { name: "7-8pm: ", type: "seasonal" },
+    //   { name: "8-9pm: ", type: "seasonal" },
+    // ],
   };
 
   // 🛠 Define Colors for Bullet Points Based on Type
