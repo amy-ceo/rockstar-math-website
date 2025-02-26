@@ -202,8 +202,16 @@ root.render(
                       <AdminLogin />
                       <Footer />
                     </>} />
-                  <Route path="admin/forgot-password" element={<AdminForgotPassword />} />
-                  <Route path="admin/reset-password/:token" element={<AdminResetPassword />} />
+                  <Route path="admin/forgot-password" element={<>
+                      <Navbar />
+                      <AdminForgotPassword />
+                      <Footer />
+                    </>} />
+                  <Route path="admin/reset-password/:token" element={<>
+                      <Navbar />
+                      <AdminResetPassword />
+                      <Footer />
+                    </>} />
 
                 {/* ✅ Admin Dashboard Layout (Without Navbar & Footer) */}
                 <Route

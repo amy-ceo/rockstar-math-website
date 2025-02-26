@@ -1,7 +1,8 @@
 const bcrypt = require("bcryptjs");
 
-const password = "securepassword1234!"; // ✅ Change this to the password you want
-const salt = bcrypt.genSaltSync(10);
-const hashedPassword = bcrypt.hashSync(password, salt);
+const storedHash = "$2b$10$96B6Rc575iws.9aiD2K6yOtp0kwz2yKZFBGF.G4KlCZdJYUdtNToy"; // Paste your stored hash from MongoDB
+const enteredPassword = "hello123"; // Use the exact password you’re entering in the login form
 
-console.log("Hashed Password:", hashedPassword);
+bcrypt.compare(enteredPassword, storedHash).then((result) => {
+    console.log("✅ Password Match Result:", result);
+});
