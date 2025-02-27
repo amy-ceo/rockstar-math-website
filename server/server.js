@@ -2,6 +2,7 @@ require("dotenv").config();
 console.log("Stripe Secret Key:", process.env.STRIPE_SECRET_KEY ? "Loaded ✅" : "Not Loaded ❌");
 const express = require('express');
 const cors = require('cors');
+const mongoose = require("mongoose");
 const bodyParser = require('body-parser');
 const connectDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
@@ -112,6 +113,21 @@ app.use('/uploads', express.static('uploads')); // Serve uploaded images
 //       return res.status(400).json({ error: "Invalid OTP or OTP expired." });
 //     }
 //   });
+async function fixMongoIndexes() {
+  try {
+    const db = mongoose.connection.db;
+    await db.collection("registers").dropIndex("coupons.code_1"); // Drop existing index
+    console.log("✅ Dropped old coupons.code_1 index");
+
+    await db.collection("registers").createIndex({ "coupons.code": 1 }, { unique: true, sparse: true });
+    console.log("✅ Created new sparse index on coupons.code");
+  } catch (error) {
+    console.error("❌ Error updating MongoDB indexes:", error.message);
+  }
+}
+
+// Run index fix when the app starts
+mongoose.connection.once("open", fixMongoIndexes);
   
 // Routes
 app.use('/api/auth', authRoutes);
