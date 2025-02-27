@@ -375,7 +375,15 @@ exports.addPurchasedClass = async (req, res) => {
     }
 
     user.purchasedClasses.push(...newPurchases)
-    user.coupons.push(...couponCodes) // Save all coupons
+    if (couponCodes.length > 0) {
+      // ✅ Filter out any invalid coupons before saving
+      couponCodes = couponCodes.filter(coupon => coupon.code && coupon.code.trim() !== "");
+  
+      if (couponCodes.length > 0) {
+          user.coupons.push(...couponCodes); // Save only valid coupons
+      }
+  }
+  
     await user.save()
     console.log('📡 Zoom Links Before Sending Email:', zoomLinks)
     console.log('🎟 Coupon Codes Before Sending Email:', couponCodes)
