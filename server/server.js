@@ -65,53 +65,53 @@ app.use('/uploads', express.static('uploads')); // Serve uploaded images
 // app.options("*", cors());
 
 
-const client = new twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+// const client = new twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
-let otpStore = {}; // Temporary OTP storage (use Redis for production)
+// let otpStore = {}; // Temporary OTP storage (use Redis for production)
 
 // ✅ Send OTP API
-app.post("/api/send-otp", async (req, res) => {
-    const { phone } = req.body;
+// app.post("/api/send-otp", async (req, res) => {
+//     const { phone } = req.body;
   
-    if (!phone) {
-      return res.status(400).json({ error: "Phone number is required!" });
-    }
+//     if (!phone) {
+//       return res.status(400).json({ error: "Phone number is required!" });
+//     }
   
-    const otp = Math.floor(100000 + Math.random() * 900000); // Generate 6-digit OTP
+//     const otp = Math.floor(100000 + Math.random() * 900000); // Generate 6-digit OTP
   
-    try {
-      const message = await client.messages.create({
-        body: `Your OTP code is: ${otp}`,
-        from: process.env.TWILIO_PHONE_NUMBER,
-        to: phone,
-      });
+//     try {
+//       const message = await client.messages.create({
+//         body: `Your OTP code is: ${otp}`,
+//         from: process.env.TWILIO_PHONE_NUMBER,
+//         to: phone,
+//       });
   
-      console.log("OTP Sent:", message.sid);
+//       console.log("OTP Sent:", message.sid);
       
-      otpStore[phone] = otp; // ✅ Store OTP (Use Redis for production!)
+//       otpStore[phone] = otp; // ✅ Store OTP (Use Redis for production!)
   
-      res.json({ success: true, otp }); // ⚠️ Remove `otp` from response in production
-    } catch (error) {
-      console.error("Twilio Error:", error);
-      res.status(500).json({ error: "Failed to send OTP. Please check Twilio settings!" });
-    }
-  });
+//       res.json({ success: true, otp }); // ⚠️ Remove `otp` from response in production
+//     } catch (error) {
+//       console.error("Twilio Error:", error);
+//       res.status(500).json({ error: "Failed to send OTP. Please check Twilio settings!" });
+//     }
+//   });
 
-// ✅ Verify OTP API
-app.post("/api/verify-otp", (req, res) => {
-    const { phone, otp } = req.body;
+// // ✅ Verify OTP API
+// app.post("/api/verify-otp", (req, res) => {
+//     const { phone, otp } = req.body;
   
-    if (!phone || !otp) {
-      return res.status(400).json({ error: "Phone and OTP are required!" });
-    }
+//     if (!phone || !otp) {
+//       return res.status(400).json({ error: "Phone and OTP are required!" });
+//     }
   
-    if (otpStore[phone] && otpStore[phone] == otp) {
-      delete otpStore[phone]; // ✅ Remove OTP after successful verification
-      return res.json({ success: true, message: "OTP Verified Successfully!" });
-    } else {
-      return res.status(400).json({ error: "Invalid OTP or OTP expired." });
-    }
-  });
+//     if (otpStore[phone] && otpStore[phone] == otp) {
+//       delete otpStore[phone]; // ✅ Remove OTP after successful verification
+//       return res.json({ success: true, message: "OTP Verified Successfully!" });
+//     } else {
+//       return res.status(400).json({ error: "Invalid OTP or OTP expired." });
+//     }
+//   });
   
 // Routes
 app.use('/api/auth', authRoutes);
