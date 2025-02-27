@@ -31,7 +31,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 const allowedOrigins = [
   "http://localhost:8080",
-  "https://frontend-production-9912.up.railway.app", // ✅ Ensure this matches your frontend
+  "https://www.rockstarmath.com", // ✅ Ensure this matches your frontend
 ];
 
 app.use(
