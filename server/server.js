@@ -28,29 +28,20 @@ const app = express();
 app.use("/api/stripe/webhook", bodyParser.raw({ type: "application/json" })); // 👈 Raw body only for Stripe
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-const allowedOrigins = [
-  "http://localhost:8080", // Local Development
-  "https://frontend-production-9912.up.railway.app", // Production URL
-];
+const corsOptions = {
+  origin: [
+    "http://localhost:8080", // Local Development
+    "https://frontend-production-9912.up.railway.app", // Production URL
+  ],
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+  credentials: true, // ✅ Allow cookies/auth
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
 
-// ✅ Enable JSON Parsing (Fix for req.body undefined issue)
+app.use(cors(corsOptions));
 
 
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        console.error(`❌ CORS Blocked: ${origin}`);
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    credentials: true, // ✅ Needed for authentication cookies
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
+
 app.use('/uploads', express.static('uploads')); // Serve uploaded images
 
 // // ✅ Remove Manual Header Setting (Fixes conflict)
