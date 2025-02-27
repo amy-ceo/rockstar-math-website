@@ -173,14 +173,9 @@ router.post('/create-payment-intent', async (req, res) => {
     const metadata = {
       userId: String(userId),
       orderId: String(orderId),
-      userEmail: userEmail || "no-email@example.com",
-      cartSummary: cartItems.map((item) => item.name).join(", "), // ✅ Short summary only
-      cartItems: JSON.stringify(
-        cartItems.map((item) => ({
-          name: item.name, // Only store names, NOT descriptions
-          description: item.description, // Store price if needed
-        }))
-      ), // ✅ Avoid sending full objects
+      userEmail: userEmail || 'no-email@example.com',
+      cartSummary: cartItems.map((item) => item.name).join(', '), // ✅ Short summary only
+      cartItemIds: JSON.stringify(cartItems.map((item) => item.id)) // ✅ Store only product IDs
     };
     
     console.log('📡 Sending Payment Intent with Metadata:', metadata)
@@ -404,9 +399,7 @@ router.post(
       }
 
       const userId = paymentIntent.metadata.userId
-      const cartItems = paymentIntent.metadata?.cartItems
-      ? JSON.parse(paymentIntent.metadata.cartItems)
-      : [];
+      const cartItemIds = JSON.parse(paymentIntent.metadata?.cartItemIds || '[]');
     
     console.log("🔹 Parsed Cart Items:", cartItems);
 
@@ -414,7 +407,11 @@ router.post(
       console.log('🔹 Cart Items:', cartItems)
 
       try {
-        console.log('📡 Calling addPurchasedClass API...')
+        const cartItems = await ProductModel.find({ _id: { $in: cartItemIds } });
+  
+        console.log('✅ Retrieved Product Details:', cartItems);
+  
+        console.log('📡 Calling addPurchasedClass API...');
         const purchaseResponse = await fetch(
           'https://backend-production-cbe2.up.railway.app/api/add-purchased-class',
           {
@@ -428,17 +425,17 @@ router.post(
               })),
               userEmail: paymentIntent.metadata.userEmail,
             }),
-          },
-        )
-
-        const purchaseResult = await purchaseResponse.json()
-        console.log('✅ Purchased Classes API Response:', purchaseResult)
-
+          }
+        );
+  
+        const purchaseResult = await purchaseResponse.json();
+        console.log('✅ Purchased Classes API Response:', purchaseResult);
+  
         if (!purchaseResponse.ok) {
-          console.warn('⚠️ Issue updating purchased classes:', purchaseResult.message)
+          console.warn('⚠️ Issue updating purchased classes:', purchaseResult.message);
         }
       } catch (error) {
-        console.error('❌ Error calling addPurchasedClass API:', error)
+        console.error('❌ Error calling addPurchasedClass API:', error);
       }
     } else {
       console.log('⚠️ Webhook received but not a payment event:', event.type)
