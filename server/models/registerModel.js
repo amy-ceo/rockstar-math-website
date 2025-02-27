@@ -70,8 +70,7 @@ const RegisterSchema = new mongoose.Schema(
     // ✅ Purchased Classes & Services
     purchasedClasses: [purchasedClassSchema], // ✅ Includes both Zoom & Service purchases
     // ✅ New: Calendly Bookings
-    calendlyBookings: [calendlyBookingSchema],
-    calendlyBookingsCount: { type: calendlyBookingsCountSchema, default: {} },
+   
     // ✅ Zoom Meeting Details (For Purchased Classes)
     zoomMeetings: [
       {
