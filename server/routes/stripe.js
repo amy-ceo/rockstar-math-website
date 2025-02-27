@@ -372,74 +372,66 @@ const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET
 
 router.post(
   '/webhook',
-  bodyParser.raw({ type: 'application/json' }), // ✅ Ensure Raw Body
+  bodyParser.raw({ type: 'application/json' }),
   async (req, res) => {
-    let event
-    const sig = req.headers['stripe-signature']
+    let event;
+    const sig = req.headers['stripe-signature'];
 
     try {
-      event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret)
+      event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
     } catch (err) {
-      console.error('❌ Webhook Signature Verification Failed:', err.message)
-      return res.status(400).send(`Webhook Error: ${err.message}`)
+      console.error('❌ Webhook Signature Verification Failed:', err.message);
+      return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
-    console.log('🔔 Received Stripe Webhook Event:', event.type)
+    console.log('🔔 Received Stripe Webhook Event:', event.type);
 
     if (event.type === 'payment_intent.succeeded') {
-      console.log('✅ Payment Intent Succeeded Event Triggered')
-      const paymentIntent = event.data.object
+      console.log('✅ Payment Intent Succeeded Event Triggered');
+      const paymentIntent = event.data.object;
 
-      console.log('🔹 Payment Intent ID:', paymentIntent.id)
-      console.log('🔹 Metadata:', paymentIntent.metadata)
+      console.log('🔹 Payment Intent ID:', paymentIntent.id);
+      console.log('🔹 Metadata:', paymentIntent.metadata);
 
       if (!paymentIntent.metadata || !paymentIntent.metadata.userId) {
-        console.error('❌ Missing metadata in payment intent!')
-        return res.status(400).json({ error: 'Missing metadata in payment intent' })
+        console.error('❌ Missing metadata in payment intent!');
+        return res.status(400).json({ error: 'Missing metadata in payment intent' });
       }
 
       const userId = paymentIntent.metadata.userId;
-      const cartItemIds = JSON.parse(paymentIntent.metadata?.cartItemIds || '[]');
-      
-      console.log("🔹 Parsed Cart Item IDs:", cartItemIds);
-      
+      const cartSummary = paymentIntent.metadata.cartSummary.split(', '); // Extract names
+      console.log('🔹 User ID:', userId);
+      console.log('🔹 Cart Summary:', cartSummary);
+
       try {
-          // ✅ Fetch full product details from your database using cartItemIds
-          const cartItems = await ProductModel.find({ _id: { $in: cartItemIds } });
-      
-          console.log('✅ Retrieved Product Details:', cartItems);
-      
-          console.log('📡 Calling addPurchasedClass API...');
-          const purchaseResponse = await fetch(
-              'https://backend-production-cbe2.up.railway.app/api/add-purchased-class',
-              {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                      userId: userId,
-                      purchasedItems: cartItems.map((item) => ({
-                          name: item.name,
-                          description: item.description || 'No description available',
-                      })),
-                      userEmail: paymentIntent.metadata.userEmail,
-                  }),
-              }
-          );
-      
-          const purchaseResult = await purchaseResponse.json();
-          console.log('✅ Purchased Classes API Response:', purchaseResult);
-      
-          if (!purchaseResponse.ok) {
-              console.warn('⚠️ Issue updating purchased classes:', purchaseResult.message);
-          }
+        // ✅ Update `purchasedClasses` inside `Register` model
+        const updatedUser = await Register.findByIdAndUpdate(
+          userId,
+          {
+            $push: {
+              purchasedClasses: {
+                $each: cartSummary.map((name) => ({
+                  name: name.trim(),
+                  description: 'Purchased via Stripe', // You can update this later
+                })),
+              },
+            },
+          },
+          { new: true } // Return updated document
+        );
+
+        console.log('✅ Updated User Purchased Classes:', updatedUser.purchasedClasses);
+
+        res.status(200).json({ message: 'Purchased classes updated successfully' });
       } catch (error) {
-          console.error('❌ Error fetching product details or calling addPurchasedClass API:', error);
+        console.error('❌ Error updating purchased classes:', error);
+        res.status(500).json({ error: 'Error updating purchased classes' });
       }
     } else {
-      console.log('⚠️ Webhook received but not a payment event:', event.type)
+      console.log('⚠️ Webhook received but not a payment event:', event.type);
     }
 
-    res.sendStatus(200)
-  },
-)
+    res.sendStatus(200);
+  }
+);
 module.exports = router
