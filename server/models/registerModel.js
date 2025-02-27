@@ -11,15 +11,7 @@ const purchasedClassSchema = new mongoose.Schema({
   bookingLink: { type: String, default: null }, // ✅ Calendly Booking Link (For Services)
 })
 
-// ✅ Calendly Booking Schema (New Feature)
-const calendlyBookingSchema = new mongoose.Schema({
-  eventId: { type: String, required: true, unique: true },
-  userEmail: { type: String, required: true },
-  eventType: { type: String, required: true }, // e.g., "90 minute session"
-  startTime: { type: Date, required: true },
-  endTime: { type: Date, required: true },
-  createdAt: { type: Date, default: Date.now },
-})
+
 
 // ✅ Coupon Schema Inside Register Model
 const couponSchema = new mongoose.Schema({
@@ -36,12 +28,7 @@ const archivedClassSchema = new mongoose.Schema({
   description: { type: String },
   archivedAt: { type: Date, default: Date.now },
 })
-// ✅ Store Booking Count for each Calendly Service
-const calendlyBookingsCountSchema = new mongoose.Schema({
-  "3x30": { type: Number, default: 0 },
-  "5x30": { type: Number, default: 0 },
-  "8x30": { type: Number, default: 0 },
-});
+
 // ✅ Define Schema
 const RegisterSchema = new mongoose.Schema(
   {
