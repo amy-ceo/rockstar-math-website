@@ -163,13 +163,13 @@ router.post('/create-payment-intent', async (req, res) => {
       return res.status(400).json({ error: 'Unsupported currency. Use USD, EUR, GBP, etc.' });
     }
 
-    // ✅ Fix: Ensure `userEmail` is passed correctly in metadata
+    // ✅ Fix: Optimize metadata to avoid exceeding the 500-character limit
+    const cartSummary = cartItems.map(item => item.name).join(", "); // 🔹 Only store names, not full objects
     const metadata = {
       userId: String(userId),
       orderId: String(orderId),
-      userEmail: userEmail || "no-email@example.com",  // ✅ Ensure email is always included
-      cartSummary: cartItems.map(item => item.name).join(", "), // 🔥 Include cart summary
-      cartItems: JSON.stringify(cartItems), // ✅ Fix: Store full cart items as JSON
+      userEmail: userEmail || "no-email@example.com",
+      cartSummary: cartSummary.length > 500 ? cartSummary.substring(0, 497) + "..." : cartSummary, // ✅ Ensure metadata stays within the 500-character limit
     };
 
     console.log('📡 Sending Payment Intent with Metadata:', metadata);
