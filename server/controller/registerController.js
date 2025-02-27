@@ -348,14 +348,13 @@ exports.addPurchasedClass = async (req, res) => {
         return false
       })
 
-      if (matchedCoupon && matchedCoupon.code) { // ✅ Prevent null values
+      if (matchedCoupon) {
         couponCodes.push({
-            code: matchedCoupon.code,
-            percent_off: matchedCoupon.percent_off,
-            expires: matchedCoupon.expires,
+          code: matchedCoupon.code,
+          percent_off: matchedCoupon.percent_off,
+          expires: matchedCoupon.expires,
         })
-    }
-    
+      }
       if (['Learn', 'Achieve', 'Excel'].includes(item.name)) {
         console.log(`✅ User purchased ${item.name}, adding ALL Zoom links with names`)
 
