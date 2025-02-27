@@ -175,9 +175,9 @@ router.post('/create-payment-intent', async (req, res) => {
       orderId: String(orderId),
       userEmail: userEmail || 'no-email@example.com',
       cartSummary: cartItems.map((item) => item.name).join(', '), // ✅ Short summary only
-      cartItemIds: JSON.stringify(cartItems.map((item) => item.id)) // ✅ Store only product IDs
-    };
-    
+      cartItemIds: JSON.stringify(cartItems.map((item) => item.id)), // ✅ Store only product IDs
+    }
+
     console.log('📡 Sending Payment Intent with Metadata:', metadata)
 
     const paymentIntent = await stripe.paymentIntents.create({
@@ -370,75 +370,79 @@ router.post('/create-checkout-session', async (req, res) => {
 })
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET
 
-router.post(
-  "/webhook",
-  bodyParser.raw({ type: "application/json" }),
-  async (req, res) => {
-    let event;
-    const sig = req.headers["stripe-signature"];
+router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req, res) => {
+  let event
+  const sig = req.headers['stripe-signature']
 
-    try {
-      event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
-    } catch (err) {
-      console.error("❌ Webhook Signature Verification Failed:", err.message);
-      return res.status(400).send(`Webhook Error: ${err.message}`);
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET)
+  } catch (err) {
+    console.error('❌ Webhook Signature Verification Failed:', err.message)
+    return res.status(400).send(`Webhook Error: ${err.message}`)
+  }
+
+  console.log('🔔 Received Stripe Webhook Event:', event.type)
+
+  if (event.type === 'payment_intent.succeeded') {
+    console.log('✅ Payment Intent Succeeded Event Triggered')
+    const paymentIntent = event.data.object
+
+    console.log('🔹 Payment Intent ID:', paymentIntent.id)
+    console.log('🔹 Metadata:', paymentIntent.metadata)
+
+    if (!paymentIntent.metadata || !paymentIntent.metadata.userId) {
+      console.error('❌ Missing metadata in payment intent!')
+      return res.status(400).json({ error: 'Missing metadata in payment intent' })
     }
 
-    console.log("🔔 Received Stripe Webhook Event:", event.type);
+    const userId = paymentIntent.metadata.userId
+    const cartSummaryString = paymentIntent.metadata.cartSummary || '' // Ensure it's a string
+    const cartSummary = cartSummaryString ? cartSummaryString.split(', ') : [] // Convert to array safely
+    const userEmail = paymentIntent.metadata.userEmail;
+    console.log("📧 Extracted userEmail from metadata:", userEmail);
 
-    if (event.type === "payment_intent.succeeded") {
-      console.log("✅ Payment Intent Succeeded Event Triggered");
-      const paymentIntent = event.data.object;
+    console.log('🔹 User ID:', userId)
+    console.log('🔹 Cart Summary:', cartSummary)
 
-      console.log("🔹 Payment Intent ID:", paymentIntent.id);
-      console.log("🔹 Metadata:", paymentIntent.metadata);
+    if (cartSummary.length === 0) {
+      console.warn('⚠️ No items found in cartSummary. Skipping update.')
+      return res.status(400).json({ error: 'Cart summary is empty' })
+    }
 
-      if (!paymentIntent.metadata || !paymentIntent.metadata.userId) {
-        console.error("❌ Missing metadata in payment intent!");
-        return res.status(400).json({ error: "Missing metadata in payment intent" });
-      }
-
-      const userId = paymentIntent.metadata.userId;
-      const cartSummaryString = paymentIntent.metadata.cartSummary || ""; // Ensure it's a string
-      const cartSummary = cartSummaryString ? cartSummaryString.split(", ") : []; // Convert to array safely
-
-      console.log("🔹 User ID:", userId);
-      console.log("🔹 Cart Summary:", cartSummary);
-
-      if (cartSummary.length === 0) {
-        console.warn("⚠️ No items found in cartSummary. Skipping update.");
-        return res.status(400).json({ error: "Cart summary is empty" });
-      }
-
-      try {
-        // ✅ Update `purchasedClasses` in `Register` model
-        const updatedUser = await Register.findByIdAndUpdate(
-          userId,
-          {
-            $push: {
-              purchasedClasses: {
-                $each: cartSummary.map((name) => ({
-                  name: name.trim(),
-                  description: "Purchased via Stripe", // You can update this later
-                })),
-              },
+    try {
+      // ✅ Update `purchasedClasses` in `Register` model
+      const updatedUser = await Register.findByIdAndUpdate(
+        userId,
+        {
+          $push: {
+            purchasedClasses: {
+              $each: cartSummary.map((name) => ({
+                name: name.trim(),
+                description: 'Purchased via Stripe', // You can update this later
+              })),
             },
           },
-          { new: true } // Return updated document
-        );
+        },
+        { new: true }, // Return updated document
+      )
+      console.log("📧 Attempting to send email...");
+      console.log("📧 To:", userEmail);
+      console.log("📧 Subject:", welcomeSubject);
+      console.log("📧 Email Body:", welcomeHtml);
+      console.log('📧 Sending purchase confirmation email...')
+      await sendEmail(userEmail, 'Your Purchase Confirmation', 'Thank you for your purchase!')
+      console.log('✅ Email sent!')
 
-        console.log("✅ Updated User Purchased Classes:", updatedUser.purchasedClasses);
-        return res.status(200).json({ message: "Purchased classes updated successfully" }); // ✅ Return to prevent multiple responses
-      } catch (error) {
-        console.error("❌ Error updating purchased classes:", error);
-        return res.status(500).json({ error: "Error updating purchased classes" }); // ✅ Return here to stop further execution
-      }
-    } 
-
-    // ✅ Only send 200 if no response has been sent
-    console.log("⚠️ Webhook received but not a payment event:", event.type);
-    res.sendStatus(200);
+      return res.status(200).json({ message: 'Purchased classes updated successfully' }) // ✅ Return to prevent multiple responses
+    } catch (error) {
+      console.error('❌ Error updating purchased classes:', error)
+      return res.status(500).json({ error: 'Error updating purchased classes' }) // ✅ Return here to stop further execution
+    }
   }
-);
+
+  // ✅ Only send 200 if no response has been sent
+  console.log('⚠️ Webhook received but not a payment event:', event.type)
+  res.sendStatus(200)
+})
 
 module.exports = router
