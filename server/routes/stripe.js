@@ -173,11 +173,16 @@ router.post('/create-payment-intent', async (req, res) => {
     const metadata = {
       userId: String(userId),
       orderId: String(orderId),
-      userEmail: userEmail || 'no-email@example.com',
-      cartSummary: cartItems.map((item) => item.name).join(', '), // ✅ Short summary
-      cartItems: JSON.stringify(cartItems), // ✅ Full cart items as JSON string
-    }
-
+      userEmail: userEmail || "no-email@example.com",
+      cartSummary: cartItems.map((item) => item.name).join(", "), // ✅ Short summary only
+      cartItems: JSON.stringify(
+        cartItems.map((item) => ({
+          name: item.name, // Only store names, NOT descriptions
+          description: item.description, // Store price if needed
+        }))
+      ), // ✅ Avoid sending full objects
+    };
+    
     console.log('📡 Sending Payment Intent with Metadata:', metadata)
 
     const paymentIntent = await stripe.paymentIntents.create({
@@ -400,8 +405,10 @@ router.post(
 
       const userId = paymentIntent.metadata.userId
       const cartItems = paymentIntent.metadata?.cartItems
-        ? JSON.parse(paymentIntent.metadata.cartItems)
-        : []
+      ? JSON.parse(paymentIntent.metadata.cartItems)
+      : [];
+    
+    console.log("🔹 Parsed Cart Items:", cartItems);
 
       console.log('🔹 User ID:', userId)
       console.log('🔹 Cart Items:', cartItems)
