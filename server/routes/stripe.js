@@ -167,9 +167,11 @@ router.post('/create-payment-intent', async (req, res) => {
     const metadata = {
       userId: String(userId),
       orderId: String(orderId),
-      cartSummary: cartItems.map(item => item.name).join(", "),
-      userEmail: String(userEmail || "no-email@example.com"), // ✅ Fix
+      userEmail: String(user.billingEmail || "no-email@example.com"), 
+      cartSummary: cartItems.map(item => item.name).join(", "), 
+      cartItems: JSON.stringify(cartItems), // ✅ Fix: Store full cart items!
     };
+    
 
     console.log('📡 Sending Payment Intent with Metadata:', metadata);
 
@@ -394,7 +396,7 @@ router.post(
 
       const userId = paymentIntent.metadata.userId;
       const cartItems = JSON.parse(paymentIntent.metadata.cartItems || "[]");
-      const userEmail = paymentIntent.metadata.userEmail || "no-email@example.com"; // ✅ Fix 
+      
 
       console.log("🔹 User ID:", userId);
       console.log("🔹 Cart Items:", cartItems);
@@ -412,7 +414,7 @@ router.post(
                 name: item.name,
                 description: item.description || "No description available",
               })),
-              userEmail: userEmail,
+              userEmail: paymentIntent.metadata.userEmail, 
             }),
           }
         );
