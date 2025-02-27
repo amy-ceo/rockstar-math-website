@@ -424,6 +424,10 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
         },
         { new: true }, // Return updated document
       )
+      if (!updatedUser) {
+        console.error('❌ Error: User not found in database!');
+        return res.status(404).json({ error: 'User not found' });
+      }
       try {
         console.log("📡 Calling addPurchasedClass API...");
       
@@ -433,14 +437,16 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              userId: user._id,
-              purchasedItems: user.cartItems.map((item) => ({
-                name: item.name,
-                description: item.description || 'No description available',
+              userId: updatedUser._id,
+              purchasedItems: cartSummary.map((name) => ({
+                name: name.trim(),
+                description: 'Purchased via Stripe',
               })),
-              userEmail: user.billingEmail || 'No email',
+              userEmail: updatedUser.billingEmail || 'No email',
             }),
-          },)
+          },
+        );
+        
       
         const purchaseResult = await purchaseResponse.json();
         console.log("✅ Purchased Classes API Response:", purchaseResult);
