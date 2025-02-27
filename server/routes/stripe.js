@@ -7,9 +7,7 @@ require('dotenv').config() // Ensure environment variables are loaded
 const bodyParser = require('body-parser') // Ensure body-parser is imported
 const { createZoomMeeting } = require('../controller/zoomController')
 const Register = require('../models/registerModel') // ✅ Using Register Model
-const stripe = require('stripe')(
-  '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',
-)
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
 
 
 
@@ -362,6 +360,7 @@ router.post('/create-checkout-session', async (req, res) => {
     res.status(500).json({ error: 'Error creating checkout session' })
   }
 })
+const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 router.post(
   "/webhook",
@@ -369,7 +368,6 @@ router.post(
   async (req, res) => {
     let event;
     const sig = req.headers["stripe-signature"];
-    const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
     try {
       event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);

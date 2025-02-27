@@ -8,7 +8,6 @@ const authRoutes = require('./routes/authRoutes');
 const registerRoutes = require("./routes/registerRoutes");
 // const otpRoutes = require("./routes/otpRoutes");
 const classRoutes = require("./routes/classRoutes");
-const StripeWebhookRoutes = require("./routes/stripeWebhook"); // ✅ Import Webhook Route
 const subscribeRoute = require("./routes/subscribeRoute");
 const contactRoutes = require('./routes/contactRoutes');
 const stripeRoutes = require("./routes/stripe"); // Import the Stripe route
@@ -25,6 +24,8 @@ const blogRoutes = require('./routes/blogRoutes');
 connectDB();
 const app = express();
 // ✅ JSON Middleware for Other Routes (Not Webhook)
+// ✅ **Place Webhook Route BEFORE express.json()**
+app.use("/api/stripe/webhook", bodyParser.raw({ type: "application/json" })); // 👈 Raw body only for Stripe
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 const allowedOrigins = [
