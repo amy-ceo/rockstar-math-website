@@ -425,13 +425,35 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
         },
         { new: true }, // Return updated document
       )
-      console.log("📧 Attempting to send email...");
-      console.log("📧 To:", userEmail);
-      console.log("📧 Subject:", welcomeSubject);
-      console.log("📧 Email Body:", welcomeHtml);
-      console.log('📧 Sending purchase confirmation email...')
-      await sendEmail(userEmail, 'Your Purchase Confirmation', 'Thank you for your purchase!')
-      console.log('✅ Email sent!')
+      try {
+        console.log("📡 Calling addPurchasedClass API...");
+      
+        const purchaseResponse = await fetch(
+          'https://backend-production-cbe2.up.railway.app/api/add-purchased-class',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: userId,
+              purchasedItems: cartSummary.map((name) => ({
+                name: name.trim(),
+                description: 'Purchased via Stripe',
+              })),
+              userEmail: userEmail,
+            }),
+          }
+        );
+      
+        const purchaseResult = await purchaseResponse.json();
+        console.log("✅ Purchased Classes API Response:", purchaseResult);
+      
+        if (!purchaseResponse.ok) {
+          console.warn("⚠️ Issue updating purchased classes:", purchaseResult.message);
+        }
+      } catch (purchaseError) {
+        console.error("❌ Error calling addPurchasedClass API:", purchaseError);
+      }
+      
 
       return res.status(200).json({ message: 'Purchased classes updated successfully' }) // ✅ Return to prevent multiple responses
     } catch (error) {
