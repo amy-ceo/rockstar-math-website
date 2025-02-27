@@ -23,12 +23,11 @@ const calendlyBookingSchema = new mongoose.Schema({
 
 // ✅ Coupon Schema Inside Register Model
 const couponSchema = new mongoose.Schema({
-  code: { type: String, required: true, unique: true, sparse: true }, // ✅ Fix applied
+  code: { type: String, required: true, unique: true },
   percent_off: { type: Number, required: true },
   valid: { type: Boolean, default: true },
   assignedAt: { type: Date, default: Date.now },
-});
-
+})
 
 // ✅ Archived Classes Schema (Same as purchasedClasses)
 const archivedClassSchema = new mongoose.Schema({

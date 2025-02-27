@@ -348,15 +348,14 @@ exports.addPurchasedClass = async (req, res) => {
         if (item.name === 'Excel' && coupon.percent_off === 20) return true
         return false
       })
+
       if (matchedCoupon) {
-        console.log("🎟 Matched Coupon Found:", matchedCoupon);  // ✅ Debugging
         couponCodes.push({
-            code: matchedCoupon.code,
-            percent_off: matchedCoupon.percent_off,
-            expires: matchedCoupon.expires,
-        });
-    }
-    console.log("🎟 Coupon Codes Before Saving:", couponCodes);
+          code: matchedCoupon.code,
+          percent_off: matchedCoupon.percent_off,
+          expires: matchedCoupon.expires,
+        })
+      }
       if (['Learn', 'Achieve', 'Excel'].includes(item.name)) {
         console.log(`✅ User purchased ${item.name}, adding ALL Zoom links with names`)
 
@@ -376,12 +375,8 @@ exports.addPurchasedClass = async (req, res) => {
     }
 
     user.purchasedClasses.push(...newPurchases)
-    if (couponCodes.length > 0) {
-      couponCodes = couponCodes.filter(coupon => coupon.code); // Remove null coupons
-      user.coupons.push(...couponCodes);
-  }
+    user.coupons.push(...couponCodes) // Save all coupons
     await user.save()
-    console.log("✅ User Coupons After Saving:", user.coupons);
     console.log('📡 Zoom Links Before Sending Email:', zoomLinks)
     console.log('🎟 Coupon Codes Before Sending Email:', couponCodes)
 

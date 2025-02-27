@@ -430,27 +430,17 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
         const purchaseResponse = await fetch(
           'https://backend-production-cbe2.up.railway.app/api/add-purchased-class',
           {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                  userId: userId,
-                  purchasedItems: user.cartItems.map((item) => ({
-                      name: item.name,
-                      description: item.description || "No description available",
-                  })),
-                  userEmail: userEmail,
-              }),
-          }
-      );
-      console.log("📡 Sending Data to addPurchasedClass:", JSON.stringify({
-        userId: userId,
-        purchasedItems: user.cartItems.map((item) => ({
-            name: item.name,
-            description: item.description || "No description available",
-        })),
-        userEmail: userEmail,
-    }, null, 2));
-    
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: user._id,
+              purchasedItems: user.cartItems.map((item) => ({
+                name: item.name,
+                description: item.description || 'No description available',
+              })),
+              userEmail: user.billingEmail || 'No email',
+            }),
+          },)
       
         const purchaseResult = await purchaseResponse.json();
         console.log("✅ Purchased Classes API Response:", purchaseResult);
