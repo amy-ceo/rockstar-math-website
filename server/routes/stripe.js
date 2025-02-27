@@ -163,11 +163,11 @@ router.post('/create-payment-intent', async (req, res) => {
       return res.status(400).json({ error: 'Unsupported currency. Use USD, EUR, GBP, etc.' });
     }
 
-    // ✅ Fix: Convert metadata values to STRING only
+    // ✅ Fix: Reduce Metadata Size
     const metadata = {
       userId: String(userId),
       orderId: String(orderId),
-      cartItems: JSON.stringify(cartItems), // ✅ Convert array to string
+      cartSummary: cartItems.map(item => item.name).join(", "), // 🔥 Only store names
     };
 
     console.log('📡 Sending Payment Intent with Metadata:', metadata);
@@ -192,6 +192,7 @@ router.post('/create-payment-intent', async (req, res) => {
     res.status(500).json({ error: 'Payment creation failed. Please try again later.' });
   }
 });
+
 
 
 

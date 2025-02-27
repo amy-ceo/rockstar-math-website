@@ -239,70 +239,69 @@ const CheckoutPage = () => {
   }
 
   // ✅ Create Stripe Payment Intent
-    // ✅ Create Stripe Payment Intent
-    const createPaymentIntent = async () => {
-      if (total <= 0) {
-        handleZeroAmount();
-        return null;
+  const createPaymentIntent = async () => {
+    if (total <= 0) {
+      handleZeroAmount();
+      return null;
+    }
+  
+    try {
+      const user = JSON.parse(localStorage.getItem("user"));
+      if (!user || !user._id) {
+        toast.error("User authentication required!");
+        return;
       }
-    
-      try {
-        const user = JSON.parse(localStorage.getItem("user"));
-        if (!user || !user._id) {
-          toast.error("User authentication required!");
-          return;
-        }
-    
-        const orderId = `order_${Date.now()}`;
-        const currency = "usd";
-    
-        // ✅ Convert Cart Items to Proper Format
-        const formattedCartItems = cartItems.map(item => ({
-          id: item.id,
-          name: item.name,
-          description: item.description || "No description available",
-          price: String(item.price), // Ensure price is a string
-          currency: item.currency || "USD"
-        }));
-    
-        console.log("🔹 Sending Payment Request:", {
+  
+      const orderId = `order_${Date.now()}`;
+      const currency = "usd";
+  
+      // ✅ Fix: Reduce cart items size before sending
+      const formattedCartItems = cartItems.map(item => ({
+        id: item.id,
+        name: item.name, // 🔥 Only send name
+        price: String(item.price), // Ensure price is a string
+        currency: item.currency || "USD"
+      }));
+  
+      console.log("🔹 Sending Payment Request:", {
+        amount: total,
+        currency,
+        userId: user._id,
+        orderId,
+        cartItems: formattedCartItems, // ✅ Send formatted cart items
+      });
+  
+      const response = await fetch("https://backend-production-cbe2.up.railway.app/api/stripe/create-payment-intent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           amount: total,
           currency,
           userId: user._id,
           orderId,
-          cartItems: formattedCartItems, // ✅ Send formatted cart items
-        });
-    
-        const response = await fetch("https://backend-production-cbe2.up.railway.app/api/stripe/create-payment-intent", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            amount: total,
-            currency,
-            userId: user._id,
-            orderId,
-            cartItems: formattedCartItems, // ✅ Fix data format
-          }),
-        });
-    
-        if (!response.ok) {
-          console.error("❌ Failed to create payment intent. Status:", response.status);
-          throw new Error(`Payment Intent creation failed. Server responded with ${response.status}`);
-        }
-    
-        const data = await response.json();
-        console.log("✅ Payment Intent Created:", data);
-    
-        setPaymentIntentId(data.id);
-        setClientSecret(data.clientSecret);
-    
-        return data.clientSecret;
-      } catch (error) {
-        console.error("❌ Payment Intent Error:", error);
-        toast.error(`Payment Error: ${error.message}`);
-        return null;
+          cartItems: formattedCartItems, // ✅ Fix data format
+        }),
+      });
+  
+      if (!response.ok) {
+        console.error("❌ Failed to create payment intent. Status:", response.status);
+        throw new Error(`Payment Intent creation failed. Server responded with ${response.status}`);
       }
-    };
+  
+      const data = await response.json();
+      console.log("✅ Payment Intent Created:", data);
+  
+      setPaymentIntentId(data.id);
+      setClientSecret(data.clientSecret);
+  
+      return data.clientSecret;
+    } catch (error) {
+      console.error("❌ Payment Intent Error:", error);
+      toast.error(`Payment Error: ${error.message}`);
+      return null;
+    }
+  };
+  
     
 
     const handlePaymentSuccess = async () => {
