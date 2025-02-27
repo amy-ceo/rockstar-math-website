@@ -76,31 +76,31 @@ const CALENDLY_LINKS = {
 }
 
 // ✅ Function to Generate Calendly Link with Booking Limits
-const generateCalendlyLink = async (userId, sessionType) => {
-  try {
-    const user = await Register.findById(userId)
-    if (!user) return null
+// const generateCalendlyLink = async (userId, sessionType) => {
+//   try {
+//     const user = await Register.findById(userId)
+//     if (!user) return null
 
-    user.calendlyBookingsCount = user.calendlyBookingsCount || {} // Ensure field exists
-    const currentBookings = user.calendlyBookingsCount[sessionType] || 0
-    const maxBookings = SERVICE_PACKAGES[sessionType]
+//     user.calendlyBookingsCount = user.calendlyBookingsCount || {} // Ensure field exists
+//     const currentBookings = user.calendlyBookingsCount[sessionType] || 0
+//     const maxBookings = SERVICE_PACKAGES[sessionType]
 
-    // ✅ Prevent Overbooking
-    if (currentBookings >= maxBookings) {
-      console.warn(`⚠️ User ${userId} exceeded booking limit for ${sessionType}`)
-      return null
-    }
+//     // ✅ Prevent Overbooking
+//     if (currentBookings >= maxBookings) {
+//       console.warn(`⚠️ User ${userId} exceeded booking limit for ${sessionType}`)
+//       return null
+//     }
 
-    user.calendlyBookingsCount[sessionType] = currentBookings + 1
-    await user.save()
+//     user.calendlyBookingsCount[sessionType] = currentBookings + 1
+//     await user.save()
 
-    console.log(`✅ Calendly Link Generated for ${sessionType}: ${CALENDLY_LINKS[sessionType]}`)
-    return CALENDLY_LINKS[sessionType]
-  } catch (error) {
-    console.error('❌ Calendly Link Generation Failed:', error)
-    return null
-  }
-}
+//     console.log(`✅ Calendly Link Generated for ${sessionType}: ${CALENDLY_LINKS[sessionType]}`)
+//     return CALENDLY_LINKS[sessionType]
+//   } catch (error) {
+//     console.error('❌ Calendly Link Generation Failed:', error)
+//     return null
+//   }
+// }
 
 // ✅ Function to Automatically Archive Expired Classes
 const archiveExpiredCalendlySessions = async () => {
@@ -315,7 +315,7 @@ exports.addPurchasedClass = async (req, res) => {
     let zoomLinks = []
     let couponCodes = [] // Store multiple coupons
     let commonCorePurchased = false
-    let calendlyMeetingLink = null
+    // let calendlyMeetingLink = null
 
     // ✅ Find User
     console.log(`🔎 Finding User: ${userId}`)
