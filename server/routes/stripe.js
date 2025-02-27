@@ -141,9 +141,9 @@ router.get('/get-products', async (req, res) => {
 
 router.post('/create-payment-intent', async (req, res) => {
   try {
-    let { amount, currency, userId, orderId, cartItems } = req.body;
+    let { amount, currency, userId, orderId, cartItems, userEmail } = req.body;
 
-    console.log('🔹 Received Payment Request:', { amount, currency, userId, orderId, cartItems });
+    console.log('🔹 Received Payment Request:', { amount, currency, userId, orderId, cartItems, userEmail });
 
     if (!userId || !orderId || !cartItems || cartItems.length === 0) {
       console.error('❌ Missing required fields:', { userId, orderId, cartItems });
@@ -163,11 +163,12 @@ router.post('/create-payment-intent', async (req, res) => {
       return res.status(400).json({ error: 'Unsupported currency. Use USD, EUR, GBP, etc.' });
     }
 
-    // ✅ Fix: Reduce Metadata Size
+    // ✅ Fix: Include `userEmail` in metadata
     const metadata = {
       userId: String(userId),
       orderId: String(orderId),
-      cartSummary: cartItems.map(item => item.name).join(", "), // 🔥 Only store names
+      cartSummary: cartItems.map(item => item.name).join(", "),
+      userEmail: String(userEmail || "no-email@example.com"), // ✅ Fix
     };
 
     console.log('📡 Sending Payment Intent with Metadata:', metadata);
@@ -175,8 +176,8 @@ router.post('/create-payment-intent', async (req, res) => {
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amount,
       currency: currency.toLowerCase(),
-      payment_method_types: ['card'], // ✅ Ensure "card" is set properly
-      metadata, // ✅ Correct metadata format
+      payment_method_types: ['card'],
+      metadata,
     });
 
     if (!paymentIntent.client_secret) {
@@ -393,6 +394,7 @@ router.post(
 
       const userId = paymentIntent.metadata.userId;
       const cartItems = JSON.parse(paymentIntent.metadata.cartItems || "[]");
+      const userEmail = paymentIntent.metadata.userEmail || "no-email@example.com"; // ✅ Fix 
 
       console.log("🔹 User ID:", userId);
       console.log("🔹 Cart Items:", cartItems);
@@ -410,7 +412,7 @@ router.post(
                 name: item.name,
                 description: item.description || "No description available",
               })),
-              userEmail: user.billingEmail,
+              userEmail: userEmail,
             }),
           }
         );
