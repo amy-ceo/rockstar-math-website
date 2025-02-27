@@ -398,44 +398,42 @@ router.post(
         return res.status(400).json({ error: 'Missing metadata in payment intent' })
       }
 
-      const userId = paymentIntent.metadata.userId
+      const userId = paymentIntent.metadata.userId;
       const cartItemIds = JSON.parse(paymentIntent.metadata?.cartItemIds || '[]');
-    
-    console.log("🔹 Parsed Cart Items:", cartItems);
-
-      console.log('🔹 User ID:', userId)
-      console.log('🔹 Cart Items:', cartItems)
-
+      
+      console.log("🔹 Parsed Cart Item IDs:", cartItemIds);
+      
       try {
-        const cartItems = await ProductModel.find({ _id: { $in: cartItemIds } });
-  
-        console.log('✅ Retrieved Product Details:', cartItems);
-  
-        console.log('📡 Calling addPurchasedClass API...');
-        const purchaseResponse = await fetch(
-          'https://backend-production-cbe2.up.railway.app/api/add-purchased-class',
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              userId: userId,
-              purchasedItems: cartItems.map((item) => ({
-                name: item.name,
-                description: item.description || 'No description available',
-              })),
-              userEmail: paymentIntent.metadata.userEmail,
-            }),
+          // ✅ Fetch full product details from your database using cartItemIds
+          const cartItems = await ProductModel.find({ _id: { $in: cartItemIds } });
+      
+          console.log('✅ Retrieved Product Details:', cartItems);
+      
+          console.log('📡 Calling addPurchasedClass API...');
+          const purchaseResponse = await fetch(
+              'https://backend-production-cbe2.up.railway.app/api/add-purchased-class',
+              {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                      userId: userId,
+                      purchasedItems: cartItems.map((item) => ({
+                          name: item.name,
+                          description: item.description || 'No description available',
+                      })),
+                      userEmail: paymentIntent.metadata.userEmail,
+                  }),
+              }
+          );
+      
+          const purchaseResult = await purchaseResponse.json();
+          console.log('✅ Purchased Classes API Response:', purchaseResult);
+      
+          if (!purchaseResponse.ok) {
+              console.warn('⚠️ Issue updating purchased classes:', purchaseResult.message);
           }
-        );
-  
-        const purchaseResult = await purchaseResponse.json();
-        console.log('✅ Purchased Classes API Response:', purchaseResult);
-  
-        if (!purchaseResponse.ok) {
-          console.warn('⚠️ Issue updating purchased classes:', purchaseResult.message);
-        }
       } catch (error) {
-        console.error('❌ Error calling addPurchasedClass API:', error);
+          console.error('❌ Error fetching product details or calling addPurchasedClass API:', error);
       }
     } else {
       console.log('⚠️ Webhook received but not a payment event:', event.type)
