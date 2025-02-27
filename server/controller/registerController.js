@@ -312,7 +312,6 @@ exports.addPurchasedClass = async (req, res) => {
       return res.status(400).json({ message: 'Invalid request. Missing data.' })
     }
     const activeCoupons = await getActiveCoupons()
-    console.log("🎟 Active Coupons (Fetched):", activeCoupons);
     let zoomLinks = []
     let couponCodes = [] // Store multiple coupons
     let commonCorePurchased = false
@@ -349,13 +348,14 @@ exports.addPurchasedClass = async (req, res) => {
         return false
       })
 
-      if (matchedCoupon) {
+      if (matchedCoupon && matchedCoupon.code) { // ✅ Prevent null values
         couponCodes.push({
-          code: matchedCoupon.code,
-          percent_off: matchedCoupon.percent_off,
-          expires: matchedCoupon.expires,
+            code: matchedCoupon.code,
+            percent_off: matchedCoupon.percent_off,
+            expires: matchedCoupon.expires,
         })
-      }
+    }
+    
       if (['Learn', 'Achieve', 'Excel'].includes(item.name)) {
         console.log(`✅ User purchased ${item.name}, adding ALL Zoom links with names`)
 
