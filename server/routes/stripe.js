@@ -12,30 +12,45 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
 // ✅ Fetch Active Coupons from Stripe
 async function getActiveCoupons() {
   try {
-      const coupons = await stripe.coupons.list({ limit: 100 });
+    const coupons = await stripe.coupons.list({ limit: 100 })
 
-      return coupons.data
-          .filter(coupon => coupon.percent_off) // ✅ Only coupons with discounts
-          .map(coupon => ({
-              id: coupon.id,
-              code: coupon.id,
-              percent_off: coupon.percent_off,
-              expires: coupon.redeem_by ? new Date(coupon.redeem_by * 1000) : 'Forever',
-          }));
+    return coupons.data
+      .filter((coupon) => coupon.percent_off) // ✅ Only coupons with discounts
+      .map((coupon) => ({
+        id: coupon.id,
+        code: coupon.id,
+        percent_off: coupon.percent_off,
+        expires: coupon.redeem_by ? new Date(coupon.redeem_by * 1000) : 'Forever',
+      }))
   } catch (error) {
-      console.error('❌ Error Fetching Coupons:', error.message);
-      return [];
+    console.error('❌ Error Fetching Coupons:', error.message)
+    return []
   }
 }
 
 // ✅ Define Zoom Course Links
 const zoomCourseMapping = [
-  { name: '📘 Algebra 1 Tutoring', link: 'https://us06web.zoom.us/meeting/register/mZHoQiy9SqqHx69f4dejgg#/registration' },
-  { name: '📗 Algebra 2 Tutoring', link: 'https://us06web.zoom.us/meeting/register/z2W2vvBHRQK_yEWMTteOrg#/registration' },
-  { name: '📕 Calculus 1 Tutoring', link: 'https://us06web.zoom.us/meeting/register/kejTnKqpTpteWaMN13BAb0#/registration' },
-  { name: '📙 Pre-Calculus & Trigonometry Tutoring', link: 'https://us06web.zoom.us/meeting/register/jH2N2rFMSXyqX1UDEZAarQ#/registration' },
-  { name: '📒 Geometry Tutoring', link: 'https://us06web.zoom.us/meeting/register/Lsd_MFiwQpKRKhMZhPIVPw#/registration' },
-];
+  {
+    name: '📘 Algebra 1 Tutoring',
+    link: 'https://us06web.zoom.us/meeting/register/mZHoQiy9SqqHx69f4dejgg#/registration',
+  },
+  {
+    name: '📗 Algebra 2 Tutoring',
+    link: 'https://us06web.zoom.us/meeting/register/z2W2vvBHRQK_yEWMTteOrg#/registration',
+  },
+  {
+    name: '📕 Calculus 1 Tutoring',
+    link: 'https://us06web.zoom.us/meeting/register/kejTnKqpTpteWaMN13BAb0#/registration',
+  },
+  {
+    name: '📙 Pre-Calculus & Trigonometry Tutoring',
+    link: 'https://us06web.zoom.us/meeting/register/jH2N2rFMSXyqX1UDEZAarQ#/registration',
+  },
+  {
+    name: '📒 Geometry Tutoring',
+    link: 'https://us06web.zoom.us/meeting/register/Lsd_MFiwQpKRKhMZhPIVPw#/registration',
+  },
+]
 
 // ✅ Fetch all products from Stripe
 router.get('/test-products', async (req, res) => {
@@ -399,95 +414,106 @@ router.post('/create-checkout-session', async (req, res) => {
 
 // ✅ Webhook for Stripe Payments
 router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req, res) => {
-  let event;
-  const sig = req.headers['stripe-signature'];
+  let event
+  const sig = req.headers['stripe-signature']
 
   try {
-      event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET)
   } catch (err) {
-      console.error('❌ Webhook Signature Verification Failed:', err.message);
-      return res.status(400).send(`Webhook Error: ${err.message}`);
+    console.error('❌ Webhook Signature Verification Failed:', err.message)
+    return res.status(400).send(`Webhook Error: ${err.message}`)
   }
 
-  console.log('🔔 Received Stripe Webhook Event:', event.type);
+  console.log('🔔 Received Stripe Webhook Event:', event.type)
 
   if (event.type === 'payment_intent.succeeded') {
-      console.log('✅ Payment Intent Succeeded Event Triggered');
-      const paymentIntent = event.data.object;
+    console.log('✅ Payment Intent Succeeded Event Triggered')
+    const paymentIntent = event.data.object
 
-      // ✅ Extract User & Cart Data
-      const userId = paymentIntent.metadata?.userId;
-      const cartSummary = paymentIntent.metadata?.cartSummary?.split(', ') || [];
-      const userEmail = paymentIntent.metadata?.userEmail || 'No email provided';
+    // ✅ Extract User & Cart Data
+    const userId = paymentIntent.metadata?.userId
+    const cartSummary = paymentIntent.metadata?.cartSummary?.split(', ') || []
+    const userEmail = paymentIntent.metadata?.userEmail || 'No email provided'
 
-      console.log('🔹 User ID:', userId);
-      console.log('🛒 Purchased Items:', cartSummary);
+    console.log('🔹 User ID:', userId)
+    console.log('🛒 Purchased Items:', cartSummary)
 
-      if (!userId || cartSummary.length === 0) {
-          console.warn('⚠️ Missing user ID or cart summary. Skipping update.');
-          return res.status(400).json({ error: 'Invalid payment data' });
+    if (!userId || cartSummary.length === 0) {
+      console.warn('⚠️ Missing user ID or cart summary. Skipping update.')
+      return res.status(400).json({ error: 'Invalid payment data' })
+    }
+
+    try {
+      // ✅ Update User's Purchased Classes
+      const updatedUser = await Register.findByIdAndUpdate(
+        userId,
+        {
+          $push: {
+            purchasedClasses: {
+              $each: cartSummary.map((name) => ({
+                name: name.trim(),
+                description: 'Purchased via Stripe',
+                purchaseDate: new Date(),
+              })),
+            },
+          },
+        },
+        { new: true },
+      )
+
+      if (!updatedUser) {
+        console.error('❌ Error: User not found in database!')
+        return res.status(404).json({ error: 'User not found' })
       }
 
-      try {
-          // ✅ Update User's Purchased Classes
-          const updatedUser = await Register.findByIdAndUpdate(
-              userId,
-              {
-                  $push: {
-                      purchasedClasses: {
-                          $each: cartSummary.map(name => ({
-                              name: name.trim(),
-                              description: 'Purchased via Stripe',
-                              purchaseDate: new Date(),
-                          })),
-                      },
-                  },
-              },
-              { new: true }
-          );
+      // ✅ Fetch Active Coupons
+      const activeCoupons = await getActiveCoupons()
+      console.log('🎟 Active Coupons from Stripe:', activeCoupons)
+      // ✅ Match Coupons Based on Course Name
+      let userCoupons = activeCoupons.filter((coupon) => {
+        return cartSummary.some((item) => {
+          return item.toLowerCase().includes(coupon.code.toLowerCase()) // Match case-insensitively
+        })
+      })
+      console.log('🛒 Purchased Items from Metadata:', cartSummary)
 
-          if (!updatedUser) {
-              console.error('❌ Error: User not found in database!');
-              return res.status(404).json({ error: 'User not found' });
-          }
-
-          // ✅ Fetch Active Coupons
-          const activeCoupons = await getActiveCoupons();
-          let userCoupons = activeCoupons.filter(coupon => cartSummary.includes(coupon.name));
-
-          // ✅ Fetch Zoom Links
-          let zoomLinks = [];
-          if (['Learn', 'Achieve', 'Excel'].some(course => cartSummary.includes(course))) {
-              zoomLinks = zoomCourseMapping;
-          }
-
-          // ✅ Update Coupons in User DB
-          if (userCoupons.length > 0) {
-              await Register.findByIdAndUpdate(userId, {
-                  $push: { coupons: { $each: userCoupons } },
-              });
-          }
-
-          // ✅ Send Email with Zoom Links & Coupons
-          console.log('📧 Sending Email with Zoom Links:', zoomLinks);
-          console.log('🎟 Sending Email with Coupons:', userCoupons);
-
-          const emailHtml = generateEmailHtml(updatedUser, zoomLinks, userCoupons);
-
-          await sendEmail(userEmail, '📚 Your Rockstar Math Purchase Details', '', emailHtml);
-
-          console.log('✅ Purchase confirmation email sent successfully!');
-          return res.status(200).json({ message: 'Purchase updated & all emails sent!' });
-
-      } catch (error) {
-          console.error('❌ Error processing purchase:', error);
-          return res.status(500).json({ error: 'Error updating purchased classes' });
+      // ✅ Fetch Zoom Links
+      let zoomLinks = []
+      if (['Learn', 'Achieve', 'Excel'].some((course) => cartSummary.includes(course))) {
+        zoomLinks = zoomCourseMapping
       }
+
+      // ✅ If no coupons matched, add a warning log
+      if (userCoupons.length === 0) {
+        console.warn('⚠️ No matching coupons found for the purchased items.')
+      }
+
+      // ✅ Update Coupons in User DB (only if coupons exist)
+      if (userCoupons.length > 0) {
+        await Register.findByIdAndUpdate(userId, {
+          $push: { coupons: { $each: userCoupons } },
+        })
+      }
+
+      // ✅ Send Email with Zoom Links & Coupons
+      console.log('📧 Sending Email with Zoom Links:', zoomLinks)
+      console.log('🎟 Sending Email with Coupons:', userCoupons)
+
+      const emailHtml = generateEmailHtml(updatedUser, zoomLinks, userCoupons)
+
+      await sendEmail(userEmail, '📚 Your Rockstar Math Purchase Details', '', emailHtml)
+
+      console.log('✅ Purchase confirmation email sent successfully!')
+      return res.status(200).json({ message: 'Purchase updated & all emails sent!' })
+    } catch (error) {
+      console.error('❌ Error processing purchase:', error)
+      return res.status(500).json({ error: 'Error updating purchased classes' })
+    }
   }
 
   // ✅ If event is not `payment_intent.succeeded`, send 200 response
-  res.sendStatus(200);
-});
+  res.sendStatus(200)
+})
 
 // ✅ Function to Generate Email HTML
 function generateEmailHtml(user, zoomLinks, userCoupons) {
@@ -498,21 +524,21 @@ function generateEmailHtml(user, zoomLinks, userCoupons) {
 
           <h3 style="color: #007bff;">🔗 Available Courses & Registration Links:</h3>
           <ul style="list-style-type: none; padding: 0;">
-  `;
+  `
 
   if (zoomLinks.length > 0) {
-      detailsHtml += `<h3>🔗 Your Course Zoom Links:</h3><ul>`;
-      zoomLinks.forEach(course => {
-          detailsHtml += `<li>📚 <b>${course.name}</b> – <a href="${course.link}" target="_blank">Register Here</a></li>`;
-      });
-      detailsHtml += `</ul>`;
+    detailsHtml += `<h3>🔗 Your Course Zoom Links:</h3><ul>`
+    zoomLinks.forEach((course) => {
+      detailsHtml += `<li>📚 <b>${course.name}</b> – <a href="${course.link}" target="_blank">Register Here</a></li>`
+    })
+    detailsHtml += `</ul>`
   }
 
   if (userCoupons.length > 0) {
-      detailsHtml += `<h3 style="color: #d9534f;">🎟 Your Exclusive Discount Coupons:</h3>`;
-      userCoupons.forEach(coupon => {
-          detailsHtml += `<p><b>Coupon Code:</b> ${coupon.code} - ${coupon.percent_off}% off (Expires: ${coupon.expires})</p>`;
-      });
+    detailsHtml += `<h3 style="color: #d9534f;">🎟 Your Exclusive Discount Coupons:</h3>`
+    userCoupons.forEach((coupon) => {
+      detailsHtml += `<p><b>Coupon Code:</b> ${coupon.code} - ${coupon.percent_off}% off (Expires: ${coupon.expires})</p>`
+    })
   }
 
   detailsHtml += `
@@ -523,9 +549,9 @@ function generateEmailHtml(user, zoomLinks, userCoupons) {
               <li>🖥 Log in to your Dashboard to view your scheduled tutoring sessions.</li>
           </ol>
       </div>
-  `;
+  `
 
-  return detailsHtml;
+  return detailsHtml
 }
 
 module.exports = router
