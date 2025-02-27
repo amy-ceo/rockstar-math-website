@@ -409,7 +409,7 @@ router.post(
                 name: item.name,
                 description: item.description || "No description available",
               })),
-              userEmail: "No email provided",
+              userEmail: user.billingEmail,
             }),
           }
         );
@@ -423,28 +423,6 @@ router.post(
       } catch (error) {
         console.error("❌ Error calling addPurchasedClass API:", error);
       }
-
-      // ✅ **SEND EMAIL AFTER SUCCESSFUL PAYMENT**
-      try {
-        const userResponse = await fetch(`https://backend-production-cbe2.up.railway.app/api/user/${userId}`);
-        const userData = await userResponse.json();
-
-        if (userResponse.ok && userData.billingEmail) {
-          console.log(`📧 Sending Payment Confirmation Email to ${userData.billingEmail}...`);
-
-          await sendEmail({
-            to: userData.billingEmail,
-            subject: "Payment Successful - Order Confirmation",
-            text: `Thank you for your purchase!\n\nOrder ID: ${paymentIntent.id}\nTotal: ${paymentIntent.amount / 100} ${paymentIntent.currency.toUpperCase()}\n\nYour purchased items:\n${cartItems.map(item => `- ${item.name}`).join("\n")}`,
-          });
-
-          console.log("✅ Email Sent Successfully!");
-        } else {
-          console.warn("⚠️ User email not found or API failed:", userData);
-        }
-      } catch (emailError) {
-        console.error("❌ Error Sending Email:", emailError);
-      }
     } else {
       console.log("⚠️ Webhook received but not a payment event:", event.type);
     }
@@ -452,5 +430,4 @@ router.post(
     res.sendStatus(200);
   }
 );
-
 module.exports = router
