@@ -163,15 +163,14 @@ router.post('/create-payment-intent', async (req, res) => {
       return res.status(400).json({ error: 'Unsupported currency. Use USD, EUR, GBP, etc.' });
     }
 
-    // ✅ Fix: Include `userEmail` in metadata
+    // ✅ Fix: Ensure `userEmail` is passed correctly in metadata
     const metadata = {
       userId: String(userId),
       orderId: String(orderId),
-      userEmail: String(user.billingEmail || "no-email@example.com"), 
-      cartSummary: cartItems.map(item => item.name).join(", "), 
-      cartItems: JSON.stringify(cartItems), // ✅ Fix: Store full cart items!
+      userEmail: userEmail || "no-email@example.com",  // ✅ Ensure email is always included
+      cartSummary: cartItems.map(item => item.name).join(", "), // 🔥 Include cart summary
+      cartItems: JSON.stringify(cartItems), // ✅ Fix: Store full cart items as JSON
     };
-    
 
     console.log('📡 Sending Payment Intent with Metadata:', metadata);
 
@@ -179,7 +178,7 @@ router.post('/create-payment-intent', async (req, res) => {
       amount: amount,
       currency: currency.toLowerCase(),
       payment_method_types: ['card'],
-      metadata,
+      metadata, // ✅ Correct metadata format
     });
 
     if (!paymentIntent.client_secret) {
@@ -205,7 +204,8 @@ router.post("/capture-stripe-payment", async (req, res) => {
 
     console.log("📡 Received Stripe Payment Capture Request:", { paymentIntentId, user });
 
-    if (!paymentIntentId || !user || !user._id || !Array.isArray(user.cartItems) || user.cartItems.length === 0) {
+    // ✅ Ensure `user` exists
+    if (!user || !user._id || !Array.isArray(user.cartItems) || user.cartItems.length === 0) {
       console.error("❌ Missing required fields in Stripe Capture:", { paymentIntentId, user });
       return res.status(400).json({ error: "Missing required fields or empty cart items" });
     }
