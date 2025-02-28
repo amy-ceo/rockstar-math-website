@@ -40,38 +40,58 @@ const Dashboard = () => {
       }
     }
 
-    const fetchCalendlyBookings = async () => {
-      try {
-        const response = await fetch(
-          `https://backend-production-cbe2.up.railway.app/api/webhook/${users._id}/calendly-bookings`
-        );
-        
-        const data = await response.json()
-        if (!response.ok) throw new Error(data.message || 'No Calendly bookings found.')
-
-        const currentDate = new Date()
-        const activeSessions = []
-        const expiredSessions = []
-
-        data.bookings.forEach((session) => {
-          if (new Date(session.startTime) < currentDate) {
-            expiredSessions.push(session)
-          } else {
-            activeSessions.push(session)
+   
+    useEffect(() => {
+      if (!users || !users._id) return
+      setLoading(true)
+  
+      // -- API calls here --
+      // fetchPurchasedClasses(), fetchZoomMeeting(), fetchCalendlyBookings(), fetchCoupons()
+  
+      // Example Calendly Bookings fetch
+      const fetchCalendlyBookings = async () => {
+        try {
+          const response = await fetch(
+            `https://backend-production-cbe2.up.railway.app/api/webhook/${users._id}/calendly-bookings`
+          )
+          const data = await response.json()
+          if (!response.ok) throw new Error(data.message || 'No Calendly bookings found.')
+  
+          // Optionally separate active vs. expired
+          const currentDate = new Date()
+          const activeSessions = []
+          const expiredSessions = []
+  
+          data.bookings.forEach((session) => {
+            if (new Date(session.startTime) < currentDate) {
+              expiredSessions.push(session)
+            } else {
+              activeSessions.push(session)
+            }
+          })
+  
+          // Store only active sessions in state
+          setCalendlyBookings(activeSessions)
+  
+          // Optionally archive expired sessions
+          if (expiredSessions.length > 0) {
+            await archiveExpiredSessions(expiredSessions)
           }
-        })
-
-        setCalendlyBookings(activeSessions)
-
-        if (expiredSessions.length > 0) {
-          console.log(`📂 Archiving ${expiredSessions.length} expired sessions...`)
-          await archiveExpiredSessions(expiredSessions)
+        } catch (error) {
+          console.error('❌ Error fetching Calendly bookings:', error)
+          setCalendlyBookings([])
         }
-      } catch (error) {
-        console.error('❌ Error fetching Calendly bookings:', error)
-        setCalendlyBookings([])
       }
-    }
+  
+      // -- similarly fetchCoupons, fetchZoomMeeting, etc. --
+  
+      Promise.allSettled([
+        // fetchPurchasedClasses(),
+        // fetchZoomMeeting(),
+        fetchCalendlyBookings(),
+        // fetchCoupons(),
+      ]).finally(() => setLoading(false))
+    }, [users])
 
     const fetchCoupons = async () => {
       try {
@@ -189,8 +209,8 @@ const Dashboard = () => {
             </section>
           )}
 
-          {/* ✅ Show Only Active Calendly Bookings */}
-          {calendlyBookings.length > 0 && (
+           {/* Calendly Bookings (place it right below coupons!) */}
+           {calendlyBookings.length > 0 && (
             <section className="mt-6 p-4 bg-white shadow-md rounded-lg">
               <h3 className="text-lg font-bold mb-2">📅 Your Scheduled Calendly Bookings</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
@@ -199,16 +219,23 @@ const Dashboard = () => {
                     key={index}
                     className="p-4 bg-white rounded-lg shadow-md border border-gray-300"
                   >
-                    <h4 className="text-blue-600 font-semibold">{booking.eventType}</h4>
+                    <h4 className="text-blue-600 font-semibold">
+                      {booking.eventName /* Make sure this matches your DB field */}
+                    </h4>
                     <p>
-                      <strong>📅 Start Time:</strong> {new Date(booking.startTime).toLocaleString()}
+                      <strong>📅 Start Time:</strong>{' '}
+                      {new Date(booking.startTime).toLocaleString()}
                     </p>
                     <p>
-                      <strong>⏳ End Time:</strong> {new Date(booking.endTime).toLocaleString()}
+                      <strong>⏳ End Time:</strong>{' '}
+                      {new Date(booking.endTime).toLocaleString()}
+                    </p>
+                    <p>
+                      <strong>Status:</strong> {booking.status}
                     </p>
                     <p>
                       <a
-                        href={booking.bookingLink}
+                        href={booking.calendlyEventUri}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-blue-500 underline"
