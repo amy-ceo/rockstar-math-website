@@ -12,3 +12,9 @@
 html {
     scroll-behavior: smooth;
   }
+
+  @media (max-width: 1024px) {
+    .mobile-menu {
+      display: block !important;
+    }
+  }
