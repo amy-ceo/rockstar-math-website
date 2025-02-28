@@ -1,45 +1,45 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react';
-import { FaQuoteLeft } from 'react-icons/fa';
-import axios from 'axios';
+import React, { useState, useEffect, Suspense, lazy } from 'react'
+import { FaQuoteLeft } from 'react-icons/fa'
+import axios from 'axios'
 
 // Lazy Load Components
-const BlogBanner = lazy(() => import('../components/banners/BlogBanner'));
-const AnimatedSection = lazy(() => import('../components/AnimatedSection'));
+const BlogBanner = lazy(() => import('../components/banners/BlogBanner'))
+const AnimatedSection = lazy(() => import('../components/AnimatedSection'))
 
 function BlogPage() {
-  const [blogs, setBlogs] = useState([]);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [selectedBlog, setSelectedBlog] = useState(null);
+  const [blogs, setBlogs] = useState([])
+  const [modalOpen, setModalOpen] = useState(false)
+  const [selectedBlog, setSelectedBlog] = useState(null)
 
   // ✅ Fetch Blogs from Backend
   useEffect(() => {
     const fetchBlogs = async () => {
       try {
-        const response = await axios.get('https://backend-production-cbe2.up.railway.app/api/blogs'); // Adjust URL as needed
-        setBlogs(response.data);
+        const response = await axios.get('https://backend-production-cbe2.up.railway.app/api/blogs') // Adjust URL as needed
+        setBlogs(response.data)
       } catch (error) {
-        console.error('Error fetching blogs:', error);
+        console.error('Error fetching blogs:', error)
       }
-    };
-    fetchBlogs();
-  }, []);
+    }
+    fetchBlogs()
+  }, [])
 
   // ✅ Open & Close Modal
   const handleOpenModal = (blog) => {
-    setSelectedBlog(blog);
-    setModalOpen(true);
-  };
+    setSelectedBlog(blog)
+    setModalOpen(true)
+  }
 
   const handleCloseModal = () => {
-    setModalOpen(false);
-    setSelectedBlog(null);
-  };
+    setModalOpen(false)
+    setSelectedBlog(null)
+  }
 
   const handleBackdropClick = (e) => {
     if (e.target === e.currentTarget) {
-      handleCloseModal();
+      handleCloseModal()
     }
-  };
+  }
 
   return (
     <>
@@ -67,7 +67,12 @@ function BlogPage() {
 
         <div className="md:w-1/3">
           <div className="relative overflow-hidden rounded-lg shadow-lg">
-            <img src="/images/blog2.png" loading="lazy" alt="Blog" className="w-full h-auto object-cover" />
+            <img
+              src="/images/blog2.png"
+              loading="lazy"
+              alt="Blog"
+              className="w-full h-auto object-cover"
+            />
           </div>
         </div>
       </div>
@@ -86,8 +91,9 @@ function BlogPage() {
                 <FaQuoteLeft className="text-6xl sm:text-7xl text-white" />
               </div>
               <p className="text-lg sm:text-1xl leading-relaxed font-medium">
-                RockstarMath is all about transforming challenges into achievements. We take pride in simplifying math
-                and helping students discover their true potential through guided learning.
+                RockstarMath is all about transforming challenges into achievements. We take pride
+                in simplifying math and helping students discover their true potential through
+                guided learning.
               </p>
               <br />
               <hr />
@@ -106,26 +112,36 @@ function BlogPage() {
             </h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 px-6 md:px-12 xl:px-20">
-              {blogs.map((item, index) => (
-                <div
-                  key={index}
-                  className="flex flex-col cursor-pointer bg-white shadow-md border border-gray-200 rounded-lg hover:shadow-2xl transform hover:scale-105 transition-transform duration-300 overflow-hidden"
-                  onClick={() => handleOpenModal(item)}
-                >
-                  {/* ✅ Image Container */}
-                  <div className="relative w-full h-56 overflow-hidden rounded-t-lg">
-                    <img src={`https://backend-production-cbe2.up.railway.app${item.image}`} loading="lazy" alt={item.title} className="w-full h-full object-cover" />
-                  </div>
-
-                  {/* ✅ Content Section */}
-                  <div className="p-6 flex flex-col justify-between h-auto">
-                    <h6 className="mb-3 text-gray-900 text-lg font-bold hover:text-blue-600 transition-colors duration-300">
-                      {item.title}
-                    </h6>
-                    <p className="text-gray-600 text-sm leading-relaxed">{item.description.substring(0, 100)}...</p>
-                  </div>
+              {blogs.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 px-6 md:px-12 xl:px-20">
+                  {blogs.map((item, index) => (
+                    <div
+                      key={index}
+                      className="flex flex-col cursor-pointer bg-white shadow-md border border-gray-200 rounded-lg hover:shadow-2xl transform hover:scale-105 transition-transform duration-300 overflow-hidden"
+                      onClick={() => handleOpenModal(item)}
+                    >
+                      <div className="relative w-full h-56 overflow-hidden rounded-t-lg">
+                        <img
+                          src={`https://backend-production-cbe2.up.railway.app${item.image}`}
+                          loading="lazy"
+                          alt={item.title}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="p-6 flex flex-col justify-between h-auto">
+                        <h6 className="mb-3 text-gray-900 text-lg font-bold hover:text-blue-600 transition-colors duration-300">
+                          {item.title}
+                        </h6>
+                        <p className="text-gray-600 text-sm leading-relaxed">
+                          {item.description.substring(0, 100)}...
+                        </p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              ) : (
+                <p className="text-center text-gray-500 py-6">No blogs available.</p>
+              )}
             </div>
           </div>
         </AnimatedSection>
@@ -133,15 +149,25 @@ function BlogPage() {
 
       {/* ✅ Blog Modal */}
       {modalOpen && selectedBlog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4 md:p-8" onClick={handleBackdropClick}>
-          <button onClick={handleCloseModal} className="absolute top-6 right-6 text-white p-3 transition-all focus:outline-none z-50">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4 md:p-8"
+          onClick={handleBackdropClick}
+        >
+          <button
+            onClick={handleCloseModal}
+            className="absolute top-6 right-6 text-white p-3 transition-all focus:outline-none z-50"
+          >
             ✖
           </button>
           <div className="relative bg-white rounded-lg w-full max-w-4xl shadow-lg overflow-hidden">
             <div className="flex flex-col md:flex-row">
               {/* ✅ Image Section */}
               <div className="md:w-1/2 h-64 md:h-auto bg-gray-100">
-                <img src={`https://backend-production-cbe2.up.railway.app${selectedBlog.image}`} alt={selectedBlog.title} className="w-full h-full object-cover" />
+                <img
+                  src={`https://backend-production-cbe2.up.railway.app${selectedBlog.image}`}
+                  alt={selectedBlog.title}
+                  className="w-full h-full object-cover"
+                />
               </div>
               {/* ✅ Content Section */}
               <div className="md:w-1/2 p-6 overflow-y-auto max-h-[80vh]">
@@ -153,7 +179,7 @@ function BlogPage() {
         </div>
       )}
     </>
-  );
+  )
 }
 
-export default BlogPage;
+export default BlogPage

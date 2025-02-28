@@ -70,33 +70,29 @@ function AboutPage() {
       </div>
 
       <Suspense fallback={<div className="text-center py-10 text-gray-500">Loading Animation...</div>}>
-        <AnimatedSection direction="left">
+      <AnimatedSection direction="left">
           <div className="flex flex-col justify-center items-center py-10 bg-gray-50">
-            <h2 className="text-3xl font-bold text-black text-center relative inline-block">
-              <span className="relative z-10">That’s why I…</span>
+            <h2 className="text-gray-800 text-center text-2xl sm:text-3xl font-bold">
+              That’s why I…
             </h2>
 
-            <div className="flex flex-wrap justify-center gap-8 mt-12">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6 mt-12">
               {aboutItems.map((item, index) => (
-                <div
-                  key={index}
-                  className="flex flex-col bg-white shadow-md border border-gray-200 rounded-lg w-80 md:w-96 hover:shadow-lg transition-transform duration-300 transform hover:-translate-y-2"
-                >
-                  <div className="h-56 m-3 overflow-hidden rounded-lg relative">
+                <div key={index} className="bg-white shadow-md border border-gray-200 rounded-lg w-full sm:w-80 md:w-96 hover:shadow-lg transition-transform transform hover:-translate-y-2">
+                  <div className="h-40 sm:h-48 md:h-56 m-3 overflow-hidden rounded-lg relative">
                     <img src={item.image} loading="lazy" alt="card-image" className="w-full h-full object-cover" />
                   </div>
                   <div className="p-5">
-                    <h6 className="mb-2 text-gray-800 text-xl font-semibold hover:text-deepBlue transition duration-300">
+                    <h6 className="text-gray-800 text-lg font-semibold hover:text-deepBlue transition">
                       {item.title}
                     </h6>
-                    <p className="text-gray-600 leading-relaxed font-light">{item.description}</p>
+                    <p className="text-gray-600 text-sm leading-relaxed">{item.description}</p>
                   </div>
                 </div>
               ))}
             </div>
           </div>
         </AnimatedSection>
-      </Suspense>
 
       <div className="flex flex-col items-center bg-gray-50 py-14">
         <h2 className="text-gray-800 text-center text-3xl font-bold">
@@ -135,6 +131,8 @@ function AboutPage() {
           ))}
         </div>
       </div>
+      </Suspense>
+
     </>
   );
 }
