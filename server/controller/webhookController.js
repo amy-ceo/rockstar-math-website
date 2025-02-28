@@ -3,7 +3,7 @@ const Register = require("../models/registerModel");
 
 exports.calendlyWebhook = async (req, res) => {
     try {
-        console.log('📢 Calendly Webhook Received:', JSON.stringify(req.body, null, 2)); // ✅ Log the entire payload
+        console.log('📢 Full Webhook Payload:', JSON.stringify(req.body, null, 2)); // ✅ Log full payload
 
         if (!req.body || !req.body.payload) {
             console.error('❌ Invalid Webhook Payload:', req.body);
@@ -11,20 +11,23 @@ exports.calendlyWebhook = async (req, res) => {
         }
 
         const payload = req.body.payload;
-        const inviteeEmail = payload.invitee?.email || null;
-        const eventName = payload.event?.name || "Unknown Event";
-        const eventUri = payload.event?.uri || "No URL Provided";
-        const startTime = payload.event?.start_time ? new Date(payload.event.start_time) : null;
-        const endTime = payload.event?.end_time ? new Date(payload.event.end_time) : null;
+        console.log('🔍 Extracting Fields from Payload:', payload);
 
-        console.log('📅 Extracted Booking Details:', { inviteeEmail, eventName, eventUri, startTime, endTime });
+        // ✅ Extract only the fields that actually exist in your Calendly webhook
+        const inviteeEmail = payload.invitee?.email || "❌ Missing";
+        const eventName = payload.event?.name || "❌ Missing";
+        const eventUri = payload.event?.uri || "❌ Missing";
+        const startTime = payload.event?.start_time ? new Date(payload.event.start_time) : "❌ Missing";
+        const createdAt = payload.created_at ? new Date(payload.created_at) : "❌ Missing"; // Booking creation time
 
-        if (!inviteeEmail || !startTime || !endTime) {
-            console.error('❌ Missing required data in webhook:', { inviteeEmail, startTime, endTime });
+        console.log('📅 Extracted Booking Details:', { inviteeEmail, eventName, eventUri, startTime, createdAt });
+
+        if (inviteeEmail === "❌ Missing" || startTime === "❌ Missing") {
+            console.error('❌ Missing required data in webhook:', { inviteeEmail, startTime });
             return res.status(400).json({ error: 'Missing required fields in webhook data' });
         }
 
-        // ✅ Find user in MongoDB
+        // ✅ Find user in MongoDB using email
         const user = await Register.findOne({ billingEmail: inviteeEmail });
 
         if (!user) {
@@ -34,18 +37,18 @@ exports.calendlyWebhook = async (req, res) => {
 
         console.log('👤 User Found:', user);
 
-        // ✅ New Booking Object
+        // ✅ Store booking with only the relevant fields
         const newBooking = {
             eventName: eventName,
             calendlyEventUri: eventUri,
             startTime: startTime,
-            endTime: endTime,
+            createdAt: createdAt, // Optional: Track when this booking was made
             status: "Booked",
         };
 
         console.log('📢 Storing New Booking:', newBooking);
 
-        // ✅ Push new booking to bookedSessions array
+        // ✅ Update user in MongoDB
         const updatedUser = await Register.findByIdAndUpdate(
             user._id,
             { $push: { bookedSessions: newBooking } },
@@ -65,6 +68,7 @@ exports.calendlyWebhook = async (req, res) => {
         res.status(500).json({ error: 'Internal Server Error' });
     }
 };
+
 
 
 
