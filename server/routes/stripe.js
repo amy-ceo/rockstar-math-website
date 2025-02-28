@@ -57,8 +57,8 @@ const COMMONCORE_ZOOM_LINK = {
 
 const CALENDLY_LINKS = {
   '3 x 30': 'https://calendly.com/rockstarmathtutoring/30-minute-session',
-  '5 - 30': 'https://calendly.com/rockstarmathtutoring/60min',
-  '8 x 30 minutes': 'https://calendly.com/rockstarmathtutoring/90-minute-sessions',
+  '5 - 30': 'https://calendly.com/rockstarmathtutoring/30-minute-session',
+  '8 x 30 minutes': 'https://calendly.com/rockstarmathtutoring/30-minute-session',
 }
 
 // ✅ Fetch all products from Stripe
