@@ -1,49 +1,42 @@
 const Register = require("../models/registerModel");
 
 exports.calendlyWebhook = async (req, res) => {
-  try {
-    const { event, payload } = req.body;
+    try {
+        console.log('📡 Webhook Received:', req.body); // Debugging
 
-    console.log("📩 Calendly Webhook Received:", event);
-    console.log("🔹 Payload Data:", payload);
+        const { event, payload } = req.body;
 
-    if (event === "invitee.created") {
-      const { invitee } = payload;
+        if (!event || !payload || !payload.invitee) {
+            return res.status(400).json({ message: 'Invalid webhook payload' });
+        }
 
-      // ✅ Find User by Email
-      const user = await Register.findOne({ billingEmail: invitee.email });
+        const { email, event: sessionName, uri, start_time, end_time } = payload.invitee;
 
-      if (!user) {
-        console.warn("⚠️ User not found for email:", invitee.email);
-        return res.status(404).json({ message: "User not found" });
-      }
+        // ✅ Find User by Email
+        const user = await Register.findOne({ billingEmail: email });
 
-      // ✅ Check if Session Already Exists
-      const existingSession = user.bookedSessions.find(
-        (session) => session.calendlyEventUri === invitee.uri
-      );
+        if (!user) {
+            console.log('❌ User not found for email:', email);
+            return res.status(404).json({ message: 'User not found' });
+        }
 
-      if (existingSession) {
-        console.log("⚠️ Session already exists for:", invitee.email);
-        return res.status(400).json({ message: "Session already exists" });
-      }
+        // ✅ Store Booking in User's Purchased Classes
+        const newBooking = {
+            name: sessionName,
+            description: `Booked through Calendly`,
+            purchaseDate: new Date(),
+            bookingLink: uri,
+            sessionCount: 1,
+            remainingSessions: 0,
+        };
 
-      // ✅ Save the Booked Session
-      user.bookedSessions.push({
-        eventName: invitee.event,
-        calendlyEventUri: invitee.uri,
-        startTime: invitee.start_time,
-        endTime: invitee.end_time,
-        status: "Booked",
-      });
+        user.purchasedClasses.push(newBooking);
+        await user.save();
 
-      await user.save();
-      console.log("✅ Session saved successfully for:", user.email);
+        console.log('✅ Booking stored successfully for user:', email);
+        return res.status(200).json({ message: 'Webhook processed successfully' });
+    } catch (error) {
+        console.error('❌ Error processing webhook:', error);
+        return res.status(500).json({ message: 'Server error' });
     }
-
-    res.status(200).json({ message: "Webhook received successfully!" });
-  } catch (error) {
-    console.error("❌ Error processing webhook:", error);
-    res.status(500).json({ message: "Server error" });
-  }
 };
