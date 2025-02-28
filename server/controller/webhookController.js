@@ -11,8 +11,6 @@ exports.calendlyWebhook = async (req, res) => {
             return res.status(400).json({ error: "Invalid webhook data" });
         }
 
-        console.log("✅ [LIVE] Webhook Payload Extracted:", payload);
-
         const inviteeEmail = payload.invitee.email;
         const eventName = payload.event.name;
         const eventUri = payload.event.uri;
@@ -21,8 +19,9 @@ exports.calendlyWebhook = async (req, res) => {
 
         console.log("📅 [LIVE] Extracted Booking Details:", { inviteeEmail, eventName, eventUri, startTime, endTime });
 
-        // Check if the user exists in the database
+        // Fetch user from DB
         const user = await Register.findOne({ billingEmail: inviteeEmail });
+
         if (!user) {
             console.error("❌ [LIVE] No user found with email:", inviteeEmail);
             return res.status(404).json({ error: "User not found" });
@@ -30,21 +29,26 @@ exports.calendlyWebhook = async (req, res) => {
 
         console.log("👤 [LIVE] User Found:", user);
 
+        // Construct the booking object
         const newBooking = {
-            eventType: eventName,
-            calendlyUrl: eventUri,
+            eventName: eventName,
+            calendlyEventUri: eventUri,
             startTime: startTime,
             endTime: endTime,
+            status: "Booked",
+            createdAt: new Date(),
         };
 
         console.log("📢 [LIVE] Saving to Database:", newBooking);
 
-        // Store booking details in database
+        // Store booking in database
         const updatedUser = await Register.findByIdAndUpdate(
             user._id,
-            { $push: { calendlyBookings: newBooking } },
+            { $push: { bookedSessions: newBooking } },
             { new: true, runValidators: true }
         );
+
+        console.log("✅ [LIVE] Updated User Response:", updatedUser);
 
         if (!updatedUser) {
             console.error("❌ [LIVE] Failed to update user bookings:", user._id);
