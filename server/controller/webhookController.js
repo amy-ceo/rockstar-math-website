@@ -67,14 +67,26 @@ exports.calendlyWebhook = async (req, res) => {
 
 exports.getCalendlyBookings = async (req, res) => {
     try {
-        const { userId } = req.params;
-        const user = await Register.findById(userId);
-        if (!user) {
-            return res.status(404).json({ message: "User not found" });
-        }
-        res.status(200).json({ bookings: user.calendlyBookings || [] });
+      const { userId } = req.params;
+      
+      console.log("🔍 Checking UserId:", userId); // Debugging log
+  
+      // Find user in MongoDB
+      const user = await Register.findById(userId);
+      
+      console.log("✅ Retrieved user data:", JSON.stringify(user, null, 2)); // Debugging log
+  
+      if (!user) {
+        console.error("❌ User not found with ID:", userId);
+        return res.status(404).json({ message: "User not found" });
+      }
+  
+      // ✅ Return bookedSessions from the user
+      res.status(200).json({ bookings: user.bookedSessions || [] });
+  
     } catch (error) {
-        console.error("❌ Error fetching bookings:", error);
-        res.status(500).json({ message: "Server error" });
+      console.error("❌ Error fetching bookings:", error);
+      res.status(500).json({ message: "Server error" });
     }
-};
+  };
+  

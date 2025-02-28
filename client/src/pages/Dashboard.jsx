@@ -46,22 +46,24 @@ const Dashboard = () => {
       }
     }
 
-    // Fetch Calendly Bookings
     const fetchCalendlyBookings = async () => {
       try {
         const response = await fetch(
-          `https://backend-production-cbe2.up.railway.app/api/webhook/${users._id}/calendly-bookings`
+          `https://backend-production-cbe2.up.railway.app/api/${users._id}/calendly-bookings`
         );
-        const data = await response.json()
-        if (!response.ok) throw new Error(data.message || "No Calendly bookings found.")
-
-        console.log("✅ Fetched Calendly Bookings:", data)
-        setCalendlyBookings(data.bookings || [])
+        const data = await response.json();
+    
+        console.log("✅ Fetched Calendly Bookings:", data); // Debugging log
+    
+        if (!response.ok) throw new Error(data.message || "No Calendly bookings found.");
+    
+        setCalendlyBookings(data.bookings || []);
+    
       } catch (error) {
-        console.error("❌ Error fetching Calendly bookings:", error)
-        setCalendlyBookings([])
+        console.error("❌ Error fetching Calendly bookings:", error);
+        setCalendlyBookings([]); // Ensures UI doesn't break
       }
-    }
+    };
 
     // Fetch Coupons
     const fetchCoupons = async () => {
