@@ -447,63 +447,63 @@ exports.addPurchasedClass = async (req, res) => {
     // ✅ Send Zoom & Coupon Email (Always Sent)
     console.log(`📧 Sending Zoom Links & Coupon Email to: ${userEmail}`)
 
-    let detailsSubject = `📚 Your Rockstar Math Purchase Details`
+    // let detailsSubject = `📚 Your Rockstar Math Purchase Details`
 
-    let detailsHtml = `
-      <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
-        <h2 style="color: #2C3E50;">🎉 Hello ${user.username}!</h2>
-        <p>We're excited to have you on board! 🚀 Below are your registration details.</p>
+    // let detailsHtml = `
+    //   <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
+    //     <h2 style="color: #2C3E50;">🎉 Hello ${user.username}!</h2>
+    //     <p>We're excited to have you on board! 🚀 Below are your registration details.</p>
 
-        <h3 style="color: #007bff;">🔗 Available Courses & Registration Links:</h3>
-        <ul style="list-style-type: none; padding: 0;">
-    `
+    //     <h3 style="color: #007bff;">🔗 Available Courses & Registration Links:</h3>
+    //     <ul style="list-style-type: none; padding: 0;">
+    // `
 
-    // ✅ Show Proper Course Names & Their Correct Zoom Links
-    if (zoomLinks.length > 0) {
-      detailsHtml += `<h3>🔗 Your Course Zoom Links:</h3><ul>`
+    // // ✅ Show Proper Course Names & Their Correct Zoom Links
+    // if (zoomLinks.length > 0) {
+    //   detailsHtml += `<h3>🔗 Your Course Zoom Links:</h3><ul>`
 
-      zoomLinks.forEach((course) => {
-        detailsHtml += `<li>📚 <b>${course.name}</b> – 
-          <a href="${course.link}" target="_blank">Register Here</a></li>`
-      })
+    //   zoomLinks.forEach((course) => {
+    //     detailsHtml += `<li>📚 <b>${course.name}</b> – 
+    //       <a href="${course.link}" target="_blank">Register Here</a></li>`
+    //   })
 
-      detailsHtml += `</ul>`
-    }
-
-    // ✅ Include CommonCore Zoom Link
-    if (commonCorePurchased) {
-      detailsHtml += `<li style="margin-bottom: 10px;">📚 Common Core for Parents – <a href="${COMMONCORE_ZOOM_LINK}" target="_blank" style="color: #007bff;">Register Here</a></li>`
-    }
-
-    detailsHtml += `</ul>`
-
-    // ✅ Include Coupons (if available)
-    if (couponCodes.length > 0) {
-      detailsHtml += `<h3 style="color: #d9534f;">🎟 Your Exclusive Discount Coupons:</h3>`
-      couponCodes.forEach((coupon) => {
-        detailsHtml += `<p><b>Coupon Code:</b> ${coupon.code} - ${coupon.percent_off}% off 
-      (Expires on: ${coupon.expires})</p>`
-      })
-    } else {
-      detailsHtml += `<h3 style="color: #d9534f;">🎟 No Discount Coupons Available</h3>`
-    }
-
-    detailsHtml += `
-        <h3 style="color: #5bc0de;">📌 Next Steps:</h3>
-        <ol>
-          <li>✅ Select one course from the list above and complete your registration.</li>
-          <li>📩 Check your email for confirmation details.</li>
-          <li>🖥 Log in to your Dashboard at <a href="https://rockstarmathtutoring.com" target="_blank" style="color: #007bff;">rockstarmathtutoring.com</a> to view your upcoming scheduled tutoring sessions.</li>
-        </ol>
-
-        <p style="text-align: center; font-size: 16px; font-weight: bold;">We can’t wait to see you in class! 🎉</p>
-      </div>`
-
-    // if (!ZOOM_LINKS || ZOOM_LINKS.length === 0) {
-    //   console.error('❌ ZOOM_LINKS is empty or undefined!')
+    //   detailsHtml += `</ul>`
     // }
 
-    await sendEmail(userEmail, detailsSubject, '', detailsHtml)
+    // // ✅ Include CommonCore Zoom Link
+    // if (commonCorePurchased) {
+    //   detailsHtml += `<li style="margin-bottom: 10px;">📚 Common Core for Parents – <a href="${COMMONCORE_ZOOM_LINK}" target="_blank" style="color: #007bff;">Register Here</a></li>`
+    // }
+
+    // detailsHtml += `</ul>`
+
+    // // ✅ Include Coupons (if available)
+    // if (couponCodes.length > 0) {
+    //   detailsHtml += `<h3 style="color: #d9534f;">🎟 Your Exclusive Discount Coupons:</h3>`
+    //   couponCodes.forEach((coupon) => {
+    //     detailsHtml += `<p><b>Coupon Code:</b> ${coupon.code} - ${coupon.percent_off}% off 
+    //   (Expires on: ${coupon.expires})</p>`
+    //   })
+    // } else {
+    //   detailsHtml += `<h3 style="color: #d9534f;">🎟 No Discount Coupons Available</h3>`
+    // }
+
+    // detailsHtml += `
+    //     <h3 style="color: #5bc0de;">📌 Next Steps:</h3>
+    //     <ol>
+    //       <li>✅ Select one course from the list above and complete your registration.</li>
+    //       <li>📩 Check your email for confirmation details.</li>
+    //       <li>🖥 Log in to your Dashboard at <a href="https://rockstarmathtutoring.com" target="_blank" style="color: #007bff;">rockstarmathtutoring.com</a> to view your upcoming scheduled tutoring sessions.</li>
+    //     </ol>
+
+    //     <p style="text-align: center; font-size: 16px; font-weight: bold;">We can’t wait to see you in class! 🎉</p>
+    //   </div>`
+
+    // // if (!ZOOM_LINKS || ZOOM_LINKS.length === 0) {
+    // //   console.error('❌ ZOOM_LINKS is empty or undefined!')
+    // // }
+
+    // await sendEmail(userEmail, detailsSubject, '', detailsHtml)
     console.log('✅ Zoom links & coupon email sent successfully!')
 
     return res.status(200).json({ message: 'Purchase updated & all emails sent!' })
