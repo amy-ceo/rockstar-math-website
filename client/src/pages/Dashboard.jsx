@@ -49,7 +49,7 @@ const Dashboard = () => {
     const fetchCalendlyBookings = async () => {
       try {
         const response = await fetch(
-          `https://backend-production-cbe2.up.railway.app/api/${users._id}/calendly-bookings`
+          `https://backend-production-cbe2.up.railway.app/api/webhook/${users._id}/calendly-bookings`
         );
         const data = await response.json();
     
