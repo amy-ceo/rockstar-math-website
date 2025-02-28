@@ -322,7 +322,6 @@ exports.addPurchasedClass = async (req, res) => {
     }
 
     let newPurchases = []
-    let userCalendlyLinks = [] // ✅ Only purchased product links
 
     console.log('🛒 Processing Purchased Items...')
     for (const item of purchasedItems) {
@@ -337,46 +336,14 @@ exports.addPurchasedClass = async (req, res) => {
         purchaseDate: new Date(),
       }
 
-       // ✅ If the product has a Calendly link, add only that one
-       if (CALENDLY_LINKS[item.name]) {
-        console.log(`✅ ${item.name} Calendly link found.`)
-        userCalendlyLinks.push({
-          name: item.name,
-          link: CALENDLY_LINKS[item.name],
-        })
-      }
-
-      newPurchases.push(newPurchase)
-    }
+   
 
     user.purchasedClasses.push(...newPurchases)
     await user.save()
 
    // ✅ Send Calendly Email Only If User Purchased a Calendly Product
-if (userCalendlyLinks.length > 0) {
-  console.log('📨 Sending Email with Calendly Links...')
-  let emailSubject = `📅 Your Rockstar Math Tutoring Booking Link`
-  let emailContent = `<div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
-    <h2 style="color: #2C3E50;">🎉 Congratulations ${user.username}!</h2>
-    <p>You have successfully purchased tutoring sessions. Use the link below to book your session on Calendly.</p>
-    <h3>🔗 Your Booking Link:</h3>
-    <ul style="list-style-type: none; padding: 0;">`
 
-  userCalendlyLinks.forEach((session) => {
-    emailContent += `<li>📚 <b>${session.name}</b>: <a href="${session.link}" target="_blank" style="color: #007bff;">Book Now</a></li>`
-  })
 
-  emailContent += `</ul>
-    <p style="text-align: center; font-size: 16px;">Happy Learning! 🚀</p>
-    <p style="text-align: center; font-size: 14px; color: #555; margin-top: 20px;">
-      Best regards,<br>
-      <b>Amy Gemme</b><br>
-      Rockstar Math Tutoring<br>
-      📞 510-410-4963
-    </p>
-  </div>`
-
-  await sendEmail(userEmail, emailSubject, '', emailContent)
   console.log('✅ Calendly email sent successfully!')
 }
 
