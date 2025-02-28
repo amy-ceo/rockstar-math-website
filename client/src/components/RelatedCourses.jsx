@@ -32,21 +32,20 @@ const waitlistCourses = [, "calculus-2", "calculus-3", "probability", "discrete-
 function RelatedCourses() {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState("");
-  const [hoveredCourse, setHoveredCourse] = useState(null); // ✅ Manage Hover State for Tooltip
+  const [hoveredCourse, setHoveredCourse] = useState(null);
 
   const handleCourseClick = (course) => {
+    console.log("Clicked on:", course.title); // Debugging Tap Issue
     if (waitlistCourses.includes(course.id)) {
-      // ✅ Open Waitlist Form
       setSelectedCourse(course.title);
       setIsFormModalOpen(true);
     } else {
-      // ✅ Redirect to the course link
       window.location.href = course.link;
     }
   };
 
   return (
-    <div className="w-full py-10 px-4 md:px-10 lg:px-20 bg-gray-50">
+    <div className="w-full py-10 px-4 md:px-10 lg:px-20 bg-gray-50 block">
       <AnimatedSection direction="left">
         <div className="text-center mb-10">
           <h1 className="text-3xl font-bold text-gray-900">Related Courses</h1>
@@ -55,14 +54,15 @@ function RelatedCourses() {
           </p>
         </div>
 
-        {/* ✅ Courses Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
+        {/* ✅ Responsive Courses Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-4">
           {courses.map((course, index) => (
             <div
               key={index}
               onClick={() => handleCourseClick(course)}
-              onMouseEnter={() => setHoveredCourse(course.id)} // ✅ Show Tooltip on Hover
-              onMouseLeave={() => setHoveredCourse(null)} // ✅ Hide Tooltip on Mouse Leave
+              onTouchStart={() => handleCourseClick(course)} // ✅ Fix for Mobile Taps
+              onMouseEnter={() => setHoveredCourse(course.id)}
+              onMouseLeave={() => setHoveredCourse(null)}
               className="relative cursor-pointer flex items-center gap-4 p-4 rounded-lg shadow-md bg-white border border-gray-200 transition-transform hover:shadow-lg hover:scale-105"
             >
               <div className="p-3 bg-gray-100 rounded-full text-deepBlue text-4xl">
@@ -77,21 +77,23 @@ function RelatedCourses() {
                 <LuArrowUpRight />
               </div>
 
-              {/* ✅ Tooltip for Hover Courses */}
+              {/* ✅ Mobile-Friendly Tooltip */}
               {hoveredCourse === course.id && course.tooltip && (
-                <div className="absolute -top-14 left-1/2 transform -translate-x-1/2 mt-2 w-64 p-2 bg-gray-900 text-white text-sm rounded-md shadow-lg z-50">
-                  {course.tooltip}
-                </div>
+               <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 -translate-y-2 w-auto max-w-xs bg-gray-900 text-white text-sm rounded-md shadow-lg p-2 z-50 text-center">
+               {course.tooltip}
+             </div>
+             
               )}
             </div>
           ))}
         </div>
       </AnimatedSection>
 
-      {/* ✅ Show Waitlist Form when triggered */}
+      {/* ✅ Waitlist Form (Ensure it closes properly) */}
       {isFormModalOpen && <WaitlistForm setIsFormModalOpen={setIsFormModalOpen} />}
     </div>
   );
 }
+
 
 export default RelatedCourses;
