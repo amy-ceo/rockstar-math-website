@@ -149,7 +149,7 @@ app.use("/api", registerRoutes);
 
 // ✅ **Use Webhook Route Properly**
 // app.use("/api/otp", otpRoutes);
-app.use("/api", webhookRoutes);
+app.use("/api/webhook", webhookRoutes);
 app.use("/api/admin", adminRoutes);
 app.use('/api/blogs', blogRoutes);
 app.use("/api/paypal", paypalRoutes);
