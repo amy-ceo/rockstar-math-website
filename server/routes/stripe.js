@@ -526,17 +526,20 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
       }
 
       // ✅ **Fetch Calendly Booking Links**
+      // ✅ Fetch Calendly Booking Links
       let calendlyLinks = []
       cartSummary.forEach((item) => {
-        if (CALENDLY_LINKS[item.trim()]) {
-          calendlyLinks.push({
-            name: item,
-            link: CALENDLY_LINKS[item.trim()],
-          })
-        }
-      })
+        const formattedItemName = item.trim().toLowerCase() // 🔹 Normalize Item Name
 
-      console.log('📅 Calendly Links Found:', calendlyLinks)
+        Object.keys(CALENDLY_LINKS).forEach((calendlyKey) => {
+          if (formattedItemName === calendlyKey.toLowerCase().trim()) {
+            calendlyLinks.push({
+              name: item, // ✅ Original Item Name
+              link: CALENDLY_LINKS[calendlyKey], // ✅ Get Correct Calendly Link
+            })
+          }
+        })
+      })
 
       // ✅ Apply Discount Coupons Based on Course Name (Same Logic as `addPurchasedClass`)
       let appliedCoupons = []
@@ -572,17 +575,19 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
         console.warn('⚠️ No matching coupons found for the purchased items.')
       }
 
-       // ✅ Save Calendly Links in Database
-       if (calendlyLinks.length > 0) {
+      // ✅ Save Calendly Links in Database
+      if (calendlyLinks.length > 0) {
         await Register.findByIdAndUpdate(userId, {
           $push: { calendlyBookings: { $each: calendlyLinks } },
-        });
+        })
       }
+      console.log('🛒 Purchased Items from Metadata:', cartSummary);
+console.log('📅 Available Calendly Links:', Object.keys(CALENDLY_LINKS));
 
-      console.log('📧 Sending Email with Zoom Links & Calendly Links:', zoomLinks, calendlyLinks);
+      console.log('📧 Sending Email with Zoom Links & Calendly Links:', zoomLinks, calendlyLinks)
       console.log('🎟 Sending Email with Coupons:', appliedCoupons)
 
-      const emailHtml = generateEmailHtml(updatedUser, zoomLinks, appliedCoupons,calendlyLinks)
+      const emailHtml = generateEmailHtml(updatedUser, zoomLinks, appliedCoupons, calendlyLinks)
 
       await sendEmail(userEmail, '📚 Your Rockstar Math Purchase Details', '', emailHtml)
 
@@ -599,7 +604,7 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
 })
 
 // ✅ Function to Generate Email HTML
-function generateEmailHtml(user, zoomLinks, userCoupons) {
+function generateEmailHtml(user, zoomLinks, userCoupons, calendlyLinks) {
   let detailsHtml = `
       <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
           <h2 style="color: #2C3E50;">🎉 Hello ${user.username}!</h2>
@@ -624,25 +629,16 @@ function generateEmailHtml(user, zoomLinks, userCoupons) {
     })
   }
 
-  detailsHtml += `
-          <h3 style="color: #5bc0de;">📌 Next Steps:</h3>
-          <ol>
-              <li>✅ Select one course from the list above and complete your registration.</li>
-              <li>📩 Check your email for confirmation details.</li>
-              <li>🖥 Log in to your Dashboard to view your scheduled tutoring sessions.</li>
-          </ol>
-      </div>
-  `
-
   if (calendlyLinks.length > 0) {
-    detailsHtml += `<h3>📅 Your Scheduled Calendly Sessions:</h3><ul>`;
+    // ✅ Ensure Calendly Links are Shown
+    detailsHtml += `<h3>📅 Your Scheduled Calendly Sessions:</h3><ul>`
     calendlyLinks.forEach((session) => {
-      detailsHtml += `<li>📚 <b>${session.name}</b> – <a href="${session.link}" target="_blank">Book Now</a></li>`;
-    });
-    detailsHtml += `</ul>`;
+      detailsHtml += `<li>📚 <b>${session.name}</b> – <a href="${session.link}" target="_blank">Book Now</a></li>`
+    })
+    detailsHtml += `</ul>`
   }
 
-  detailsHtml += `</div>`;
+  detailsHtml += `</div>`
 
   return detailsHtml
 }
