@@ -42,56 +42,34 @@ const Dashboard = () => {
 
    
     useEffect(() => {
-      if (!users || !users._id) return
-      setLoading(true)
-  
-      // -- API calls here --
-      // fetchPurchasedClasses(), fetchZoomMeeting(), fetchCalendlyBookings(), fetchCoupons()
-  
-      // Example Calendly Bookings fetch
+      if (!users || !users._id) {
+        console.warn("❌ User is not available, skipping API calls.");
+        return; // Prevents making API calls with invalid user
+      }
+    
+      setLoading(true);
+    
       const fetchCalendlyBookings = async () => {
         try {
           const response = await fetch(
             `https://backend-production-cbe2.up.railway.app/api/webhook/${users._id}/calendly-bookings`
-          )
-          const data = await response.json()
-          if (!response.ok) throw new Error(data.message || 'No Calendly bookings found.')
-  
-          // Optionally separate active vs. expired
-          const currentDate = new Date()
-          const activeSessions = []
-          const expiredSessions = []
-  
-          data.bookings.forEach((session) => {
-            if (new Date(session.startTime) < currentDate) {
-              expiredSessions.push(session)
-            } else {
-              activeSessions.push(session)
-            }
-          })
-  
-          // Store only active sessions in state
-          setCalendlyBookings(activeSessions)
-  
-          // Optionally archive expired sessions
-          if (expiredSessions.length > 0) {
-            await archiveExpiredSessions(expiredSessions)
-          }
+          );
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.message || "No Calendly bookings found.");
+    
+          console.log("✅ Fetched Calendly Bookings:", data);
+    
+          setCalendlyBookings(data.bookings || []);
         } catch (error) {
-          console.error('❌ Error fetching Calendly bookings:', error)
-          setCalendlyBookings([])
+          console.error("❌ Error fetching Calendly bookings:", error);
+          setCalendlyBookings([]);
         }
-      }
-  
-      // -- similarly fetchCoupons, fetchZoomMeeting, etc. --
-  
-      Promise.allSettled([
-        // fetchPurchasedClasses(),
-        // fetchZoomMeeting(),
-        fetchCalendlyBookings(),
-        // fetchCoupons(),
-      ]).finally(() => setLoading(false))
-    }, [users])
+      };
+    
+      fetchCalendlyBookings().finally(() => setLoading(false));
+    
+    }, [users]); // ✅ Depend only on `users`
+    
 
     const fetchCoupons = async () => {
       try {
