@@ -11,8 +11,6 @@ exports.calendlyWebhook = async (req, res) => {
         }
 
         const payload = req.body.payload;
-
-        // ✅ Extract Required Data
         const inviteeEmail = payload.invitee?.email || null;
         const eventName = payload.event?.name || "Unknown Event";
         const eventUri = payload.invitee?.uri || "No URL Provided";
@@ -64,7 +62,6 @@ exports.calendlyWebhook = async (req, res) => {
 };
 
 
-
 exports.getCalendlyBookings = async (req, res) => {
     try {
         const { userId } = req.params;
@@ -76,7 +73,8 @@ exports.getCalendlyBookings = async (req, res) => {
             return res.status(404).json({ message: "User not found" });
         }
 
-        console.log("✅ User Found, Sending Bookings:", user.calendlyBookings);
+        console.log("✅ User Found, Sending Bookings:", user.calendlyBookings || []);
+
         res.status(200).json({ bookings: user.calendlyBookings || [] });
     } catch (error) {
         console.error("❌ Error fetching bookings:", error);
