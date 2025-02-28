@@ -4,6 +4,95 @@ const Register = require("../models/registerModel"); // Ensure Register Model is
 const sendEmail = require("../utils/emailSender");
 const paypalClient = require("../config/paypal");
 
+
+// ✅ Function to Generate Email HTML
+function generateEmailHtml(user, zoomLinks, userCoupons) {
+  let detailsHtml = `
+      <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
+          <h2 style="color: #2C3E50;">🎉 Hello ${user.username}!</h2>
+          <p>We're excited to have you on board! 🚀 Below are your registration details.</p>
+
+          <h3 style="color: #007bff;">🔗 Available Courses & Registration Links:</h3>
+          <ul style="list-style-type: none; padding: 0;">
+  `;
+
+  if (zoomLinks.length > 0) {
+    detailsHtml += `<h3>🔗 Your Course Zoom Links:</h3><ul>`;
+    zoomLinks.forEach((course) => {
+      detailsHtml += `<li>📚 <b>${course.name}</b> – <a href="${course.link}" target="_blank">Register Here</a></li>`;
+    });
+    detailsHtml += `</ul>`;
+  }
+
+  if (userCoupons.length > 0) {
+    detailsHtml += `<h3 style="color: #d9534f;">🎟 Your Exclusive Discount Coupons:</h3>`;
+    userCoupons.forEach((coupon) => {
+      detailsHtml += `<p><b>Coupon Code:</b> ${coupon.code} - ${coupon.percent_off}% off (Expires: ${coupon.expires})</p>`;
+    });
+  }
+
+  detailsHtml += `
+          <h3 style="color: #5bc0de;">📌 Next Steps:</h3>
+          <ol>
+              <li>✅ Select one course from the list above and complete your registration.</li>
+              <li>📩 Check your email for confirmation details.</li>
+              <li>🖥 Log in to your Dashboard to view your scheduled tutoring sessions.</li>
+          </ol>
+      </div>
+  `;
+
+  return detailsHtml;
+}
+
+
+// ✅ Fetch Active Coupons from Stripe
+async function getActiveCoupons() {
+  try {
+    const coupons = await stripe.coupons.list({ limit: 100 })
+
+    return coupons.data
+      .filter((coupon) => coupon.percent_off) // ✅ Only coupons with discounts
+      .map((coupon) => ({
+        id: coupon.id,
+        code: coupon.id,
+        percent_off: coupon.percent_off,
+        expires: coupon.redeem_by ? new Date(coupon.redeem_by * 1000) : 'Forever',
+      }))
+  } catch (error) {
+    console.error('❌ Error Fetching Coupons:', error.message)
+    return []
+  }
+}
+
+// ✅ Define Zoom Course Links
+const zoomCourseMapping = [
+  {
+    name: '📘 Algebra 1 Tutoring',
+    link: 'https://us06web.zoom.us/meeting/register/mZHoQiy9SqqHx69f4dejgg#/registration',
+  },
+  {
+    name: '📗 Algebra 2 Tutoring',
+    link: 'https://us06web.zoom.us/meeting/register/z2W2vvBHRQK_yEWMTteOrg#/registration',
+  },
+  {
+    name: '📕 Calculus 1 Tutoring',
+    link: 'https://us06web.zoom.us/meeting/register/kejTnKqpTpteWaMN13BAb0#/registration',
+  },
+  {
+    name: '📙 Pre-Calculus & Trigonometry Tutoring',
+    link: 'https://us06web.zoom.us/meeting/register/jH2N2rFMSXyqX1UDEZAarQ#/registration',
+  },
+  {
+    name: '📒 Geometry Tutoring',
+    link: 'https://us06web.zoom.us/meeting/register/Lsd_MFiwQpKRKhMZhPIVPw#/registration',
+  },
+]
+
+const COMMONCORE_ZOOM_LINK = {
+  name: '📚  Common Core for Parents',
+  link: 'https://us06web.zoom.us/meeting/register/XsYhADVmQcK8BIIT3Sfbpyg#/registration',
+}
+
 // 🎯 Create PayPal Order
 const calculateItemTotal = (cartItems) => {
   return cartItems.reduce(
@@ -138,6 +227,69 @@ exports.captureOrder = async (req, res) => {
         return res.status(500).json({ error: "Database error while saving payment.", details: saveError.message });
       }
   
+
+     // ✅ Fetch Active Coupons
+     const activeCoupons = await getActiveCoupons();
+     console.log("🎟 Active Coupons from Stripe:", activeCoupons);
+ 
+     // ✅ Match Coupons Based on Course Name
+     let userCoupons = activeCoupons.filter((coupon) => {
+       return user.cartItems.some((item) => {
+         return item.name.toLowerCase().includes(coupon.code.toLowerCase());
+       });
+     });
+ 
+     console.log("🛒 Purchased Items from Cart:", user.cartItems.map((item) => item.name));
+ 
+     // ✅ Fetch Zoom Links
+     let zoomLinks = [];
+     if (["Learn", "Achieve", "Excel"].some((course) => user.cartItems.map((item) => item.name).includes(course))) {
+       zoomLinks = zoomCourseMapping;
+     }
+ 
+     // ✅ **Check if User Purchased "Common Core for Parents" Course**
+     const hasCommonCore = user.cartItems.some((item) => item.name.toLowerCase() === "common core for parents");
+     if (hasCommonCore) {
+       zoomLinks.push(COMMONCORE_ZOOM_LINK); // ✅ Add the specific Common Core Zoom link
+     }
+ 
+     // ✅ Apply Discount Coupons Based on Course Name (Same Logic as `addPurchasedClass`)
+     let appliedCoupons = [];
+     user.cartItems.forEach((item) => {
+       let matchedCoupon = activeCoupons.find((coupon) => {
+         if (item.name === "Learn" && coupon.percent_off === 10) return true;
+         if (item.name === "Achieve" && coupon.percent_off === 30) return true;
+         if (item.name === "Excel" && coupon.percent_off === 20) return true;
+         return false;
+       });
+ 
+       if (matchedCoupon && matchedCoupon.code) {
+         appliedCoupons.push({
+           code: matchedCoupon.code,
+           percent_off: matchedCoupon.percent_off,
+           expires: matchedCoupon.expires,
+         });
+       }
+     });
+ 
+     // ✅ Save Coupons in User's Database
+     if (appliedCoupons.length > 0) {
+       appliedCoupons = appliedCoupons.filter((coupon) => coupon.code && coupon.code.trim() !== "");
+       if (appliedCoupons.length > 0) {
+         await Register.findByIdAndUpdate(user._id, {
+           $push: { coupons: { $each: appliedCoupons } },
+         });
+       }
+     }
+ 
+     console.log("📧 Sending Email with Zoom Links:", zoomLinks);
+     console.log("🎟 Sending Email with Coupons:", appliedCoupons);
+ 
+     const emailHtml = generateEmailHtml(user, zoomLinks, appliedCoupons);
+ 
+ 
+
+
       // ✅ Call `addPurchasedClass` API to add purchased items
       try {
         console.log("📡 Calling addPurchasedClass API...");
@@ -179,7 +331,8 @@ exports.captureOrder = async (req, res) => {
       } catch (emailError) {
         console.error("❌ Email Sending Failed:", emailError);
       }
-  
+      await sendEmail(user.billingEmail, "📚 Your Rockstar Math Purchase Details", "", emailHtml);
+
 
       // ✅ Cart Empty ka Response Frontend ko bhejna
       // res.json({ message: "Payment captured & records updated successfully.", clearCart: true });

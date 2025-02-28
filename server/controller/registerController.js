@@ -9,26 +9,26 @@ const stripe = require('stripe')(
 ) // 🛑 Replace with your actual Stripe Secret Key
 
 // ✅ Coupans
-async function getActiveCoupons() {
-  try {
-    const coupons = await stripe.coupons.list({ limit: 100 }) // Fetch latest coupons
+// async function getActiveCoupons() {
+//   try {
+//     const coupons = await stripe.coupons.list({ limit: 100 }) // Fetch latest coupons
 
-    let activeCoupons = coupons.data
-      .filter((coupon) => coupon.percent_off) // Ensure it has a discount
-      .map((coupon) => ({
-        id: coupon.id,
-        code: coupon.id, // Use ID as the coupon code
-        percent_off: coupon.percent_off,
-        expires: coupon.redeem_by ? new Date(coupon.redeem_by * 1000) : 'Forever',
-      }))
+//     let activeCoupons = coupons.data
+//       .filter((coupon) => coupon.percent_off) // Ensure it has a discount
+//       .map((coupon) => ({
+//         id: coupon.id,
+//         code: coupon.id, // Use ID as the coupon code
+//         percent_off: coupon.percent_off,
+//         expires: coupon.redeem_by ? new Date(coupon.redeem_by * 1000) : 'Forever',
+//       }))
 
-    console.log('✅ Active Coupons:', activeCoupons)
-    return activeCoupons
-  } catch (error) {
-    console.error('❌ Error Fetching Coupons:', error.message)
-    return []
-  }
-}
+//     console.log('✅ Active Coupons:', activeCoupons)
+//     return activeCoupons
+//   } catch (error) {
+//     console.error('❌ Error Fetching Coupons:', error.message)
+//     return []
+//   }
+// }
 // ✅ Define Zoom Course Names
 
 // ✅ Define Service Packages and Their Booking Limits
@@ -39,34 +39,34 @@ const SERVICE_PACKAGES = {
 }
 
 // ✅ Map Each Zoom Link to a Custom Course Name
-const zoomCourseMapping = [
-  {
-    name: '📘 Algebra 1 Tutoring',
-    link: 'https://us06web.zoom.us/meeting/register/mZHoQiy9SqqHx69f4dejgg#/registration',
-  },
-  {
-    name: '📗 Algebra 2 Tutoring',
-    link: 'https://us06web.zoom.us/meeting/register/z2W2vvBHRQK_yEWMTteOrg#/registration',
-  },
-  {
-    name: '📕 Calculus 1 Tutoring',
-    link: 'https://us06web.zoom.us/meeting/register/kejTnKqpTpteWaMN13BAb0#/registration',
-  },
-  {
-    name: '📙 Pre-Calculus & Trigonometry Tutoring ',
-    link: 'https://us06web.zoom.us/meeting/register/jH2N2rFMSXyqX1UDEZAarQ#/registration',
-  },
-  {
-    name: '📒 Geometry Tutoring',
-    link: 'https://us06web.zoom.us/meeting/register/Lsd_MFiwQpKRKhMZhPIVPw#/registration',
-  },
-]
+// const zoomCourseMapping = [
+//   {
+//     name: '📘 Algebra 1 Tutoring',
+//     link: 'https://us06web.zoom.us/meeting/register/mZHoQiy9SqqHx69f4dejgg#/registration',
+//   },
+//   {
+//     name: '📗 Algebra 2 Tutoring',
+//     link: 'https://us06web.zoom.us/meeting/register/z2W2vvBHRQK_yEWMTteOrg#/registration',
+//   },
+//   {
+//     name: '📕 Calculus 1 Tutoring',
+//     link: 'https://us06web.zoom.us/meeting/register/kejTnKqpTpteWaMN13BAb0#/registration',
+//   },
+//   {
+//     name: '📙 Pre-Calculus & Trigonometry Tutoring ',
+//     link: 'https://us06web.zoom.us/meeting/register/jH2N2rFMSXyqX1UDEZAarQ#/registration',
+//   },
+//   {
+//     name: '📒 Geometry Tutoring',
+//     link: 'https://us06web.zoom.us/meeting/register/Lsd_MFiwQpKRKhMZhPIVPw#/registration',
+//   },
+// ]
 
 // ✅ Specific Zoom Link for Common Core
-const COMMONCORE_ZOOM_LINK = {
-  name: '📚  Common Core for Parents',
-  link: 'https://us06web.zoom.us/meeting/register/XsYhADVmQcK8BIIT3Sfbpyg#/registration',
-}
+// const COMMONCORE_ZOOM_LINK = {
+//   name: '📚  Common Core for Parents',
+//   link: 'https://us06web.zoom.us/meeting/register/XsYhADVmQcK8BIIT3Sfbpyg#/registration',
+// }
 
 // ✅ Define Calendly Booking Links
 const CALENDLY_LINKS = {
@@ -311,11 +311,11 @@ exports.addPurchasedClass = async (req, res) => {
     ) {
       return res.status(400).json({ message: 'Invalid request. Missing data.' })
     }
-    const activeCoupons = await getActiveCoupons()
-    let zoomLinks = []
-    let couponCodes = [] // Store multiple coupons
-    let commonCorePurchased = false
-    // let calendlyMeetingLink = null
+    // const activeCoupons = await getActiveCoupons()
+    // let zoomLinks = []
+    // let couponCodes = [] // Store multiple coupons
+    // let commonCorePurchased = false
+    // // let calendlyMeetingLink = null
 
     // ✅ Find User
     console.log(`🔎 Finding User: ${userId}`)

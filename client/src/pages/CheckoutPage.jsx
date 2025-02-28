@@ -391,10 +391,11 @@ const CheckoutPage = () => {
         localStorage.setItem("user", JSON.stringify(updatedUser));
       }
   
-      // ✅ Clear Cart Properly
-      localStorage.removeItem("cartItems");
-      setCartItems([]);
-      window.dispatchEvent(new Event("storage"));
+        // ✅ **Clear Cart Properly (Fix: Same as PayPal)**
+    console.log("🛒 Clearing Cart after Successful Payment...");
+    localStorage.removeItem("cartItems"); // ✅ Remove from localStorage
+    setCartItems([]); // ✅ Update State
+    window.dispatchEvent(new Event("storage")); // ✅ Trigger update in all tabs
   
       toast.success("🎉 Payment Successful! Redirecting...");
       setTimeout(() => {

@@ -8,14 +8,12 @@ const connectDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const registerRoutes = require("./routes/registerRoutes");
 // const otpRoutes = require("./routes/otpRoutes");
-const classRoutes = require("./routes/classRoutes");
 const subscribeRoute = require("./routes/subscribeRoute");
 const contactRoutes = require('./routes/contactRoutes');
 const stripeRoutes = require("./routes/stripe"); // Import the Stripe route
 const twilio = require("twilio");
 const consultationRoutes = require("./routes/consultationRoutes");
 const waitlist = require("./routes/waitlist");
-const zoomRoutes = require("./routes/zoomRoutes");
 const userRoutes = require("./routes/userRoutes")
 const paymentRoutes = require("./routes/paymentRoutes"); // ✅ Import Payment Routes
 const ordersRoute = require("./routes/order.js"); // ✅ Import Orders Route
@@ -147,7 +145,6 @@ app.use("/api", subscribeRoute);
 app.use('/api/contact', contactRoutes);
 app.use("/api/stripe", stripeRoutes); // Set up route
 app.use("/api", registerRoutes);
-app.use("/api/classes", classRoutes);
 
 // ✅ **Use Webhook Route Properly**
 // app.use("/api/otp", otpRoutes);
@@ -156,7 +153,6 @@ app.use('/api/blogs', blogRoutes);
 app.use("/api/paypal", paypalRoutes);
 app.use("/api/consultation", consultationRoutes);
 app.use("/api", waitlist);
-app.use("/api", zoomRoutes);
 app.use('/api/users', userRoutes); // ✅ Now users API will work properly
 app.use("/api/orders", ordersRoute); // ✅ Set orders route
 const PORT = process.env.PORT || 5000;

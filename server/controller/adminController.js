@@ -269,7 +269,7 @@ exports.requestAdminPasswordReset = async (req, res) => {
     console.log('🔹 Hashed Token Saved:', hashedToken)
 
     // ✅ Send Email with Reset Link
-    const resetURL = `https://frontend-production-9912.up.railway.app/admin/reset-password/${resetToken}`
+    const resetURL = `https://www.rockstarmath.com/admin/reset-password/${resetToken}`
     sendEmail(
       admin.email,
       'Password Reset Request',
