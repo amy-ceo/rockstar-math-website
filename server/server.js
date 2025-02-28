@@ -8,6 +8,7 @@ const connectDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const registerRoutes = require("./routes/registerRoutes");
 // const otpRoutes = require("./routes/otpRoutes");
+const webhookRoutes = require("./routes/webhookRoutes");
 const subscribeRoute = require("./routes/subscribeRoute");
 const contactRoutes = require('./routes/contactRoutes');
 const stripeRoutes = require("./routes/stripe"); // Import the Stripe route
@@ -148,6 +149,7 @@ app.use("/api", registerRoutes);
 
 // ✅ **Use Webhook Route Properly**
 // app.use("/api/otp", otpRoutes);
+app.use("/api", webhookRoutes);
 app.use("/api/admin", adminRoutes);
 app.use('/api/blogs', blogRoutes);
 app.use("/api/paypal", paypalRoutes);

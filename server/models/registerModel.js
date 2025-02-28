@@ -11,7 +11,14 @@ const purchasedClassSchema = new mongoose.Schema({
   bookingLink: { type: String, default: null }, // ✅ Calendly Booking Link (For Services)
 })
 
-
+const bookedSessionSchema = new mongoose.Schema({
+  eventName: { type: String, required: true }, // ✅ Session Name (e.g., "30 Minute Session")
+  calendlyEventUri: { type: String, required: true }, // ✅ Event URI from Calendly
+  startTime: { type: Date, required: true }, // ✅ Session Start Time
+  endTime: { type: Date, required: true }, // ✅ Session End Time
+  status: { type: String, enum: ["Booked", "Completed", "Cancelled"], default: "Booked" }, // ✅ Status of the session
+  createdAt: { type: Date, default: Date.now },
+});
 
 // ✅ Coupon Schema Inside Register Model
 const couponSchema = new mongoose.Schema({
@@ -70,7 +77,7 @@ const RegisterSchema = new mongoose.Schema(
     // ✅ Purchased Classes & Services
     purchasedClasses: [purchasedClassSchema], // ✅ Includes both Zoom & Service purchases
     // ✅ New: Calendly Bookings
-   
+    bookedSessions: [bookedSessionSchema], // ✅ This will store all booked sessions
     // ✅ Zoom Meeting Details (For Purchased Classes)
     zoomMeetings: [
       {
