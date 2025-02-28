@@ -3,13 +3,15 @@ const Register = require("../models/registerModel");
 
 exports.calendlyWebhook = async (req, res) => {
     try {
-        console.log("📢 Calendly Webhook Received:", JSON.stringify(req.body, null, 2));
+        console.log("📢 [LIVE] Calendly Webhook Received:", JSON.stringify(req.body, null, 2));
 
         const { payload } = req.body;
         if (!payload || !payload.event || !payload.invitee) {
-            console.error("❌ Invalid webhook data received");
+            console.error("❌ [LIVE] Invalid webhook data received");
             return res.status(400).json({ error: "Invalid webhook data" });
         }
+
+        console.log("✅ [LIVE] Webhook Payload Extracted:", payload);
 
         const inviteeEmail = payload.invitee.email;
         const eventName = payload.event.name;
@@ -17,18 +19,17 @@ exports.calendlyWebhook = async (req, res) => {
         const startTime = new Date(payload.event.start_time);
         const endTime = new Date(payload.event.end_time);
 
-        console.log("📅 Extracted Booking Details:", { inviteeEmail, eventName, eventUri, startTime, endTime });
+        console.log("📅 [LIVE] Extracted Booking Details:", { inviteeEmail, eventName, eventUri, startTime, endTime });
 
         // Check if the user exists in the database
         const user = await Register.findOne({ billingEmail: inviteeEmail });
         if (!user) {
-            console.error("❌ No user found with email:", inviteeEmail);
+            console.error("❌ [LIVE] No user found with email:", inviteeEmail);
             return res.status(404).json({ error: "User not found" });
         }
 
-        console.log("👤 User Found:", user);
+        console.log("👤 [LIVE] User Found:", user);
 
-        // Store booking details in user’s database record
         const newBooking = {
             eventType: eventName,
             calendlyUrl: eventUri,
@@ -36,6 +37,9 @@ exports.calendlyWebhook = async (req, res) => {
             endTime: endTime,
         };
 
+        console.log("📢 [LIVE] Saving to Database:", newBooking);
+
+        // Store booking details in database
         const updatedUser = await Register.findByIdAndUpdate(
             user._id,
             { $push: { calendlyBookings: newBooking } },
@@ -43,14 +47,15 @@ exports.calendlyWebhook = async (req, res) => {
         );
 
         if (!updatedUser) {
-            console.error("❌ Failed to update user bookings:", user._id);
+            console.error("❌ [LIVE] Failed to update user bookings:", user._id);
             return res.status(500).json({ error: "Failed to store booking" });
         }
 
-        console.log(`✅ Successfully stored Calendly Booking for ${inviteeEmail}`);
+        console.log(`✅ [LIVE] Successfully Stored Calendly Booking for ${inviteeEmail}`);
         res.status(200).json({ message: "Booking stored successfully", updatedUser });
+
     } catch (error) {
-        console.error("❌ Error handling Calendly webhook:", error);
+        console.error("❌ [LIVE] Error handling Calendly webhook:", error);
         res.status(500).json({ error: "Internal Server Error" });
     }
 };
