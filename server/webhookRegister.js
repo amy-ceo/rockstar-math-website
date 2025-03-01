@@ -3,9 +3,11 @@ require('dotenv').config();
 
 const registerCalendlyWebhook = async () => {
     try {
-        const calendlyApiKey = "eyJraWQiOiIxY2UxZTEzNjE3ZGNmNzY2YjNjZWJjY2Y4ZGM1YmFmYThhNjVlNjg0MDIzZjdjMzJiZTgzNDliMjM4MDEzNWI0IiwidHlwIjoiUEFUIiwiYWxnIjoiRVMyNTYifQ.eyJpc3MiOiJodHRwczovL2F1dGguY2FsZW5kbHkuY29tIiwiaWF0IjoxNzQwNzczMDgxLCJqdGkiOiJiYjdiYzE0ZC05OWU4LTRhZmUtYjdkNy01MDZlNDAxYTMzNzkiLCJ1c2VyX3V1aWQiOiJCRkZEQ1ZMSk1TT0RLRDdXIn0.3DXMEQ1-8ksgLuFWFZ6y5oqDYxb_HbUcNacovXWkdinfZjM5hVPGs-4yjgTkENprR1WUhtI1ersucpDjieAmZg"; // Load from .env
+        const calendlyApiKey = "eyJraWQiOiIxY2UxZTEzNjE3ZGNmNzY2YjNjZWJjY2Y4ZGM1YmFmYThhNjVlNjg0MDIzZjdjMzJiZTgzNDliMjM4MDEzNWI0IiwidHlwIjoiUEFUIiwiYWxnIjoiRVMyNTYifQ.eyJpc3MiOiJodHRwczovL2F1dGguY2FsZW5kbHkuY29tIiwiaWF0IjoxNzQwNzczMDgxLCJqdGkiOiJiYjdiYzE0ZC05OWU4LTRhZmUtYjdkNy01MDZlNDAxYTMzNzkiLCJ1c2VyX3V1aWQiOiJCRkZEQ1ZMSk1TT0RLRDdXIn0.3DXMEQ1-8ksgLuFWFZ6y5oqDYxb_HbUcNacovXWkdinfZjM5hVPGs-4yjgTkENprR1WUhtI1ersucpDjieAmZg"; // Load API key from .env
         const webhookUrl = "https://backend-production-cbe2.up.railway.app/api/webhook/calendly"; // Your Webhook URL
-        const organizationId = "https://api.calendly.com/organizations/AADABSJONSZO3TK2"; // Replace with your actual org ID
+
+        // Get your organization ID from the /users/me API response
+        const organizationId = "https://api.calendly.com/organizations/AADABSJONSZO3TK2"; // Replace with actual org ID
 
         if (!calendlyApiKey) {
             throw new Error("⚠️ Missing Calendly API Key. Set it in .env!");
@@ -15,9 +17,9 @@ const registerCalendlyWebhook = async () => {
             'https://api.calendly.com/webhook_subscriptions',
             {
                 url: webhookUrl, // Webhook URL to receive event data
-                events: ["invitee.created"], // ✅ Use invitee.created instead of scheduled_event.created
-                organization: organizationId,
-                scope: "organization"
+                events: ["scheduled_event.created"], // ✅ Correct Event Type
+                organization: organizationId, // ✅ Fix: Include the organization ID
+                scope: "organization" // ✅ Fix: Include the scope (must be 'organization')
             },
             {
                 headers: {
