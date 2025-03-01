@@ -1,7 +1,6 @@
 const Register = require("../models/registerModel");
 
 
-const Register = require("../models/registerModel");
 
 exports.calendlyWebhook = async (req, res) => {
     try {
