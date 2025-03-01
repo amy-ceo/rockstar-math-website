@@ -12,12 +12,12 @@ const purchasedClassSchema = new mongoose.Schema({
 })
 
 const bookedSessionSchema = new mongoose.Schema({
-  eventName: { type: String, required: true }, // ✅ Session Name (e.g., "30 Minute Session")
+  eventName: { type: String, required: true }, // ✅ Session Name (e.g., "90 Minute Session")
   calendlyEventUri: { type: String, required: true }, // ✅ Event URI from Calendly
   startTime: { type: Date, required: true }, // ✅ Session Start Time
   endTime: { type: Date, required: true }, // ✅ Session End Time
-  duration: { type: Number, required: true }, // ✅ Duration in minutes (e.g., 30)
-  timezone: { type: String, required: true }, // ✅ Timezone (e.g., "Pakistan Standard Time")
+  duration: { type: Number, required: true }, // ✅ Duration in minutes (e.g., 90)
+  timezone: { type: String, required: true }, // ✅ Timezone (e.g., "Central Time - US & Canada")
   status: { type: String, enum: ["Booked", "Completed", "Cancelled"], default: "Booked" }, // ✅ Status of session
   createdAt: { type: Date, default: Date.now }, // ✅ Booking creation time
 });

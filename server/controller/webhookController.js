@@ -5,7 +5,7 @@ const Register = require("../models/registerModel");
 
 exports.calendlyWebhook = async (req, res) => {
     try {
-        console.log('📢 FULL Webhook Payload:', JSON.stringify(req.body, null, 2)); // ✅ Log full payload
+        console.log('📢 FULL Webhook Payload:', JSON.stringify(req.body, null, 2));
 
         if (!req.body || !req.body.payload) {
             console.error('❌ Invalid Webhook Payload:', req.body);
@@ -15,22 +15,20 @@ exports.calendlyWebhook = async (req, res) => {
         const payload = req.body.payload;
         console.log('🔍 Extracting Fields from Payload:', JSON.stringify(payload, null, 2));
 
-        // ✅ Extract necessary fields
+        // ✅ Extract necessary fields from Calendly webhook
         const inviteeEmail = payload?.invitee?.email || "❌ Missing";
         const eventName = payload?.event?.name || "❌ Missing";
         const eventUri = payload?.event?.uri || "❌ Missing";
         const startTime = payload?.event?.start_time ? new Date(payload.event.start_time) : "❌ Missing";
-        const createdAt = payload?.created_at ? new Date(payload.created_at) : "❌ Missing";
-        const duration = payload?.event?.duration || "❌ Missing"; // Session Duration
-        const timezone = payload?.event?.location?.time_zone || "❌ Missing"; // Meeting Country/Timezone
+        const endTime = payload?.event?.end_time ? new Date(payload.event.end_time) : "❌ Missing";
+        const duration = payload?.event?.duration || 90; // Extract duration (default: 90 minutes)
+        const timezone = payload?.event?.location?.timezone || "❌ Missing";
 
-        console.log('📅 Extracted Booking Details:', {
-            inviteeEmail, eventName, eventUri, startTime, createdAt, duration, timezone
-        });
+        console.log('📅 Extracted Booking Details:', { inviteeEmail, eventName, eventUri, startTime, endTime, duration, timezone });
 
-        // ✅ Ensure required fields are available
-        if (inviteeEmail === "❌ Missing" || startTime === "❌ Missing") {
-            console.error('❌ Missing required data in webhook:', { inviteeEmail, startTime });
+        // ✅ Validation: Ensure required fields are not missing
+        if (inviteeEmail === "❌ Missing" || startTime === "❌ Missing" || endTime === "❌ Missing") {
+            console.error('❌ Missing required data in webhook:', { inviteeEmail, startTime, endTime });
             return res.status(400).json({ error: 'Missing required fields in webhook data' });
         }
 
@@ -44,15 +42,16 @@ exports.calendlyWebhook = async (req, res) => {
 
         console.log('👤 User Found:', user);
 
-        // ✅ Store the booking with complete details
+        // ✅ Store booking with extracted fields
         const newBooking = {
-            eventName: eventName,
+            eventName,
             calendlyEventUri: eventUri,
-            startTime: startTime,
-            createdAt: createdAt, 
-            duration: duration, // Session duration
-            timezone: timezone, // Meeting timezone
+            startTime,
+            endTime,
+            duration,
+            timezone,
             status: "Booked",
+            createdAt: new Date(), // Track booking creation time
         };
 
         console.log('📢 Storing New Booking:', newBooking);
