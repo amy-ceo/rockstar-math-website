@@ -11,27 +11,28 @@ exports.calendlyWebhook = async (req, res) => {
 
         const payload = req.body.payload;
 
-        // ✅ Extracting correct fields from the payload
-        const inviteeEmail = payload?.email || "❌ Missing";  // Fix: Ensure this exists
-        const eventName = payload?.event?.name || "❌ Missing";
+        // ✅ Extract details from payload
+        const inviteeEmail = payload?.email || "❌ Missing";
+        const eventName = payload?.name || "❌ Missing";
         const eventUri = payload?.uri || "❌ Missing";
         const startTime = payload?.start_time ? new Date(payload.start_time) : null;
+        const endTime = payload?.end_time ? new Date(payload.end_time) : new Date(startTime.getTime() + 30 * 60000); // Default: 30 min
         const timezone = payload?.timezone || "❌ Missing";
-        const joinUrl = payload?.location?.join_url || "❌ No Zoom Link";
-        const duration = 30; // Assuming duration is fixed
+        const country = payload?.location?.country || "❌ Missing";
+        const duration = 30; // Fixed Duration
 
-        // ✅ Extract phone numbers
+        // ✅ Extract Phone Numbers
         const phoneNumbers = payload?.location?.location_phones?.map(num => ({
             country: num.country || "Unknown Country",
             number: num.number || "Unknown Number",
             type: num.type || "Unknown Type"
         })) || [];
 
-        console.log('📅 Extracted Booking Details:', { inviteeEmail, eventName, eventUri, startTime, timezone, joinUrl, phoneNumbers });
+        console.log('📅 Extracted Booking Details:', { inviteeEmail, eventName, eventUri, startTime, endTime, timezone, country, phoneNumbers });
 
-        // ✅ Validation: Check required fields
-        if (inviteeEmail === "❌ Missing" || !startTime) {
-            console.error('❌ Missing required data:', { inviteeEmail, startTime });
+        // ✅ Validation
+        if (inviteeEmail === "❌ Missing" || !startTime || !endTime) {
+            console.error('❌ Missing required data:', { inviteeEmail, startTime, endTime });
             return res.status(400).json({ error: 'Missing required fields' });
         }
 
@@ -45,14 +46,15 @@ exports.calendlyWebhook = async (req, res) => {
 
         console.log('👤 User Found:', user);
 
-        // ✅ Store booking details in MongoDB
+        // ✅ Store booking in MongoDB
         const newBooking = {
             eventName,
             calendlyEventUri: eventUri,
             startTime,
+            endTime,
             timezone,
-            joinUrl, // Store Zoom link
-            phoneNumbers, // Store phone numbers
+            country,
+            phoneNumbers,
             status: "Booked",
             createdAt: new Date(),
         };
