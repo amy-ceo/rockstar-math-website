@@ -14,7 +14,7 @@ exports.calendlyWebhook = async (req, res) => {
         const payload = req.body.payload;
         console.log('🔍 Extracting Fields from Payload:', JSON.stringify(payload, null, 2));
 
-        // ✅ Extract necessary fields from Calendly webhook
+        // ✅ Extract necessary fields
         const inviteeEmail = payload?.invitee?.email || "❌ Missing";
         const eventName = payload?.event?.name || "❌ Missing";
         const eventUri = payload?.event?.uri || "❌ Missing";
@@ -22,10 +22,18 @@ exports.calendlyWebhook = async (req, res) => {
         const endTime = payload?.event?.end_time ? new Date(payload.event.end_time) : "❌ Missing";
         const duration = payload?.event?.duration || 90; // Extract duration (default: 90 minutes)
         const timezone = payload?.event?.location?.timezone || "❌ Missing";
+        
+        // ✅ Extract country and phone numbers (handling array of numbers)
+        const country = payload?.event?.location?.country || "❌ Missing"; // Extract country
+        const phoneNumbers = payload?.event?.location?.numbers?.map(num => ({
+            country: num.country_name || "Unknown Country",
+            number: num.number || "Unknown Number",
+            type: num.type || "Unknown Type"
+        })) || []; // Extract array of phone numbers
 
-        console.log('📅 Extracted Booking Details:', { inviteeEmail, eventName, eventUri, startTime, endTime, duration, timezone });
+        console.log('📅 Extracted Booking Details:', { inviteeEmail, eventName, eventUri, startTime, endTime, duration, timezone, country, phoneNumbers });
 
-        // ✅ Validation: Ensure required fields are not missing
+        // ✅ Validation: Ensure required fields are present
         if (inviteeEmail === "❌ Missing" || startTime === "❌ Missing" || endTime === "❌ Missing") {
             console.error('❌ Missing required data in webhook:', { inviteeEmail, startTime, endTime });
             return res.status(400).json({ error: 'Missing required fields in webhook data' });
@@ -49,6 +57,8 @@ exports.calendlyWebhook = async (req, res) => {
             endTime,
             duration,
             timezone,
+            country,
+            phoneNumbers, // Store all phone numbers
             status: "Booked",
             createdAt: new Date(), // Track booking creation time
         };
