@@ -16,7 +16,7 @@ exports.calendlyWebhook = async (req, res) => {
         const eventName = payload?.name || "❌ Missing";
         const eventUri = payload?.uri || "❌ Missing";
         const startTime = payload?.start_time ? new Date(payload.start_time) : null;
-        const endTime = payload?.end_time ? new Date(payload.end_time) : new Date(startTime.getTime() + 30 * 60000); // Default: 30 min
+        const endTime = startTime ? new Date(startTime.getTime() + 30 * 60000) : null; // Default: 30 min after startTime        
         const timezone = payload?.timezone || "❌ Missing";
         const country = payload?.location?.country || "❌ Missing";
         const duration = 30; // Fixed Duration
@@ -31,11 +31,10 @@ exports.calendlyWebhook = async (req, res) => {
         console.log('📅 Extracted Booking Details:', { inviteeEmail, eventName, eventUri, startTime, endTime, timezone, country, phoneNumbers });
 
         // ✅ Validation
-        if (inviteeEmail === "❌ Missing" || !startTime || !endTime) {
+        if (!inviteeEmail || !startTime || !endTime) {
             console.error('❌ Missing required data:', { inviteeEmail, startTime, endTime });
             return res.status(400).json({ error: 'Missing required fields' });
         }
-
         // ✅ Find user in MongoDB using email
         const user = await Register.findOne({ billingEmail: inviteeEmail });
 
