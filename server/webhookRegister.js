@@ -15,17 +15,16 @@ const registerCalendlyWebhook = async () => {
             'https://api.calendly.com/webhook_subscriptions',
             {
                 url: webhookUrl,
-                events: ["invitee.created"], // Event when a user books a session
+                events: ["scheduled_event.created"], 
                 organization: organizationId
             },
             {
                 headers: {
-                    "Authorization": `Bearer ${calendlyApiKey}`,
+                    "Authorization": `Bearer ${calendlyApiKey}`, // ✅ Correct format
                     "Content-Type": "application/json"
                 }
             }
         );
-
         console.log('✅ Calendly Webhook Registered:', response.data);
     } catch (error) {
         console.error('❌ Error Registering Calendly Webhook:', error.response ? error.response.data : error.message);
