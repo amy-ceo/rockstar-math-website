@@ -12,20 +12,38 @@ const purchasedClassSchema = new mongoose.Schema({
 })
 
 const bookedSessionSchema = new mongoose.Schema({
-  eventName: { type: String, required: true }, // ✅ Session Name
-  calendlyEventUri: { type: String, required: true }, // ✅ Event URI from Calendly
-  startTime: { type: Date, required: true }, // ✅ Session Start Time
-  endTime: { type: Date, required: true }, // ✅ Session End Time
-  duration: { type: Number, required: true }, // ✅ Duration in minutes
-  timezone: { type: String, required: true }, // ✅ Timezone
-  country: { type: String, required: true }, // ✅ Country name
-  phoneNumbers: [{ // ✅ Store multiple phone numbers
-      country: { type: String, required: true },
+  eventName: { type: String, required: true }, // ✅ Event Name
+  calendlyEventUri: { type: String, required: true, unique: true }, // ✅ Unique Event URI
+  startTime: { type: Date, required: true }, // ✅ Event Start Time
+  endTime: { type: Date, required: false }, // ✅ Optional: End Time
+  timezone: { type: String, required: false }, // ✅ Timezone (if available)
+  
+  // ✅ Host Details
+  hostEmail: { type: String, required: true }, // Event Host's Email
+  hostName: { type: String, required: true }, // Event Host's Name
+  hostCalendlyUrl: { type: String, required: true }, // Host's Calendly Profile URL
+
+  // ✅ Invitee Details
+  activeInvitees: { type: Number, default: 0 }, // Currently Active Invitees
+  inviteeLimit: { type: Number, default: 0 }, // Max Invitees Allowed
+  totalInvitees: { type: Number, default: 0 }, // Total Invitees
+
+  // ✅ Location Details
+  joinUrl: { type: String, required: false }, // ✅ Zoom Join URL (if applicable)
+  dialInNumbers: [{
+      countryName: { type: String },
+      city: { type: String, default: null },
       number: { type: String, required: true },
-      type: { type: String, required: true }
-  }],
-  status: { type: String, enum: ["Booked", "Completed", "Cancelled"], default: "Booked" }, // ✅ Status of session
-  createdAt: { type: Date, default: Date.now }, // ✅ Booking creation time
+      type: { type: String, default: "unknown" } // e.g., toll
+  }], // ✅ Store multiple phone numbers
+
+  intlNumbersUrl: { type: String, required: false }, // ✅ International Numbers URL
+
+  // ✅ Event Status
+  status: { type: String, enum: ["Booked", "Completed", "Cancelled", "Active", "Pushed"], default: "Booked" }, // ✅ Booking Status
+
+  createdAt: { type: Date, default: Date.now }, // ✅ When Booking Was Stored
+  updatedAt: { type: Date, required: false } // ✅ When Last Updated
 });
 
 // ✅ Coupon Schema Inside Register Model

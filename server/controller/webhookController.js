@@ -11,31 +11,49 @@ exports.calendlyWebhook = async (req, res) => {
 
         const payload = req.body.payload;
 
-        // ✅ Extract details from payload
+        // ✅ Extract Invitee & Event Details
         const inviteeEmail = payload?.email || "❌ Missing";
-        const eventName = payload?.name || "❌ Missing";
-        const eventUri = payload?.uri || "❌ Missing";
+        const eventName = payload?.name || payload?.event?.name || "❌ Missing";
+        const eventUri = payload?.uri || payload?.event?.uri || "❌ Missing";
         const startTime = payload?.start_time ? new Date(payload.start_time) : null;
-        const endTime = startTime ? new Date(startTime.getTime() + 30 * 60000) : null; // Default: 30 min after startTime        
-        const timezone = payload?.timezone || "❌ Missing";
-        const country = payload?.location?.country || "❌ Missing";
-        const duration = 30; // Fixed Duration
+        const endTime = payload?.end_time ? new Date(payload.end_time) : startTime ? new Date(startTime.getTime() + 30 * 60000) : null; // Default 30 min
+        const timezone = payload?.timezone || payload?.event?.location?.timezone || "❌ Missing";
 
-        // ✅ Extract Phone Numbers
-        const phoneNumbers = payload?.location?.location_phones?.map(num => ({
-            country: num.country || "Unknown Country",
-            number: num.number || "Unknown Number",
-            type: num.type || "Unknown Type"
+        // ✅ Extract Host Information
+        const hostEmail = payload?.event_memberships?.[0]?.user_email || "❌ Missing";
+        const hostName = payload?.event_memberships?.[0]?.user_name || "❌ Missing";
+        const hostCalendlyUrl = payload?.event_memberships?.[0]?.user || "❌ Missing";
+
+        // ✅ Extract Invitee Counter
+        const activeInvitees = payload?.invitees_counter?.active || 0;
+        const inviteeLimit = payload?.invitees_counter?.limit || 0;
+        const totalInvitees = payload?.invitees_counter?.total || 0;
+
+        // ✅ Extract Zoom or Meeting Details
+        const joinUrl = payload?.location?.join_url || "No Zoom Link";
+        const intlNumbersUrl = payload?.location?.extra?.intl_numbers_url || null;
+
+        // ✅ Extract Dial-In Numbers
+        const dialInNumbers = payload?.location?.data?.settings?.global_dial_in_numbers?.map(number => ({
+            countryName: number.country_name || "Unknown",
+            city: number.city || null,
+            number: number.number,
+            type: number.type || "unknown"
         })) || [];
 
-        console.log('📅 Extracted Booking Details:', { inviteeEmail, eventName, eventUri, startTime, endTime, timezone, country, phoneNumbers });
+        console.log('📅 Extracted Booking Details:', { 
+            inviteeEmail, eventName, eventUri, startTime, endTime, timezone, 
+            hostEmail, hostName, hostCalendlyUrl, activeInvitees, inviteeLimit, totalInvitees, 
+            joinUrl, intlNumbersUrl, dialInNumbers
+        });
 
-        // ✅ Validation
-        if (!inviteeEmail || !startTime || !endTime) {
+        // ✅ Validation: Ensure required fields are present
+        if (inviteeEmail === "❌ Missing" || !startTime || !endTime) {
             console.error('❌ Missing required data:', { inviteeEmail, startTime, endTime });
             return res.status(400).json({ error: 'Missing required fields' });
         }
-        // ✅ Find user in MongoDB using email
+
+        // ✅ Find user in MongoDB using invitee email
         const user = await Register.findOne({ billingEmail: inviteeEmail });
 
         if (!user) {
@@ -45,22 +63,38 @@ exports.calendlyWebhook = async (req, res) => {
 
         console.log('👤 User Found:', user);
 
+        // ✅ Check if Event Already Exists to Avoid Duplicates
+        const existingEvent = await BookedSession.findOne({ calendlyEventUri: eventUri });
+
+        if (existingEvent) {
+            console.log(`⚠️ Event Already Exists: ${eventName}`);
+            return res.status(200).json({ message: 'Event already stored, skipping' });
+        }
+
         // ✅ Store booking in MongoDB
-        const newBooking = {
+        const newBooking = new BookedSession({
             eventName,
             calendlyEventUri: eventUri,
             startTime,
             endTime,
             timezone,
-            country,
-            phoneNumbers,
+            hostEmail,
+            hostName,
+            hostCalendlyUrl,
+            activeInvitees,
+            inviteeLimit,
+            totalInvitees,
+            joinUrl,
+            dialInNumbers,
+            intlNumbersUrl,
             status: "Booked",
-            createdAt: new Date(),
-        };
+            updatedAt: new Date()
+        });
 
-        console.log('📢 Storing New Booking:', JSON.stringify(newBooking, null, 2));
+        await newBooking.save();
+        console.log(`✅ Successfully Stored Calendly Booking for ${inviteeEmail}`);
 
-        // ✅ Update user in MongoDB
+        // ✅ Also Update `bookedSessions` in the User's Profile
         const updatedUser = await Register.findByIdAndUpdate(
             user._id,
             { $push: { bookedSessions: newBooking } },
@@ -72,7 +106,6 @@ exports.calendlyWebhook = async (req, res) => {
             return res.status(500).json({ error: 'Failed to store booking' });
         }
 
-        console.log(`✅ Successfully Stored Calendly Booking for ${inviteeEmail}`);
         res.status(200).json({ message: 'Booking stored successfully', updatedUser });
 
     } catch (error) {
@@ -80,7 +113,6 @@ exports.calendlyWebhook = async (req, res) => {
         res.status(500).json({ error: 'Internal Server Error' });
     }
 };
-
 exports.getCalendlyBookings = async (req, res) => {
   try {
     const { userId } = req.params
