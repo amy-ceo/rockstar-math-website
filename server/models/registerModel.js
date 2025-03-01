@@ -16,8 +16,10 @@ const bookedSessionSchema = new mongoose.Schema({
   calendlyEventUri: { type: String, required: true }, // ✅ Event URI from Calendly
   startTime: { type: Date, required: true }, // ✅ Session Start Time
   endTime: { type: Date, required: true }, // ✅ Session End Time
-  status: { type: String, enum: ["Booked", "Completed", "Cancelled"], default: "Booked" }, // ✅ Status of the session
-  createdAt: { type: Date, default: Date.now },
+  duration: { type: Number, required: true }, // ✅ Duration in minutes (e.g., 30)
+  timezone: { type: String, required: true }, // ✅ Timezone (e.g., "Pakistan Standard Time")
+  status: { type: String, enum: ["Booked", "Completed", "Cancelled"], default: "Booked" }, // ✅ Status of session
+  createdAt: { type: Date, default: Date.now }, // ✅ Booking creation time
 });
 
 // ✅ Coupon Schema Inside Register Model
