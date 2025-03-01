@@ -19,17 +19,12 @@ exports.calendlyWebhook = async (req, res) => {
         const endTime = payload?.end_time ? new Date(payload.end_time) : startTime ? new Date(startTime.getTime() + 30 * 60000) : null; // Default 30 min
         const timezone = payload?.timezone || payload?.event?.location?.timezone || "❌ Missing";
 
-        // ✅ Extract Host Information
-        const hostEmail = payload?.event_memberships?.[0]?.user_email || "❌ Missing";
-        const hostName = payload?.event_memberships?.[0]?.user_name || "❌ Missing";
-        const hostCalendlyUrl = payload?.event_memberships?.[0]?.user || "❌ Missing";
-
         // ✅ Extract Invitee Counter
         const activeInvitees = payload?.invitees_counter?.active || 0;
         const inviteeLimit = payload?.invitees_counter?.limit || 0;
         const totalInvitees = payload?.invitees_counter?.total || 0;
 
-        // ✅ Extract Zoom or Meeting Details
+        // ✅ Extract Meeting Details (Zoom, Phone Numbers, etc.)
         const joinUrl = payload?.location?.join_url || "No Zoom Link";
         const intlNumbersUrl = payload?.location?.extra?.intl_numbers_url || null;
 
@@ -43,8 +38,7 @@ exports.calendlyWebhook = async (req, res) => {
 
         console.log('📅 Extracted Booking Details:', { 
             inviteeEmail, eventName, eventUri, startTime, endTime, timezone, 
-            hostEmail, hostName, hostCalendlyUrl, activeInvitees, inviteeLimit, totalInvitees, 
-            joinUrl, intlNumbersUrl, dialInNumbers
+            activeInvitees, inviteeLimit, totalInvitees, joinUrl, intlNumbersUrl, dialInNumbers
         });
 
         // ✅ Validation: Ensure required fields are present
@@ -63,50 +57,39 @@ exports.calendlyWebhook = async (req, res) => {
 
         console.log('👤 User Found:', user);
 
-        // ✅ Check if Event Already Exists to Avoid Duplicates
-        const existingEvent = await BookedSession.findOne({ calendlyEventUri: eventUri });
+        // ✅ Check if Event Already Exists in User's bookedSessions (Avoid Duplicates)
+        const eventAlreadyExists = user.bookedSessions.some(session => session.calendlyEventUri === eventUri);
 
-        if (existingEvent) {
-            console.log(`⚠️ Event Already Exists: ${eventName}`);
+        if (eventAlreadyExists) {
+            console.log(`⚠️ Event Already Exists in User Bookings: ${eventName}`);
             return res.status(200).json({ message: 'Event already stored, skipping' });
         }
 
-        // ✅ Store booking in MongoDB
-        const newBooking = new BookedSession({
+        // ✅ Create New Booking Object (Following User's `bookedSessions` Schema)
+        const newBooking = {
             eventName,
             calendlyEventUri: eventUri,
             startTime,
             endTime,
             timezone,
-            hostEmail,
-            hostName,
-            hostCalendlyUrl,
             activeInvitees,
             inviteeLimit,
             totalInvitees,
             joinUrl,
             dialInNumbers,
-            intlNumbersUrl,
             status: "Booked",
-            updatedAt: new Date()
-        });
+            createdAt: new Date()
+        };
 
-        await newBooking.save();
+        console.log('📢 Storing New Booking:', JSON.stringify(newBooking, null, 2));
+
+        // ✅ Update User's bookedSessions
+        user.bookedSessions.push(newBooking);
+
+        await user.save();
         console.log(`✅ Successfully Stored Calendly Booking for ${inviteeEmail}`);
 
-        // ✅ Also Update `bookedSessions` in the User's Profile
-        const updatedUser = await Register.findByIdAndUpdate(
-            user._id,
-            { $push: { bookedSessions: newBooking } },
-            { new: true, runValidators: true }
-        );
-
-        if (!updatedUser) {
-            console.error('❌ Failed to update user bookings:', user._id);
-            return res.status(500).json({ error: 'Failed to store booking' });
-        }
-
-        res.status(200).json({ message: 'Booking stored successfully', updatedUser });
+        res.status(200).json({ message: 'Booking stored successfully', updatedUser: user });
 
     } catch (error) {
         console.error('❌ Error handling Calendly webhook:', error);
