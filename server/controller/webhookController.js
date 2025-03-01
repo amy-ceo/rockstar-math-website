@@ -3,7 +3,7 @@ const Register = require("../models/registerModel");
 
 exports.calendlyWebhook = async (req, res) => {
     try {
-        console.log('📢 Full Webhook Payload:', JSON.stringify(req.body, null, 2)); // ✅ Log full payload
+        console.log('📢 FULL Webhook Payload:', JSON.stringify(req.body, null, 2)); // ✅ Log full payload
 
         if (!req.body || !req.body.payload) {
             console.error('❌ Invalid Webhook Payload:', req.body);
@@ -11,14 +11,14 @@ exports.calendlyWebhook = async (req, res) => {
         }
 
         const payload = req.body.payload;
-        console.log('🔍 Extracting Fields from Payload:', payload);
+        console.log('🔍 Extracting Fields from Payload:', JSON.stringify(payload, null, 2));
 
-        // ✅ Extract only the fields that actually exist in your Calendly webhook
-        const inviteeEmail = payload.invitee?.email || "❌ Missing";
-        const eventName = payload.event?.name || "❌ Missing";
-        const eventUri = payload.event?.uri || "❌ Missing";
-        const startTime = payload.event?.start_time ? new Date(payload.event.start_time) : "❌ Missing";
-        const createdAt = payload.created_at ? new Date(payload.created_at) : "❌ Missing"; // Booking creation time
+        // ✅ Find the correct path of fields in received payload
+        const inviteeEmail = payload?.invitee?.email || "❌ Missing";
+        const eventName = payload?.event?.name || "❌ Missing";
+        const eventUri = payload?.event?.uri || "❌ Missing";
+        const startTime = payload?.event?.start_time ? new Date(payload.event.start_time) : "❌ Missing";
+        const createdAt = payload?.created_at ? new Date(payload.created_at) : "❌ Missing";
 
         console.log('📅 Extracted Booking Details:', { inviteeEmail, eventName, eventUri, startTime, createdAt });
 
@@ -27,41 +27,7 @@ exports.calendlyWebhook = async (req, res) => {
             return res.status(400).json({ error: 'Missing required fields in webhook data' });
         }
 
-        // ✅ Find user in MongoDB using email
-        const user = await Register.findOne({ billingEmail: inviteeEmail });
-
-        if (!user) {
-            console.error('❌ No user found with email:', inviteeEmail);
-            return res.status(404).json({ error: 'User not found' });
-        }
-
-        console.log('👤 User Found:', user);
-
-        // ✅ Store booking with only the relevant fields
-        const newBooking = {
-            eventName: eventName,
-            calendlyEventUri: eventUri,
-            startTime: startTime,
-            createdAt: createdAt, // Optional: Track when this booking was made
-            status: "Booked",
-        };
-
-        console.log('📢 Storing New Booking:', newBooking);
-
-        // ✅ Update user in MongoDB
-        const updatedUser = await Register.findByIdAndUpdate(
-            user._id,
-            { $push: { bookedSessions: newBooking } },
-            { new: true, runValidators: true }
-        );
-
-        if (!updatedUser) {
-            console.error('❌ Failed to update user bookings:', user._id);
-            return res.status(500).json({ error: 'Failed to store booking' });
-        }
-
-        console.log(`✅ Successfully Stored Calendly Booking for ${inviteeEmail}`);
-        res.status(200).json({ message: 'Booking stored successfully', updatedUser });
+        return res.status(200).json({ message: 'Webhook received successfully' });
 
     } catch (error) {
         console.error('❌ Error handling Calendly webhook:', error);
