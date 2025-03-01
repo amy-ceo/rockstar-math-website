@@ -15,9 +15,27 @@ exports.calendlyWebhook = async (req, res) => {
         const inviteeEmail = payload?.email || "❌ Missing";
         const eventName = payload?.name || payload?.event?.name || "❌ Missing";
         const eventUri = payload?.uri || payload?.event?.uri || "❌ Missing";
-        const startTime = payload?.start_time ? new Date(payload.start_time) : null;
-        const endTime = payload?.end_time ? new Date(payload.end_time) : startTime ? new Date(startTime.getTime() + 30 * 60000) : null; // Default 30 min
+
+        // ✅ Fix: Extract `startTime` from multiple possible locations
+        const startTime = payload?.start_time 
+            || payload?.event?.start_time 
+            || payload?.scheduled_event?.start_time
+            ? new Date(payload?.start_time || payload?.event?.start_time || payload?.scheduled_event?.start_time) 
+            : null;
+
+        const endTime = payload?.end_time 
+            || payload?.event?.end_time 
+            || payload?.scheduled_event?.end_time
+            ? new Date(payload?.end_time || payload?.event?.end_time || payload?.scheduled_event?.end_time) 
+            : startTime ? new Date(startTime.getTime() + 30 * 60000) // Default to 30 min duration
+            : null;
+
         const timezone = payload?.timezone || payload?.event?.location?.timezone || "❌ Missing";
+
+        // ✅ Extract Host Information
+        const hostEmail = payload?.event_memberships?.[0]?.user_email || "❌ Missing";
+        const hostName = payload?.event_memberships?.[0]?.user_name || "❌ Missing";
+        const hostCalendlyUrl = payload?.event_memberships?.[0]?.user || "❌ Missing";
 
         // ✅ Extract Invitee Counter
         const activeInvitees = payload?.invitees_counter?.active || 0;
@@ -38,7 +56,8 @@ exports.calendlyWebhook = async (req, res) => {
 
         console.log('📅 Extracted Booking Details:', { 
             inviteeEmail, eventName, eventUri, startTime, endTime, timezone, 
-            activeInvitees, inviteeLimit, totalInvitees, joinUrl, intlNumbersUrl, dialInNumbers
+            hostEmail, hostName, hostCalendlyUrl, activeInvitees, inviteeLimit, totalInvitees, 
+            joinUrl, intlNumbersUrl, dialInNumbers
         });
 
         // ✅ Validation: Ensure required fields are present
