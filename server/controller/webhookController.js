@@ -32,33 +32,7 @@ exports.calendlyWebhook = async (req, res) => {
 
         const timezone = payload?.timezone || payload?.event?.location?.timezone || "❌ Missing";
 
-        // ✅ Extract Host Information
-        const hostEmail = payload?.event_memberships?.[0]?.user_email || "❌ Missing";
-        const hostName = payload?.event_memberships?.[0]?.user_name || "❌ Missing";
-        const hostCalendlyUrl = payload?.event_memberships?.[0]?.user || "❌ Missing";
-
-        // ✅ Extract Invitee Counter
-        const activeInvitees = payload?.invitees_counter?.active || 0;
-        const inviteeLimit = payload?.invitees_counter?.limit || 0;
-        const totalInvitees = payload?.invitees_counter?.total || 0;
-
-        // ✅ Extract Meeting Details (Zoom, Phone Numbers, etc.)
-        const joinUrl = payload?.location?.join_url || "No Zoom Link";
-        const intlNumbersUrl = payload?.location?.extra?.intl_numbers_url || null;
-
-        // ✅ Extract Dial-In Numbers
-        const dialInNumbers = payload?.location?.data?.settings?.global_dial_in_numbers?.map(number => ({
-            countryName: number.country_name || "Unknown",
-            city: number.city || null,
-            number: number.number,
-            type: number.type || "unknown"
-        })) || [];
-
-        console.log('📅 Extracted Booking Details:', { 
-            inviteeEmail, eventName, eventUri, startTime, endTime, timezone, 
-            hostEmail, hostName, hostCalendlyUrl, activeInvitees, inviteeLimit, totalInvitees, 
-            joinUrl, intlNumbersUrl, dialInNumbers
-        });
+      
 
         // ✅ Validation: Ensure required fields are present
         if (inviteeEmail === "❌ Missing" || !startTime || !endTime) {
@@ -91,11 +65,6 @@ exports.calendlyWebhook = async (req, res) => {
             startTime,
             endTime,
             timezone,
-            activeInvitees,
-            inviteeLimit,
-            totalInvitees,
-            joinUrl,
-            dialInNumbers,
             status: "Booked",
             createdAt: new Date()
         };

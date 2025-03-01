@@ -17,28 +17,6 @@ const bookedSessionSchema = new mongoose.Schema({
   startTime: { type: Date, required: true }, // ✅ Event Start Time
   endTime: { type: Date, required: false }, // ✅ Optional: End Time
   timezone: { type: String, required: false }, // ✅ Timezone (if available)
-  
-  // ✅ Host Details
-  hostEmail: { type: String, required: true }, // Event Host's Email
-  hostName: { type: String, required: true }, // Event Host's Name
-  hostCalendlyUrl: { type: String, required: true }, // Host's Calendly Profile URL
-
-  // ✅ Invitee Details
-  activeInvitees: { type: Number, default: 0 }, // Currently Active Invitees
-  inviteeLimit: { type: Number, default: 0 }, // Max Invitees Allowed
-  totalInvitees: { type: Number, default: 0 }, // Total Invitees
-
-  // ✅ Location Details
-  joinUrl: { type: String, required: false }, // ✅ Zoom Join URL (if applicable)
-  dialInNumbers: [{
-      countryName: { type: String },
-      city: { type: String, default: null },
-      number: { type: String, required: true },
-      type: { type: String, default: "unknown" } // e.g., toll
-  }], // ✅ Store multiple phone numbers
-
-  intlNumbersUrl: { type: String, required: false }, // ✅ International Numbers URL
-
   // ✅ Event Status
   status: { type: String, enum: ["Booked", "Completed", "Cancelled", "Active", "Pushed"], default: "Booked" }, // ✅ Booking Status
 
