@@ -82,9 +82,8 @@ exports.calendlyWebhook = async (req, res) => {
 
         // ✅ Find Purchased Plan for this Event
         let purchasedPlan = user.purchasedClasses.find(item => 
-            item.name.toLowerCase().includes(eventName.toLowerCase())
+            eventName.toLowerCase().includes(item.name.toLowerCase())
         );
-
         if (!purchasedPlan) {
             console.error('❌ No matching purchased plan found for:', eventName);
             return res.status(400).json({ error: 'No matching plan found' });
