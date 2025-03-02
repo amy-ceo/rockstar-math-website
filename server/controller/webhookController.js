@@ -58,6 +58,24 @@ exports.calendlyWebhook = async (req, res) => {
             return res.status(200).json({ message: 'Event already stored, skipping' });
         }
 
+
+        // ✅ Find Purchased Plan for this Event
+        let purchasedPlan = user.purchasedClasses.find(item => item.name === eventName);
+
+        if (!purchasedPlan) {
+            console.error('❌ No matching purchased plan found for:', eventName);
+            return res.status(400).json({ error: 'No matching plan found' });
+        }
+
+        // ✅ Ensure User Has Remaining Sessions
+        if (purchasedPlan.remainingSessions <= 0) {
+            console.error(`❌ No remaining sessions left for plan: ${eventName}`);
+            return res.status(400).json({ error: `You have no remaining sessions left for ${eventName}` });
+        }
+
+        // ✅ Decrement Remaining Sessions
+        purchasedPlan.remainingSessions -= 1;
+
         // ✅ Create New Booking Object (Following User's `bookedSessions` Schema)
         const newBooking = {
             eventName,

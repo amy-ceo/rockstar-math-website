@@ -517,3 +517,22 @@ exports.restoreClass = async (req, res) => {
     res.status(500).json({ message: 'Server error' })
   }
 }
+
+
+exports.getRemainingSession = async (req, res) => {
+  try {
+    const user = await Register.findById(req.params.userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // ✅ Send only relevant session data
+    const sessionData = user.purchasedClasses.map((item) => ({
+      name: item.name,
+      remainingSessions: item.remainingSessions,
+    }));
+
+    res.json({ remainingSessions: sessionData });
+  } catch (error) {
+    console.error('❌ Error fetching remaining sessions:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+}

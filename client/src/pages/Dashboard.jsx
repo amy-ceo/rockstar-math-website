@@ -79,26 +79,27 @@ const Dashboard = () => {
       }
     }
 
-    // Fetch Zoom Meeting
-    const fetchZoomMeeting = async () => {
+    // ✅ Fetch Remaining Sessions
+    const fetchRemainingSessions = async () => {
       try {
         const response = await fetch(
-          `https://backend-production-cbe2.up.railway.app/api/${users._id}/zoom-meeting`,
+          `https://backend-production-cbe2.up.railway.app/api/user/${users._id}/remaining-sessions`,
         )
         const data = await response.json()
-        if (!response.ok) throw new Error(data.message || 'No Zoom meeting found.')
-        setZoomMeeting(data.meeting)
+        if (!response.ok) throw new Error(data.message || 'Failed to fetch remaining sessions.')
+        setRemainingSessions(data.remainingSessions || [])
       } catch (error) {
-        console.error('❌ Error fetching Zoom meeting:', error)
-        setZoomMeeting(null)
+        console.error('❌ Error fetching remaining sessions:', error)
+        setRemainingSessions([])
       }
     }
+    // Fetch Zoom Meeting
 
     // ✅ Run all API calls in parallel
     Promise.allSettled([
       fetchPurchasedClasses(),
-      fetchZoomMeeting(),
       fetchCalendlyBookings(),
+      fetchRemainingSessions(), // ✅ Fetch remaining sessions
       fetchCoupons(),
     ]).finally(() => setLoading(false))
   }, [users]) // ✅ Depend only on `users`
@@ -124,27 +125,6 @@ const Dashboard = () => {
             </div>
           ) : (
             <p>No Purchased Classes</p>
-          )}
-
-          {/* ✅ Display Zoom Meeting Details */}
-          {zoomMeeting && (
-            <section className="mt-6 p-4 bg-white shadow-md rounded-lg">
-              <h3>Your Upcoming Zoom Meeting:</h3>
-              <p>
-                <strong>Topic:</strong> {zoomMeeting.topic}
-              </p>
-              <p>
-                <strong>Start Time:</strong> {new Date(zoomMeeting.startTime).toLocaleString()}
-              </p>
-              <a
-                href={zoomMeeting.joinUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 underline"
-              >
-                ➡️ Join Meeting
-              </a>
-            </section>
           )}
 
           {/* ✅ Show Available Coupons */}
@@ -203,6 +183,25 @@ const Dashboard = () => {
                       >
                         📍 View on Calendly
                       </a>
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* ✅ Show Remaining Sessions */}
+          {remainingSessions.length > 0 && (
+            <section className="mt-6 p-4 bg-white shadow-md rounded-lg">
+              <h3 className="text-lg font-bold mb-2">🕒 Your Remaining Sessions</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {remainingSessions.map((session, index) => (
+                  <div key={index} className="p-4 bg-blue-200 rounded-lg shadow">
+                    <p>
+                      <strong>📚 Plan:</strong> {session.name}
+                    </p>
+                    <p>
+                      <strong>🕒 Remaining Sessions:</strong> {session.remainingSessions}
                     </p>
                   </div>
                 ))}
