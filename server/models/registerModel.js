@@ -2,15 +2,13 @@ const mongoose = require('mongoose')
 const bcrypt = require('bcryptjs')
 const crypto = require('crypto')
 
-// ✅ Purchased Classes Schema (Tracks User’s Purchased Sessions)
 const purchasedClassSchema = new mongoose.Schema({
-  name: { type: String, required: true }, // Plan Name (e.g., "8 x 30")
-  description: { type: String, required: true }, // Plan Description
-  totalSessions: { type: Number, required: true }, // e.g., 8, 3
-  remainingSessions: { type: Number, required: true }, // Decreases on booking
-  purchaseDate: { type: Date, default: Date.now }, // When Plan was Bought
-  bookingLink: { type: String, default: null }, // Calendly Booking Link (if applicable)
-  lastUpdated: { type: Date, default: Date.now } // Tracks Last Modification
+  name: { type: String, required: true }, // Product Name
+  description: { type: String, required: true }, // Product Description
+  purchaseDate: { type: Date, default: Date.now }, // Date of Purchase
+  sessionCount: { type: Number, required: true },  // ✅ Total Purchased Sessions
+  remainingSessions: { type: Number, required: true },  // ✅ Remaining Sessions Counter
+  bookingLink: { type: String, default: null }, // ✅ Calendly Booking Link (For Services)
 });
 
 // ✅ New: Purchased Session Tracking Schema
@@ -22,24 +20,19 @@ const purchasedSessionSchema = new mongoose.Schema({
 });
 
 
-// ✅ Booked Sessions Schema (Tracks Individual Bookings)
 const bookedSessionSchema = new mongoose.Schema({
-  eventName: { type: String, required: true }, // Event Name
-  calendlyEventUri: { type: String, required: true, sparse: true }, // ✅ Removed `unique: true`
-  startTime: { type: Date, required: true }, // Start Time
-  endTime: { type: Date, required: false }, // End Time (if available)
-  timezone: { type: String, required: false }, // Timezone (if available)
-  
-  // ✅ Updated Status Field for Better Tracking
-  status: { 
-    type: String, 
-    enum: ["Booked", "Completed", "Cancelled", "Active", "Rescheduled", "Pushed"], 
-    default: "Booked"
-  },
+  eventName: { type: String, required: true }, // ✅ Event Name
+  calendlyEventUri: { type: String, required: true, unique: true, sparse: true }, // ✅ Unique Event URI
+  startTime: { type: Date, required: true }, // ✅ Event Start Time
+  endTime: { type: Date, required: false }, // ✅ Optional: End Time
+  timezone: { type: String, required: false }, // ✅ Timezone (if available)
+  // ✅ Event Status
+  status: { type: String, enum: ["Booked", "Completed", "Cancelled", "Active", "Pushed"], default: "Booked" }, // ✅ Booking Status
 
-  createdAt: { type: Date, default: Date.now }, // When Booking Was Stored
-  updatedAt: { type: Date, default: Date.now } // When Last Updated
+  createdAt: { type: Date, default: Date.now }, // ✅ When Booking Was Stored
+  updatedAt: { type: Date, required: false } // ✅ When Last Updated
 });
+
 // ✅ Coupon Schema Inside Register Model
 const couponSchema = new mongoose.Schema({
   code: { type: String, required: true, unique: true, sparse: true }, // ✅ Fix added
