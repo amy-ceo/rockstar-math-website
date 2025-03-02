@@ -116,6 +116,7 @@ const Dashboard = () => {
   // ✅ Cancel Booking Function (After Confirmation)
   const cancelBooking = async () => {
     if (!selectedEventUri) return
+
     try {
       const response = await fetch(
         'https://backend-production-cbe2.up.railway.app/api/cancel-booking',
@@ -130,10 +131,15 @@ const Dashboard = () => {
       if (!response.ok) throw new Error(data.message)
 
       alert('Session Canceled Successfully')
+
+      // ✅ Remove the canceled session from UI
       setCalendlyBookings(
         calendlyBookings.filter((booking) => booking.calendlyEventUri !== selectedEventUri),
       )
+
+      // ✅ Hide the popup after canceling
       setShowCancelPopup(false)
+      setSelectedEventUri(null) // ✅ Reset Selected Event
     } catch (error) {
       console.error('❌ Error canceling session:', error)
     }
@@ -212,10 +218,11 @@ const Dashboard = () => {
                     {/* ✅ Cancel Button */}
                     <button
                       className="mt-2 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-700"
-                      onClick={() => cancelBooking(booking.calendlyEventUri)}
+                      onClick={() => confirmCancel(booking.calendlyEventUri)}
                     >
                       ❌ Cancel
                     </button>
+
 
                     {/* ✅ Reschedule Button */}
                     <a
@@ -252,8 +259,8 @@ const Dashboard = () => {
           )}
         </AnimatedSection>
       </div>
-      {/* ✅ Cancel Confirmation Popup */}
-      {showCancelPopup && (
+       {/* ✅ Cancel Confirmation Popup */}
+       {showCancelPopup && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white p-6 rounded shadow-lg text-center">
             <h3 className="text-lg font-bold">Are you sure you want to cancel this session?</h3>
