@@ -133,25 +133,74 @@ exports.calendlyWebhook = async (req, res) => {
 };
 
 exports.getCalendlyBookings = async (req, res) => {
-  try {
-    const { userId } = req.params
-
-    console.log('🔍 Checking UserId:', userId) // Debugging log
-
-    // Find user in MongoDB
-    const user = await Register.findById(userId)
-
-    console.log('✅ Retrieved user data:', JSON.stringify(user, null, 2)) // Debugging log
-
-    if (!user) {
-      console.error('❌ User not found with ID:', userId)
-      return res.status(404).json({ message: 'User not found' })
+    try {
+      const { userId } = req.params
+  
+      console.log('🔍 Checking UserId:', userId) // Debugging log
+  
+      // Find user in MongoDB
+      const user = await Register.findById(userId)
+  
+      console.log('✅ Retrieved user data:', JSON.stringify(user, null, 2)) // Debugging log
+  
+      if (!user) {
+        console.error('❌ User not found with ID:', userId)
+        return res.status(404).json({ message: 'User not found' })
+      }
+  
+      // ✅ Return bookedSessions from the user
+      res.status(200).json({ bookings: user.bookedSessions || [] })
+    } catch (error) {
+      console.error('❌ Error fetching bookings:', error)
+      res.status(500).json({ message: 'Server error' })
     }
-
-    // ✅ Return bookedSessions from the user
-    res.status(200).json({ bookings: user.bookedSessions || [] })
-  } catch (error) {
-    console.error('❌ Error fetching bookings:', error)
-    res.status(500).json({ message: 'Server error' })
   }
-}
+  
+  exports.cancelSession = async (req, res) => {
+      try {
+          const { userId, eventUri } = req.body;
+  
+          // ✅ Find user
+          const user = await Register.findById(userId);
+          if (!user) {
+              return res.status(404).json({ message: 'User not found' });
+          }
+  
+          // ✅ Find the session to cancel
+          const sessionIndex = user.bookedSessions.findIndex(session => session.calendlyEventUri === eventUri);
+          if (sessionIndex === -1) {
+              return res.status(404).json({ message: 'Session not found' });
+          }
+  
+          const canceledSession = user.bookedSessions[sessionIndex];
+  
+          // ✅ Restore Session Count
+          let purchasedPlan = user.purchasedClasses.find(item => item.name === canceledSession.eventName);
+          if (purchasedPlan) {
+              purchasedPlan.remainingSessions += 1; // Increase count back
+          }
+  
+          // ✅ Remove session from bookedSessions
+          user.bookedSessions.splice(sessionIndex, 1);
+          await user.save();
+  
+          console.log(`✅ Session canceled by ${user.billingEmail}: ${canceledSession.eventName}`);
+  
+          // ✅ Send email to Admin
+          const emailContent = `
+              <h3>🚨 Session Canceled</h3>
+              <p><strong>User:</strong> ${user.billingEmail}</p>
+              <p><strong>Session:</strong> ${canceledSession.eventName}</p>
+              <p><strong>Time:</strong> ${new Date(canceledSession.startTime).toLocaleString()}</p>
+          `;
+  
+          await sendEmail('anchorwebdesigner@gmail.com', '🚨 Session Canceled', '', emailContent);
+  
+          res.status(200).json({ message: 'Session canceled successfully' });
+  
+      } catch (error) {
+          console.error('❌ Error canceling session:', error);
+          res.status(500).json({ message: 'Server error' });
+      }
+  };
+  
