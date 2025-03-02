@@ -6,15 +6,17 @@ import { useNavigate } from 'react-router-dom'
 import ClassCard from '../components/ClassCard.jsx'
 
 const Dashboard = () => {
-  
   const { users } = useAuth() // ✅ Get user from AuthContext
   const navigate = useNavigate()
   const [purchasedClasses, setPurchasedClasses] = useState([])
-  const [remainingSessions, setRemainingSessions] = useState([]); // ✅ Fix: Add missing state
+  const [remainingSessions, setRemainingSessions] = useState([]) // ✅ Fix: Add missing state
   const [calendlyBookings, setCalendlyBookings] = useState([]) // ✅ State for Calendly Bookings
   const [coupons, setCoupons] = useState([]) // ✅ State for Coupons
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  // ✅ State for Cancel Confirmation Popup
+  const [showCancelPopup, setShowCancelPopup] = useState(false)
+  const [selectedEventUri, setSelectedEventUri] = useState(null)
 
   // ✅ Redirect user if not logged in
   useEffect(() => {
@@ -105,24 +107,37 @@ const Dashboard = () => {
     ]).finally(() => setLoading(false))
   }, [users]) // ✅ Depend only on `users`
 
-    // ✅ Cancel Booking Function
-    const cancelBooking = async (eventUri) => {
-      try {
-        const response = await fetch('https://backend-production-cbe2.up.railway.app/api/webhook/cancel-booking', {
+  // ✅ Open Cancel Confirmation Popup
+  const confirmCancel = (eventUri) => {
+    setSelectedEventUri(eventUri)
+    setShowCancelPopup(true)
+  }
+
+  // ✅ Cancel Booking Function (After Confirmation)
+  const cancelBooking = async () => {
+    if (!selectedEventUri) return
+    try {
+      const response = await fetch(
+        'https://backend-production-cbe2.up.railway.app/api/cancel-booking',
+        {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: users._id, eventUri }),
-        });
-  
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.message);
-  
-        alert('Session Canceled Successfully');
-        setCalendlyBookings(calendlyBookings.filter(booking => booking.calendlyEventUri !== eventUri));
-      } catch (error) {
-        console.error('❌ Error canceling session:', error);
-      }
-    };
+          body: JSON.stringify({ userId: users._id, eventUri: selectedEventUri }),
+        },
+      )
+
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.message)
+
+      alert('Session Canceled Successfully')
+      setCalendlyBookings(
+        calendlyBookings.filter((booking) => booking.calendlyEventUri !== selectedEventUri),
+      )
+      setShowCancelPopup(false)
+    } catch (error) {
+      console.error('❌ Error canceling session:', error)
+    }
+  }
 
   if (loading) return <p>Loading dashboard...</p>
   if (error) return <p className="text-red-600">{error}</p>
@@ -166,17 +181,33 @@ const Dashboard = () => {
             </section>
           )}
 
-         {/* ✅ Display Calendly Bookings with Cancel & Reschedule Buttons */}
-         {calendlyBookings.length > 0 && (
+          {/* ✅ Display Calendly Bookings with Cancel & Reschedule Buttons */}
+          {calendlyBookings.length > 0 && (
             <section className="mt-6 p-4 bg-white shadow-md rounded-lg">
               <h3 className="text-lg font-bold mb-2">📅 Your Scheduled Calendly Bookings</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 {calendlyBookings.map((booking, index) => (
-                  <div key={index} className="p-4 bg-white rounded-lg shadow-md border border-gray-300">
-                    <h4 className="text-blue-600 font-semibold">{booking.eventName || 'No Name'}</h4>
-                    <p><strong>📅 Start Time:</strong> {new Date(booking.startTime).toLocaleString()}</p>
-                    <p><strong>Status:</strong> {booking.status}</p>
-                    <a href={booking.calendlyEventUri} target="_blank" rel="noopener noreferrer" className="text-blue-500 underline">📍 View on Calendly</a>
+                  <div
+                    key={index}
+                    className="p-4 bg-white rounded-lg shadow-md border border-gray-300"
+                  >
+                    <h4 className="text-blue-600 font-semibold">
+                      {booking.eventName || 'No Name'}
+                    </h4>
+                    <p>
+                      <strong>📅 Start Time:</strong> {new Date(booking.startTime).toLocaleString()}
+                    </p>
+                    <p>
+                      <strong>Status:</strong> {booking.status}
+                    </p>
+                    <a
+                      href={booking.calendlyEventUri}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-500 underline"
+                    >
+                      📍 View on Calendly
+                    </a>
 
                     {/* ✅ Cancel Button */}
                     <button
@@ -221,6 +252,25 @@ const Dashboard = () => {
           )}
         </AnimatedSection>
       </div>
+      {/* ✅ Cancel Confirmation Popup */}
+      {showCancelPopup && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-6 rounded shadow-lg text-center">
+            <h3 className="text-lg font-bold">Are you sure you want to cancel this session?</h3>
+            <div className="mt-4 flex justify-center space-x-4">
+              <button className="bg-red-500 text-white px-4 py-2 rounded" onClick={cancelBooking}>
+                Yes, Cancel
+              </button>
+              <button
+                className="bg-gray-400 text-white px-4 py-2 rounded"
+                onClick={() => setShowCancelPopup(false)}
+              >
+                No, Keep It
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
