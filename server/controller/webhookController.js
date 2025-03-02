@@ -77,7 +77,7 @@ exports.calendlyWebhook = async (req, res) => {
                     <p><strong>New Time:</strong> ${new Date(startTime).toLocaleString()}</p>
                     <p><strong>Timezone:</strong> ${timezone}</p>
                 `
-        await sendEmail('admin@example.com', '🔄 Session Rescheduled', '', emailContent)
+        await sendEmail('anchorwebdesigner@gmail.com', '🔄 Session Rescheduled', '', emailContent)
 
         await user.save()
         return res
@@ -215,7 +215,7 @@ exports.cancelSession = async (req, res) => {
               <p><strong>Time:</strong> ${new Date(canceledSession.startTime).toLocaleString()}</p>
           `
 
-    await sendEmail('e72192@gmail.com', '🚨 Session Canceled', '', emailContent)
+    await sendEmail('anchorwebdesigner@gmail.com', '🚨 Session Canceled', '', emailContent)
 
     res.status(200).json({ message: 'Session canceled successfully' })
   } catch (error) {
