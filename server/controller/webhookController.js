@@ -1,4 +1,5 @@
 const Register = require('../models/registerModel')
+const sendEmail = require('../utils/emailSender')
 
 exports.calendlyWebhook = async (req, res) => {
     try {
@@ -109,54 +110,3 @@ exports.getCalendlyBookings = async (req, res) => {
 }
 
 
-exports.cancelSession = async (req, res) => {
-    try {
-      const { userId, eventUri } = req.body
-  
-      // ✅ Find user
-      const user = await Register.findById(userId)
-      if (!user) {
-        return res.status(404).json({ message: 'User not found' })
-      }
-  
-      // ✅ Find the session to cancel
-      const sessionIndex = user.bookedSessions.findIndex(
-        (session) => session.calendlyEventUri === eventUri,
-      )
-      if (sessionIndex === -1) {
-        return res.status(404).json({ message: 'Session not found' })
-      }
-  
-      const canceledSession = user.bookedSessions[sessionIndex]
-  
-      // ✅ Restore Session Count
-      let purchasedPlan = user.purchasedClasses.find(
-        (item) => item.name === canceledSession.eventName,
-      )
-      if (purchasedPlan) {
-        purchasedPlan.remainingSessions += 1 // Increase count back
-      }
-  
-      // ✅ Remove session from bookedSessions
-      user.bookedSessions.splice(sessionIndex, 1)
-      await user.save()
-  
-      console.log(`✅ Session canceled by ${user.billingEmail}: ${canceledSession.eventName}`)
-  
-      // ✅ Send email to Admin
-      const emailContent = `
-                <h3>🚨 Session Canceled</h3>
-                <p><strong>User:</strong> ${user.billingEmail}</p>
-                <p><strong>Session:</strong> ${canceledSession.eventName}</p>
-                <p><strong>Time:</strong> ${new Date(canceledSession.startTime).toLocaleString()}</p>
-            `
-  
-      await sendEmail('anchorwebdesigner@gmail.com', '🚨 Session Canceled', '', emailContent)
-  
-      res.status(200).json({ message: 'Session canceled successfully' })
-    } catch (error) {
-      console.error('❌ Error canceling session:', error)
-      res.status(500).json({ message: 'Server error' })
-    }
-  }
-  

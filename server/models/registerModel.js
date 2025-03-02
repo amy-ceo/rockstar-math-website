@@ -6,23 +6,14 @@ const purchasedClassSchema = new mongoose.Schema({
   name: { type: String, required: true }, // Product Name
   description: { type: String, required: true }, // Product Description
   purchaseDate: { type: Date, default: Date.now }, // Date of Purchase
-  sessionCount: { type: Number, required: true },  // ✅ Total Purchased Sessions
-  remainingSessions: { type: Number, required: true },  // ✅ Remaining Sessions Counter
+  sessionCount: { type: Number, required: true },  // ✅ Total Purchased
+  remainingSessions: { type: Number, required: true },  // ✅ Sessions Left
   bookingLink: { type: String, default: null }, // ✅ Calendly Booking Link (For Services)
-});
-
-// ✅ New: Purchased Session Tracking Schema
-const purchasedSessionSchema = new mongoose.Schema({
-  planName: { type: String, required: true }, // e.g. "8 x 30", "3 x 30"
-  totalSessions: { type: Number, required: true }, // e.g. 8, 3
-  remainingSessions: { type: Number, required: true }, // e.g. Starts with totalSessions, decreases on booking
-  lastUpdated: { type: Date, default: Date.now } // ✅ Track when it was last modified
-});
-
+})
 
 const bookedSessionSchema = new mongoose.Schema({
   eventName: { type: String, required: true }, // ✅ Event Name
-  calendlyEventUri: { type: String, required: true, unique: true, sparse: true }, // ✅ Unique Event URI
+  calendlyEventUri: { type: String, required: true, unique: true,sparse: true }, // ✅ Unique Event URI
   startTime: { type: Date, required: true }, // ✅ Event Start Time
   endTime: { type: Date, required: false }, // ✅ Optional: End Time
   timezone: { type: String, required: false }, // ✅ Timezone (if available)
@@ -85,16 +76,22 @@ const RegisterSchema = new mongoose.Schema(
     resetPasswordExpires: { type: Date },
     // ✅ Archived Classes (New Feature)
     archivedClasses: [purchasedClassSchema], // ✅ Archived Classes
-     // ✅ Purchased Sessions (NEW) - Tracks Remaining Sessions
-     // ✅ Store User Coupons
-     coupons: [couponSchema],
-     // ✅ Purchased Classes & Services
-     purchasedClasses: [purchasedClassSchema], // ✅ Includes both Zoom & Service purchases
-     purchasedSessions: [purchasedSessionSchema], // ✅ This will track session-based purchases
-     // ✅ New: Calendly Bookings
+    // ✅ Store User Coupons
+    coupons: [couponSchema],
+    // ✅ Purchased Classes & Services
+    purchasedClasses: [purchasedClassSchema], // ✅ Includes both Zoom & Service purchases
+    // ✅ New: Calendly Bookings
     bookedSessions: [bookedSessionSchema], // ✅ This will store all booked sessions
     // ✅ Zoom Meeting Details (For Purchased Classes)
-    
+    zoomMeetings: [
+      {
+        meetingId: { type: String, required: true }, // Zoom Meeting ID
+        topic: { type: String, required: true }, // Meeting Topic
+        startTime: { type: Date, required: true }, // Start Time
+        joinUrl: { type: String, required: true }, // User Join URL
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
   },
   { timestamps: true },
 )
