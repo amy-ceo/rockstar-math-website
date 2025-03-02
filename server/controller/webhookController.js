@@ -74,18 +74,26 @@ exports.calendlyWebhook = async (req, res) => {
                 <p><strong>Timezone:</strong> ${timezone}</p>
             `;
 
-            await sendEmail('anchorwebdesigner@gmail.com', '🔄 Session Rescheduled', '', emailContent);
+            await sendEmail('admin@example.com', '🔄 Session Rescheduled', '', emailContent);
 
             await user.save();
             return res.status(200).json({ message: 'Session rescheduled successfully', updatedUser: user });
         }
 
         // ✅ Find Purchased Plan for this Event
-        let purchasedPlan = user.purchasedClasses.find(item => item.name === eventName);
+        let purchasedPlan = user.purchasedClasses.find(item => 
+            item.name.toLowerCase().includes(eventName.toLowerCase())
+        );
 
         if (!purchasedPlan) {
             console.error('❌ No matching purchased plan found for:', eventName);
             return res.status(400).json({ error: 'No matching plan found' });
+        }
+
+        // ✅ Ensure `remainingSessions` field exists in `purchasedPlan`
+        if (purchasedPlan.remainingSessions === undefined) {
+            console.warn(`⚠️ Missing "remainingSessions" field for ${eventName}, adding default value.`);
+            purchasedPlan.remainingSessions = 8; // Default Value (Adjust as needed)
         }
 
         // ✅ Ensure User Has Remaining Sessions
@@ -147,51 +155,3 @@ exports.getCalendlyBookings = async (req, res) => {
     res.status(500).json({ message: 'Server error' })
   }
 }
-
-exports.cancelSession = async (req, res) => {
-    try {
-        const { userId, eventUri } = req.body;
-
-        // ✅ Find user
-        const user = await Register.findById(userId);
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-
-        // ✅ Find the session to cancel
-        const sessionIndex = user.bookedSessions.findIndex(session => session.calendlyEventUri === eventUri);
-        if (sessionIndex === -1) {
-            return res.status(404).json({ message: 'Session not found' });
-        }
-
-        const canceledSession = user.bookedSessions[sessionIndex];
-
-        // ✅ Restore Session Count
-        let purchasedPlan = user.purchasedClasses.find(item => item.name === canceledSession.eventName);
-        if (purchasedPlan) {
-            purchasedPlan.remainingSessions += 1; // Increase count back
-        }
-
-        // ✅ Remove session from bookedSessions
-        user.bookedSessions.splice(sessionIndex, 1);
-        await user.save();
-
-        console.log(`✅ Session canceled by ${user.billingEmail}: ${canceledSession.eventName}`);
-
-        // ✅ Send email to Admin
-        const emailContent = `
-            <h3>🚨 Session Canceled</h3>
-            <p><strong>User:</strong> ${user.billingEmail}</p>
-            <p><strong>Session:</strong> ${canceledSession.eventName}</p>
-            <p><strong>Time:</strong> ${new Date(canceledSession.startTime).toLocaleString()}</p>
-        `;
-
-        await sendEmail('anchorwebdesigner@gmail.com', '🚨 Session Canceled', '', emailContent);
-
-        res.status(200).json({ message: 'Session canceled successfully' });
-
-    } catch (error) {
-        console.error('❌ Error canceling session:', error);
-        res.status(500).json({ message: 'Server error' });
-    }
-};
