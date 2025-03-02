@@ -22,7 +22,7 @@ const purchasedSessionSchema = new mongoose.Schema({
 
 const bookedSessionSchema = new mongoose.Schema({
   eventName: { type: String, required: true }, // ✅ Event Name
-  calendlyEventUri: { type: String, required: true, unique: true }, // ✅ Unique Event URI
+  calendlyEventUri: { type: String, required: true, unique: true, sparse: true }, // ✅ Unique Event URI
   startTime: { type: Date, required: true }, // ✅ Event Start Time
   endTime: { type: Date, required: false }, // ✅ Optional: End Time
   timezone: { type: String, required: false }, // ✅ Timezone (if available)

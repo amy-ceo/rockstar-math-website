@@ -132,6 +132,14 @@ async function fixMongoIndexes() {
     await db.collection("registers").createIndex({ "calendlyBookings.eventId": 1 }, { unique: true, sparse: true });
     console.log("✅ Created new sparse index on calendlyBookings.eventId");
 
+    // 🛑 Drop existing `bookedSessions.calendlyEventUri_1` index
+    await db.collection("registers").dropIndex("bookedSessions.calendlyEventUri_1").catch(err => console.warn("⚠️ No existing index for bookedSessions.calendlyEventUri"));
+    console.log("✅ Dropped old bookedSessions.calendlyEventUri_1 index");
+
+    // ✅ Recreate `bookedSessions.calendlyEventUri` index with sparse
+    await db.collection("registers").createIndex({ "bookedSessions.calendlyEventUri": 1 }, { unique: true, sparse: true });
+    console.log("✅ Created new sparse index on bookedSessions.calendlyEventUri");
+
   } catch (error) {
     console.error("❌ Error updating MongoDB indexes:", error.message);
   }
@@ -139,6 +147,7 @@ async function fixMongoIndexes() {
 
 // Run index fix when the app starts
 mongoose.connection.once("open", fixMongoIndexes);
+
 
 // Routes
 app.use('/api/auth', authRoutes);
