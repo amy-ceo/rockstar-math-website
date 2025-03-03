@@ -452,171 +452,158 @@ router.post('/create-checkout-session', async (req, res) => {
 
 // ✅ Webhook for Stripe Payments
 router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req, res) => {
-  let event
-  const sig = req.headers['stripe-signature']
+  let event;
+  const sig = req.headers['stripe-signature'];
 
   try {
-    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET)
+    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
   } catch (err) {
-    console.error('❌ Webhook Signature Verification Failed:', err.message)
-    return res.status(400).send(`Webhook Error: ${err.message}`)
+    console.error('❌ Webhook Signature Verification Failed:', err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  console.log('🔔 Received Stripe Webhook Event:', event.type)
+  console.log('🔔 Received Stripe Webhook Event:', event.type);
 
   if (event.type === 'payment_intent.succeeded') {
-    console.log('✅ Payment Intent Succeeded Event Triggered')
-    const paymentIntent = event.data.object
+    console.log('✅ Payment Intent Succeeded Event Triggered');
+    const paymentIntent = event.data.object;
 
     // ✅ Extract User & Cart Data
-    const userId = paymentIntent.metadata?.userId
-    const cartSummary = paymentIntent.metadata?.cartSummary?.split(', ') || []
-    const userEmail = paymentIntent.metadata?.userEmail || 'No email provided'
+    const userId = paymentIntent.metadata?.userId;
+    const cartSummary = paymentIntent.metadata?.cartSummary?.split(', ') || [];
+    const userEmail = paymentIntent.metadata?.userEmail || 'No email provided';
 
-    // ✅ Ensure `purchasedItems` Array Exists Before Using It
-    let purchasedItems = [];
-
-    cartSummary.forEach((item) => {
-      const totalSessions = sessionMapping[item] || 0;
-      if (totalSessions > 0) {
-        purchasedItems.push({
-          name: item,
-          sessionCount: totalSessions,
-          remainingSessions: totalSessions,
-          bookingLink: calendlyMapping[item] || null, // ✅ Ensure bookingLink is assigned
-        });
-      }
-    });
-
-    console.log('🔹 User ID:', userId)
-    console.log('🛒 Purchased Items:', cartSummary)
+    console.log('🔹 User ID:', userId);
+    console.log('🛒 Purchased Items:', cartSummary);
 
     if (!userId || cartSummary.length === 0) {
-      console.warn('⚠️ Missing user ID or cart summary. Skipping update.')
-      return res.status(400).json({ error: 'Invalid payment data' })
+      console.warn('⚠️ Missing user ID or cart summary. Skipping update.');
+      return res.status(400).json({ error: 'Invalid payment data' });
     }
 
     try {
-      // ✅ Update User's Purchased Classes
-      const updatedUser = await Register.findByIdAndUpdate(
-        userId,
-        {
-          $push: {
-            purchasedClasses: { $each: purchasedItems }
-          }
-        },
-        { new: true },
-      )
+      // ✅ Fetch user first to check for existing purchases
+      const user = await Register.findById(userId);
 
-      if (!updatedUser) {
-        console.error('❌ Error: User not found in database!')
-        return res.status(404).json({ error: 'User not found' })
+      if (!user) {
+        console.error('❌ Error: User not found in database!');
+        return res.status(404).json({ error: 'User not found' });
       }
 
-      // ✅ Fetch Active Coupons
-      const activeCoupons = await getActiveCoupons()
-      console.log('🎟 Active Coupons from Stripe:', activeCoupons)
+      // ✅ Track existing purchased classes to prevent duplicates
+      const existingClasses = new Set(user.purchasedClasses.map(cls => cls.name.toLowerCase().trim()));
 
-      // ✅ Match Coupons Based on Course Name
+      // ✅ Filter new purchases to avoid duplicate entries
+      const purchasedItems = cartSummary
+        .filter(item => !existingClasses.has(item.toLowerCase().trim())) // ✅ Prevent duplicates
+        .map(item => ({
+          name: item,
+          sessionCount: sessionMapping[item] || 0,
+          remainingSessions: sessionMapping[item] || 0,
+          bookingLink: calendlyMapping[item] || null,
+          status: "Active",
+        }));
+
+      if (purchasedItems.length > 0) {
+        await Register.findByIdAndUpdate(userId, {
+          $push: { purchasedClasses: { $each: purchasedItems } }
+        }, { new: true });
+      } else {
+        console.log("⚠️ No new purchased classes to add.");
+      }
+
+      // ✅ Continue with Zoom links, Calendly, Coupons, and Emails (No changes needed below)
+      const activeCoupons = await getActiveCoupons();
+      console.log('🎟 Active Coupons from Stripe:', activeCoupons);
+
       let userCoupons = activeCoupons.filter((coupon) => {
         return cartSummary.some((item) => {
-          return item.toLowerCase().includes(coupon.code.toLowerCase())
-        })
-      })
+          return item.toLowerCase().includes(coupon.code.toLowerCase());
+        });
+      });
 
-      console.log('🛒 Purchased Items from Metadata:', cartSummary)
+      console.log('🛒 Purchased Items from Metadata:', cartSummary);
 
-      // ✅ Fetch Zoom Links
-      let zoomLinks = []
+      let zoomLinks = [];
       if (['Learn', 'Achieve', 'Excel'].some((course) => cartSummary.includes(course))) {
-        zoomLinks = zoomCourseMapping
+        zoomLinks = zoomCourseMapping;
       }
 
-      // ✅ **Check if User Purchased "Common Core for Parents" Course**
       const hasCommonCore = cartSummary.some(
-        (item) => item.toLowerCase() === 'common core for parents',
-      )
+        (item) => item.toLowerCase() === 'common core for parents'
+      );
       if (hasCommonCore) {
-        zoomLinks.push(COMMONCORE_ZOOM_LINK) // ✅ Add the specific Common Core Zoom link
+        zoomLinks.push(COMMONCORE_ZOOM_LINK);
       }
 
-      // ✅ **Fetch Calendly Booking Links**
-      // ✅ Fetch Calendly Booking Links
-      let calendlyLinks = []
+      let calendlyLinks = [];
       cartSummary.forEach((item) => {
-        const formattedItemName = item.trim().toLowerCase() // 🔹 Normalize Item Name
-
+        const formattedItemName = item.trim().toLowerCase();
         Object.keys(calendlyMapping).forEach((calendlyKey) => {
           if (formattedItemName === calendlyKey.toLowerCase().trim()) {
             calendlyLinks.push({
-              name: item, // ✅ Original Item Name
-              link: calendlyMapping[calendlyKey], // ✅ Get Correct Calendly Link
-            })
+              name: item,
+              link: calendlyMapping[calendlyKey],
+            });
           }
-        })
-      })
+        });
+      });
 
-      // ✅ Apply Discount Coupons Based on Course Name (Same Logic as `addPurchasedClass`)
-      let appliedCoupons = []
+      let appliedCoupons = [];
       cartSummary.forEach((item) => {
         let matchedCoupon = activeCoupons.find((coupon) => {
-          if (item === 'Learn' && coupon.percent_off === 10) return true
-          if (item === 'Achieve' && coupon.percent_off === 30) return true
-          if (item === 'Excel' && coupon.percent_off === 20) return true
-          return false
-        })
+          if (item === 'Learn' && coupon.percent_off === 10) return true;
+          if (item === 'Achieve' && coupon.percent_off === 30) return true;
+          if (item === 'Excel' && coupon.percent_off === 20) return true;
+          return false;
+        });
 
         if (matchedCoupon && matchedCoupon.code) {
           appliedCoupons.push({
             code: matchedCoupon.code,
             percent_off: matchedCoupon.percent_off,
             expires: matchedCoupon.expires,
-          })
+          });
         }
-      })
+      });
 
-      // ✅ Save Coupons in User's Database
       if (appliedCoupons.length > 0) {
-        appliedCoupons = appliedCoupons.filter((coupon) => coupon.code && coupon.code.trim() !== '')
+        appliedCoupons = appliedCoupons.filter((coupon) => coupon.code && coupon.code.trim() !== '');
         if (appliedCoupons.length > 0) {
           await Register.findByIdAndUpdate(userId, {
             $push: { coupons: { $each: appliedCoupons } },
-          })
+          });
         }
       }
 
-      // ✅ If no coupons matched, add a warning log
-      if (appliedCoupons.length === 0) {
-        console.warn('⚠️ No matching coupons found for the purchased items.')
-      }
-
-      // ✅ Save Calendly Links in Database
       if (calendlyLinks.length > 0) {
         await Register.findByIdAndUpdate(userId, {
           $push: { calendlyBookings: { $each: calendlyLinks } },
-        })
+        });
       }
-      console.log('🛒 Purchased Items from Metadata:', cartSummary)
-      console.log('📅 Available Calendly Links:', Object.keys(calendlyMapping))
 
-      console.log('📧 Sending Email with Zoom Links & Calendly Links:', zoomLinks, calendlyLinks)
-      console.log('🎟 Sending Email with Coupons:', appliedCoupons)
+      console.log('🛒 Purchased Items from Metadata:', cartSummary);
+      console.log('📅 Available Calendly Links:', Object.keys(calendlyMapping));
 
-      const emailHtml = generateEmailHtml(updatedUser, zoomLinks, appliedCoupons, calendlyLinks)
+      console.log('📧 Sending Email with Zoom Links & Calendly Links:', zoomLinks, calendlyLinks);
+      console.log('🎟 Sending Email with Coupons:', appliedCoupons);
 
-      await sendEmail(userEmail, '📚 Your Rockstar Math Purchase Details', '', emailHtml)
+      const emailHtml = generateEmailHtml(user, zoomLinks, appliedCoupons, calendlyLinks);
 
-      console.log('✅ Purchase confirmation email sent successfully!')
-      return res.status(200).json({ message: 'Purchase updated & all emails sent!' })
+      await sendEmail(userEmail, '📚 Your Rockstar Math Purchase Details', '', emailHtml);
+
+      console.log('✅ Purchase confirmation email sent successfully!');
+      return res.status(200).json({ message: 'Purchase updated & all emails sent!' });
+
     } catch (error) {
-      console.error('❌ Error processing purchase:', error)
-      return res.status(500).json({ error: 'Error updating purchased classes' })
+      console.error('❌ Error processing purchase:', error);
+      return res.status(500).json({ error: 'Error updating purchased classes' });
     }
   }
 
-  // ✅ If event is not `payment_intent.succeeded`, send 200 response
-  res.sendStatus(200)
-})
+  res.sendStatus(200);
+});
+
 
 // ✅ Function to Generate Email HTML
 function generateEmailHtml(user, zoomLinks, userCoupons, calendlyLinks) {
