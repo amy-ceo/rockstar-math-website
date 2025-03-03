@@ -250,7 +250,6 @@ router.post('/create-payment-intent', async (req, res) => {
     }
 
     // ✅ Fix: Optimize metadata to avoid exceeding the 500-character limit
-    const cartSummary = cartItems.map((item) => item.name).join(', ') // 🔹 Only store names, not full objects
     const metadata = {
       userId: String(userId),
       orderId: String(orderId),
