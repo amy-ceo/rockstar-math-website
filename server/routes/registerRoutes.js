@@ -13,8 +13,7 @@ router.get("/user/:userId/remaining-sessions", getRemainingSession);
 router.post('/cancel-booking', cancelSession);
 router.post('/reschedule-booking', rescheduleBooking);
 router.post("/check-booking-limit", checkBookingLimit); // ✅ New Route to Check Before Booking
-router.post("/proxy-calendly", proxyCalendly);
-
+router.get("/proxy-calendly", proxyCalendly);
 router.post("/check-registration", checkUserRegistration);
 router.post('/archive-class', archiveClass); // ✅ Archive Class
 router.get('/:userId/archived-classes', getArchivedClasses); // ✅ Fetch Archived Classes
