@@ -54,15 +54,6 @@ exports.calendlyWebhook = async (req, res) => {
   
       console.log('👤 User Found:', user);
   
-      // ✅ Debugging: Check purchased classes
-      console.log("🛒 User's Purchased Classes:", user.purchasedClasses);
-  
-      // ✅ Ensure user has purchased classes
-      if (!user.purchasedClasses || user.purchasedClasses.length === 0) {
-        console.warn(`⚠️ User ${inviteeEmail} has no purchased classes.`);
-        return res.status(400).json({ error: 'User has not purchased any class.' });
-      }
-  
       // ✅ Normalize URLs for comparison
       const normalizeUrl = (url) => url?.split('?')[0].trim().toLowerCase();
   
@@ -74,19 +65,19 @@ exports.calendlyWebhook = async (req, res) => {
         return normalizeUrl(cls.bookingLink) === normalizedEventUri;
       });
   
-      // ✅ If no exact match is found, update the first available booking link
+      // ✅ If no match, update the booking link and proceed with booking
       if (!purchasedClass) {
         console.warn(`⚠️ No valid purchased class found for user: ${inviteeEmail}`);
         
-        // ✅ Auto-update the first purchased class with this event URI
         if (user.purchasedClasses.length > 0) {
+          // ✅ Update the first available purchased class with the Calendly event URI
           user.purchasedClasses[0].bookingLink = normalizedEventUri;
+          user.purchasedClasses[0].description = user.purchasedClasses[0].description || "Calendly Booking";
           user.markModified('purchasedClasses'); // Ensure Mongoose detects the change
           await user.save();
           console.log(`🔄 Updated booking link to: ${normalizedEventUri}`);
-          
-          // ✅ Assign the updated class
-          purchasedClass = user.purchasedClasses[0];
+  
+          purchasedClass = user.purchasedClasses[0]; // Now proceed with the booking
         } else {
           return res.status(400).json({ error: "No valid purchased class for this booking." });
         }
