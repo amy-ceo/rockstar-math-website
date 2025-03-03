@@ -334,7 +334,7 @@ const CheckoutPage = () => {
                 name: item.name,
                 description: item.description || "No description available",
                 price: String(item.price),
-                quantity: item.quantity || 1, 
+                quantity: item.quantity || 1,
               })),
             },
           }),
@@ -385,19 +385,28 @@ const CheckoutPage = () => {
         localStorage.setItem("user", JSON.stringify(updatedUser));
       }
   
-      // ✅ **Fix: Ensure Cart is Cleared Properly Before Redirect**
+      // ✅ **Step 1: Clear LocalStorage & State**
       console.log("🛒 Clearing Cart after Successful Payment...");
-      localStorage.removeItem("cartItems"); // ✅ Remove from localStorage
-      await setCartItems([]); // ✅ Ensure state updates before redirection
-      window.dispatchEvent(new Event("storage")); // ✅ Trigger update in all tabs
+      localStorage.removeItem("cartItems"); // ✅ Remove from LocalStorage
+      setCartItems([]); // ✅ Clear React State
+      window.dispatchEvent(new Event("storage")); // ✅ Trigger event for all open tabs
   
-      toast.success("🎉 Payment Successful! Redirecting...");
+      // ✅ **Step 2: Wait Until Cart is Confirmed Empty**
+      await new Promise((resolve) => setTimeout(resolve, 500)); // Wait 500ms
   
-      // ✅ **Ensure cart is empty before redirecting**
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      console.log("🔄 Verifying Cart is Empty...");
+      if (cartItems.length === 0 && !localStorage.getItem("cartItems")) {
+        toast.success("🎉 Payment Successful! Redirecting...");
   
-      // ✅ **Redirect After Cart is Cleared**
-      navigate("/dashboard"); // ✅ Using navigate instead of window.location.href
+        // ✅ **Step 3: Redirect After Confirmation**
+        setTimeout(() => {
+          navigate("/dashboard"); // ✅ Using navigate for smoother transition
+        }, 500);
+      } else {
+        console.warn("❌ Cart Not Empty - Retry Clearing...");
+        setCartItems([]); // Force another update
+        localStorage.removeItem("cartItems"); // Ensure LocalStorage is cleared
+      }
     } catch (error) {
       console.error("❌ Error in Payment Process:", error);
       toast.error(error.message || "Payment processing error.");
