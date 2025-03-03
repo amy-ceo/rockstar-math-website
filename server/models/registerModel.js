@@ -25,9 +25,9 @@ const bookedSessionSchema = new mongoose.Schema({
   // ✅ Event Status
   status: {
     type: String,
-    enum: ['Booked', 'Completed', 'Cancelled', 'Active', 'Pushed'],
+    enum: ['Booked', 'Completed', 'Cancelled', 'Active', 'Pushed', 'Rescheduled'], // ✅ Added "Rescheduled"
     default: 'Booked',
-  }, // ✅ Booking Status
+},
 
   createdAt: { type: Date, default: Date.now }, // ✅ When Booking Was Stored
   updatedAt: { type: Date, required: false }, // ✅ When Last Updated

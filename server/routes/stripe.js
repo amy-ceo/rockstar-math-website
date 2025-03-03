@@ -549,15 +549,37 @@ function generateEmailHtml(user, zoomLinks, userCoupons, calendlyLinks) {
     });
   }
   if (calendlyLinks.length > 0) {
-    // Replace direct Calendly link with proxy link
-    detailsHtml += `<h3>📅 Your Scheduled Calendly Sessions:</h3><ul>`;
+    // ✅ Add structured heading
+    detailsHtml += `<h3>📅 Your Scheduled Calendly Sessions:</h3>
+    <p>Thank you for purchasing <b>${productName}</b>! Below is your registration link and important instructions on how to book your sessions:</p>
+    
+    <ul>`;
+
     calendlyLinks.forEach((session) => {
-      // Create the proxy link with user ID and session name parameters
-      const proxyLink = `${proxyBaseUrl}?userId=${user._id}&session=${encodeURIComponent(session.name)}`;
-      detailsHtml += `<li>📚 <b>${session.name}</b> – <a href="${proxyLink}" target="_blank">Book Now</a></li>`;
+        // ✅ Create the proxy link with user ID and session name parameters
+        const proxyLink = `${proxyBaseUrl}?userId=${user._id}&session=${encodeURIComponent(session.name)}`;
+
+        detailsHtml += `<li>
+            📚 <b>${session.name}</b> – Click the link below <b>${session.quantity}</b> times to book all of your sessions.
+            <br/>
+            <a href="${proxyLink}" target="_blank"><b>Book Now</b></a>
+        </li>`;
     });
-    detailsHtml += `</ul>`;
-  }
+
+    detailsHtml += `</ul>
+
+    <p>📌 Once you have booked all your sessions, head over to your <b>RockstarMath Dashboard</b> where you can:</p>
+    <ul>
+        <li>📅 View all your scheduled sessions</li>
+        <li>✏️ Reschedule sessions if needed</li>
+        <li>❌ Cancel any session</li>
+        <li>🛒 Purchase additional sessions</li>
+    </ul>
+
+    <p>🚀 Start your learning journey now!</p>
+    <p>Best Regards, <br/> Rockstar Math Team</p>`;
+}
+
   detailsHtml += `</div>`;
   return detailsHtml;
 }
