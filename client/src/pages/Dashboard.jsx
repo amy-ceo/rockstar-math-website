@@ -89,17 +89,16 @@ const Dashboard = () => {
     const fetchRemainingSessions = async () => {
       try {
         const response = await fetch(
-          `https://backend-production-cbe2.up.railway.app/api/user/${users._id}/remaining-sessions`
-        );
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.message || "Failed to fetch remaining sessions.");
-        setRemainingSessions(data.remainingSessions || []);
+          `https://backend-production-cbe2.up.railway.app/api/user/${users._id}/remaining-sessions`,
+        )
+        const data = await response.json()
+        if (!response.ok) throw new Error(data.message || 'Failed to fetch remaining sessions.')
+        setRemainingSessions(data.remainingSessions || [])
       } catch (error) {
-        console.error("❌ Error fetching remaining sessions:", error);
-        setRemainingSessions([]);
+        console.error('❌ Error fetching remaining sessions:', error)
+        setRemainingSessions([])
       }
-    };
-    
+    }
 
     // ✅ Run all API calls in parallel
     Promise.allSettled([
@@ -235,51 +234,65 @@ const Dashboard = () => {
             </section>
           )}
 
-          {/* ✅ Display Calendly Bookings with Cancel & Reschedule Buttons */}
+          {/* ✅ Professional Redesigned Display of Calendly Bookings */}
           {calendlyBookings.length > 0 && (
-            <section className="mt-6 p-4 bg-white shadow-md rounded-lg">
-              <h3 className="text-lg font-bold mb-2">📅 Your Scheduled Calendly Bookings</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <section className="mt-6 p-6 bg-white shadow-lg rounded-lg">
+              <h3 className="text-2xl font-bold mb-4 text-gray-800">
+                📅 Your Scheduled Appointments
+              </h3>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                 {calendlyBookings.map((booking, index) => (
                   <div
                     key={index}
-                    className="p-4 bg-white rounded-lg shadow-md border border-gray-300"
+                    className="p-5 bg-white rounded-xl shadow-lg border border-gray-200 transition transform hover:scale-105"
                   >
-                    <h4 className="text-blue-600 font-semibold">
+                    {/* Event Name */}
+                    <h4 className="text-xl font-semibold text-blue-700 mb-2">
                       {booking.eventName || 'No Name'}
                     </h4>
-                    <p>
-                      <strong>📅 Start Time:</strong> {new Date(booking.startTime).toLocaleString()}
+
+                    {/* Start Time */}
+                    <p className="text-gray-600">
+                      <strong className="text-gray-800">📅 Start Time:</strong>{' '}
+                      {new Date(booking.startTime).toLocaleString()}
                     </p>
-                    <p>
-                      <strong>Status:</strong> {booking.status}
+
+                    {/* Status */}
+                    <p className="mt-1 text-gray-600">
+                      <strong className="text-gray-800">Status:</strong> {booking.status}
                     </p>
+
+                    {/* View on Calendly */}
                     <a
                       href={booking.calendlyEventUri}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-500 underline"
+                      className="inline-block mt-2 text-blue-500 font-medium hover:underline"
                     >
-                      📍 View on x
+                      📍 View on Calendly
                     </a>
 
-                    {/* ✅ Cancel Button */}
-                    <button
-                      className="mt-2 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-700"
-                      onClick={() => confirmCancel(booking.calendlyEventUri)}
-                    >
-                      ❌ Cancel
-                    </button>
-
-                    {/* ✅ Reschedule Button */}
-                    {!booking.rescheduled && (
+                    {/* Action Buttons */}
+                    <div className="mt-4 flex gap-3">
+                      {/* Cancel Button */}
                       <button
-                        className="mt-2 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-700"
-                        onClick={() => openReschedulePopup(booking.calendlyEventUri)}
+                        className="flex-1 bg-red-500 text-white font-medium px-4 py-2 rounded-lg transition hover:bg-red-600"
+                        onClick={() => confirmCancel(booking.calendlyEventUri)}
                       >
-                        🔄 Reschedule
+                        ❌ Cancel
                       </button>
-                    )}
+
+                      {/* Reschedule Button */}
+                      {!booking.rescheduled && (
+                        <button
+                          className="flex-1 bg-green-500 text-white font-medium px-4 py-2 rounded-lg transition hover:bg-green-600"
+                          onClick={() => openReschedulePopup(booking.calendlyEventUri)}
+                        >
+                          🔄 Reschedule
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

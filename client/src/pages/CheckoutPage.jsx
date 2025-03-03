@@ -118,27 +118,27 @@ const CheckoutPage = () => {
   }
 
   const handlePayPalSuccess = async (data) => {
-    const user = JSON.parse(localStorage.getItem('user'))
-
+    const user = JSON.parse(localStorage.getItem("user"));
+  
     if (!user || !user._id) {
-      toast.error('User authentication required.')
-      throw new Error('User authentication required.')
+      toast.error("User authentication required.");
+      throw new Error("User authentication required.");
     }
-
+  
     try {
-      console.log('📡 Capturing PayPal Order...')
+      console.log("📡 Capturing PayPal Order...");
       const response = await fetch(
-        'https://backend-production-cbe2.up.railway.app/api/paypal/capture-order',
+        "https://backend-production-cbe2.up.railway.app/api/paypal/capture-order",
         {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             orderId: data.orderID,
             user: {
               _id: user._id,
-              username: user.username || 'Unknown User',
-              billingEmail: user.billingEmail || 'No email',
-              phone: user.phone || 'No phone',
+              username: user.username || "Unknown User",
+              billingEmail: user.billingEmail || "No email",
+              phone: user.phone || "No phone",
               cartItems: cartItems.map((item) => ({
                 name: item.name,
                 price: Number(item.price) || 0,
@@ -146,71 +146,69 @@ const CheckoutPage = () => {
               })),
             },
           }),
-        },
-      )
-
-      const result = await response.json()
-      console.log('📡 PayPal Capture Response:', result)
-
+        }
+      );
+  
+      const result = await response.json();
+      console.log("📡 PayPal Capture Response:", result);
+  
       if (!response.ok) {
-        throw new Error(result.error || 'PayPal capture failed.')
+        throw new Error(result.error || "PayPal capture failed.");
       }
-
-      // ✅ Step 2: Call `addPurchasedClass` API to update user purchases
-      console.log('📡 Calling addPurchasedClass API...')
+  
+      console.log("📡 Calling addPurchasedClass API...");
       const purchaseResponse = await fetch(
-        'https://backend-production-cbe2.up.railway.app/api/add-purchased-class',
+        "https://backend-production-cbe2.up.railway.app/api/add-purchased-class",
         {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             userId: user._id,
             purchasedItems: cartItems.map((item) => ({
               name: item.name,
-              description: item.description || 'No description available',
+              description: item.description || "No description available",
             })),
-            userEmail: user.billingEmail || 'No email',
+            userEmail: user.billingEmail || "No email",
           }),
-        },
-      )
-
-      const purchaseResult = await purchaseResponse.json()
-      console.log('✅ Purchased Classes API Response:', purchaseResult)
-
+        }
+      );
+  
+      const purchaseResult = await purchaseResponse.json();
+      console.log("✅ Purchased Classes API Response:", purchaseResult);
+  
       if (!purchaseResponse.ok) {
-        console.warn('⚠️ Issue updating purchased classes:', purchaseResult.message)
+        console.warn("⚠️ Issue updating purchased classes:", purchaseResult.message);
       }
-
-      // ✅ Step 3: Fetch Updated User Data
-      console.log('📡 Fetching updated user data...')
+  
+      console.log("📡 Fetching updated user data...");
       const userResponse = await fetch(
-        `https://backend-production-cbe2.up.railway.app/api/user/${user._id}`,
-      )
-
+        `https://backend-production-cbe2.up.railway.app/api/user/${user._id}`
+      );
+  
       if (!userResponse.ok) {
-        console.warn('⚠️ Failed to fetch updated user data.')
+        console.warn("⚠️ Failed to fetch updated user data.");
       } else {
-        const updatedUser = await userResponse.json()
-        console.log('✅ Updated User Data:', updatedUser)
-
-        // ✅ Step 4: Update Local Storage with New Purchased Classes
-        localStorage.setItem('user', JSON.stringify(updatedUser))
+        const updatedUser = await userResponse.json();
+        console.log("✅ Updated User Data:", updatedUser);
+        localStorage.setItem("user", JSON.stringify(updatedUser));
       }
-
-      // ✅ **Clear Cart Properly**
-      localStorage.removeItem('cartItems')
-      setCartItems([])
-      window.dispatchEvent(new Event('storage'))
-
-      toast.success('🎉 Payment Successful! Redirecting...')
+  
+      // ✅ **Clear Cart After Successful PayPal Payment**
+      console.log("🛒 Clearing Cart after Successful Payment...");
+      localStorage.removeItem("cartItems"); // ✅ Remove from localStorage
+      setCartItems([]); // ✅ Update State
+      window.dispatchEvent(new Event("storage")); // ✅ Trigger update in all tabs
+  
+      toast.success("🎉 Payment Successful! Redirecting...");
       setTimeout(() => {
-        window.location.href = '/dashboard'
-      }, 1000)
+        window.location.href = "/dashboard";
+      }, 1000);
     } catch (error) {
-      console.error('❌ Error in Payment Process:', error)
-      toast.error(error.message || 'Payment processing error.')
+      console.error("❌ Error in Payment Process:", error);
+      toast.error(error.message || "Payment processing error.");
     }
-  }
+  };
+  
 
   // ✅ Function to Apply Coupon
   const applyCoupon = () => {
@@ -336,7 +334,7 @@ const CheckoutPage = () => {
                 name: item.name,
                 description: item.description || "No description available",
                 price: String(item.price),
-                quantity: item.quantity || 1, // ✅ Ensure quantity is included
+                quantity: item.quantity || 1, 
               })),
             },
           }),
@@ -350,7 +348,6 @@ const CheckoutPage = () => {
         throw new Error(result.error || "Stripe payment capture failed.");
       }
   
-      // ✅ Call `addPurchasedClass` API to update user purchases
       console.log("📡 Calling addPurchasedClass API...");
       const purchaseResponse = await fetch(
         "https://backend-production-cbe2.up.railway.app/api/add-purchased-class",
@@ -375,7 +372,6 @@ const CheckoutPage = () => {
         console.warn("⚠️ Issue updating purchased classes:", purchaseResult.message);
       }
   
-      // ✅ Fetch Updated User Data
       console.log("📡 Fetching updated user data...");
       const userResponse = await fetch(
         `https://backend-production-cbe2.up.railway.app/api/user/${user._id}`
@@ -386,16 +382,14 @@ const CheckoutPage = () => {
       } else {
         const updatedUser = await userResponse.json();
         console.log("✅ Updated User Data:", updatedUser);
-  
-        // ✅ Update Local Storage with New Purchased Classes
         localStorage.setItem("user", JSON.stringify(updatedUser));
       }
   
-        // ✅ **Clear Cart Properly (Fix: Same as PayPal)**
-    console.log("🛒 Clearing Cart after Successful Payment...");
-    localStorage.removeItem("cartItems"); // ✅ Remove from localStorage
-    setCartItems([]); // ✅ Update State
-    window.dispatchEvent(new Event("storage")); // ✅ Trigger update in all tabs
+      // ✅ **Clear Cart After Successful Payment**
+      console.log("🛒 Clearing Cart after Successful Payment...");
+      localStorage.removeItem("cartItems"); // ✅ Remove from localStorage
+      setCartItems([]); // ✅ Update State
+      window.dispatchEvent(new Event("storage")); // ✅ Trigger update in all tabs
   
       toast.success("🎉 Payment Successful! Redirecting...");
       setTimeout(() => {
@@ -406,6 +400,7 @@ const CheckoutPage = () => {
       toast.error(error.message || "Payment processing error.");
     }
   };
+  
   
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-32">
