@@ -55,22 +55,25 @@ exports.calendlyWebhook = async (req, res) => {
         return res.status(400).json({ error: "User has not purchased any class." });
       }
   
-      // ✅ Find Matching Purchased Class (Based on Booking Link)
       let purchasedClass = user.purchasedClasses.find((cls) => {
-        return cls.bookingLink.trim() === eventUri.trim();
+        return (cls.bookingLink && eventUri) && (cls.bookingLink.trim() === eventUri.trim());
       });
-  
-      // ✅ If exact match fails, try partial match (debugging)
+      
+      // ✅ If exact match fails, try partial match safely
       if (!purchasedClass) {
-        purchasedClass = user.purchasedClasses.find((cls) => eventUri.includes(cls.bookingLink));
+        purchasedClass = user.purchasedClasses.find((cls) => {
+          return cls.bookingLink && eventUri && eventUri.includes(cls.bookingLink);
+        });
       }
-  
+      
+      // 🚀 Debugging logs
       if (!purchasedClass) {
         console.warn(`⚠️ No valid purchased class found for user: ${inviteeEmail}`);
         console.log("🔍 Debugging - Received Event URI:", eventUri);
-        console.log("🔍 Debugging - User's Booking Links:", user.purchasedClasses.map(cls => cls.bookingLink));
+        console.log("🔍 Debugging - User's Booking Links:", user.purchasedClasses.map(cls => cls.bookingLink || "NULL"));
         return res.status(400).json({ error: "No valid purchased class for this booking." });
       }
+      
   
       // ✅ Check if User Has Remaining Sessions
       if (purchasedClass.remainingSessions <= 0) {
