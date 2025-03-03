@@ -67,17 +67,24 @@ exports.calendlyWebhook = async (req, res) => {
       console.log("🔍 Debugging - Received Event URI:", eventUri);
       console.log("🔍 Debugging - User's Booking Links:", user.purchasedClasses.map(cls => cls.bookingLink || "NULL"));
   
-      // ✅ Extract the Base URL (Without Query Parameters)
+      // ✅ Extract the Base URL from Event URI and Booking Links
       const normalizeUrl = (url) => {
         if (!url) return null;
-        return url.split('?')[0].trim(); // ✅ Removes query parameters
+        return url.split('?')[0].trim().toLowerCase(); // ✅ Removes query parameters
       };
   
       const normalizedEventUri = normalizeUrl(eventUri);
       console.log("🔍 Normalized Event URI:", normalizedEventUri);
   
+      // ✅ Extract Only the Base Part of the Booking Link
+      const extractBaseCalendlyLink = (url) => {
+        if (!url) return null;
+        const parts = url.split('/');
+        return `https://calendly.com/${parts[3]}/${parts[4]}`; // ✅ Extracts "/rockstarmathtutoring/30-minute-session"
+      };
+  
       let purchasedClass = user.purchasedClasses.find((cls) => {
-        return normalizeUrl(cls.bookingLink) === normalizedEventUri;
+        return extractBaseCalendlyLink(cls.bookingLink) === extractBaseCalendlyLink(normalizedEventUri);
       });
   
       if (!purchasedClass) {
@@ -138,6 +145,7 @@ exports.calendlyWebhook = async (req, res) => {
       res.status(500).json({ error: 'Internal Server Error' });
     }
   };
+  
   
 exports.getCalendlyBookings = async (req, res) => {
   try {
