@@ -257,6 +257,7 @@ router.post('/create-payment-intent', async (req, res) => {
       userEmail: userEmail || 'no-email@example.com',
       cartSummary: cartItems.map((item) => item.name).join(', '), // ✅ Short summary only
       cartItemIds: JSON.stringify(cartItems.map((item) => item.id)), // ✅ Store only product IDs
+      bookingLinks: JSON.stringify(cartItems.map((item) => calendlyMapping[item.name] || null)), // ✅ Store Booking Links in Metadata
     }
 
     console.log('📡 Sending Payment Intent with Metadata:', metadata)
@@ -473,19 +474,20 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
     const cartSummary = paymentIntent.metadata?.cartSummary?.split(', ') || []
     const userEmail = paymentIntent.metadata?.userEmail || 'No email provided'
 
-      // ✅ Declare `purchasedItems` array before using it
-      let purchasedItems = [];
+    // ✅ Ensure `purchasedItems` Array Exists Before Using It
+    let purchasedItems = [];
+
     cartSummary.forEach((item) => {
-      const totalSessions = sessionMapping[item] || 0
+      const totalSessions = sessionMapping[item] || 0;
       if (totalSessions > 0) {
         purchasedItems.push({
           name: item,
           sessionCount: totalSessions,
-          remainingSessions: totalSessions, // ✅ Initially, remaining sessions = total sessions
-          bookingLink: calendlyMapping[item] || null,
-        })
+          remainingSessions: totalSessions,
+          bookingLink: calendlyMapping[item] || null, // ✅ Ensure bookingLink is assigned
+        });
       }
-    })
+    });
 
     console.log('🔹 User ID:', userId)
     console.log('🛒 Purchased Items:', cartSummary)
@@ -501,14 +503,8 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
         userId,
         {
           $push: {
-            purchasedClasses: {
-              $each: cartSummary.map((name) => ({
-                name: name.trim(),
-                description: 'Purchased via Stripe',
-                purchaseDate: new Date(),
-              })),
-            },
-          },
+            purchasedClasses: { $each: purchasedItems }
+          }
         },
         { new: true },
       )
