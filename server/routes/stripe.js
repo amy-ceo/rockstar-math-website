@@ -235,17 +235,22 @@ router.post('/capture-stripe-payment', async (req, res) => {
   try {
     const { paymentIntentId, user } = req.body;
     console.log('📡 Received Stripe Payment Capture Request:', { paymentIntentId, user });
+
     if (!user || !user._id || !Array.isArray(user.cartItems) || user.cartItems.length === 0) {
       console.error('❌ Missing required fields in Stripe Capture:', { paymentIntentId, user });
       return res.status(400).json({ error: 'Missing required fields or empty cart items' });
     }
+
     console.log('📡 Capturing Stripe Payment:', paymentIntentId);
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+
     if (!paymentIntent || paymentIntent.status !== 'succeeded') {
       console.error('❌ Payment Intent Failed or Incomplete:', paymentIntent.status);
       return res.status(400).json({ error: 'Payment not completed' });
     }
+
     console.log('✅ Stripe Payment Successful:', paymentIntentId);
+
     // ✅ Step 1: Save Payment in Database
     try {
       console.log('🔹 Saving Payment Record to DB...');
@@ -260,12 +265,14 @@ router.post('/capture-stripe-payment', async (req, res) => {
         paymentMethod: 'Stripe',
         cartItems: user.cartItems || [],
       });
+
       await newPayment.save();
       console.log('✅ Payment Record Saved in Database!');
     } catch (saveError) {
       console.error('❌ Error Saving Payment:', saveError);
       return res.status(500).json({ error: 'Database error while saving payment.' });
     }
+
     // ✅ Step 2: Call addPurchasedClass API
     try {
       console.log('📡 Calling addPurchasedClass API with Data:', {
@@ -276,6 +283,7 @@ router.post('/capture-stripe-payment', async (req, res) => {
         })),
         userEmail: user.billingEmail || 'No email',
       });
+
       const purchaseResponse = await fetch(
         'https://backend-production-cbe2.up.railway.app/api/add-purchased-class',
         {
@@ -291,21 +299,29 @@ router.post('/capture-stripe-payment', async (req, res) => {
           }),
         }
       );
+
       const purchaseResult = await purchaseResponse.json();
       console.log('✅ Purchased Classes API Response:', purchaseResult);
+
       if (!purchaseResponse.ok) {
         console.warn('⚠️ Issue updating purchased classes:', purchaseResult.message);
       }
     } catch (purchaseError) {
       console.error('❌ Error calling addPurchasedClass API:', purchaseError);
     }
-    // ✅ Step 3: Send Response to Frontend
-    res.json({ message: 'Payment captured & records updated successfully.', clearCart: true });
+
+    // ✅ Step 3: Send Clear Cart Signal to Frontend
+    res.json({
+      message: 'Payment captured & records updated successfully.',
+      clearCart: true, // 🔹 Explicitly tell frontend to clear the cart
+    });
+
   } catch (error) {
     console.error('❌ Error Capturing Stripe Payment:', error);
     res.status(500).json({ error: 'Internal Server Error', details: error.message || error });
   }
 });
+
 
 router.get('/payment-details/:paymentIntentId', async (req, res) => {
   try {

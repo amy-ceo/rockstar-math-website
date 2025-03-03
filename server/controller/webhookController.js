@@ -85,6 +85,11 @@ exports.calendlyWebhook = async (req, res) => {
         return res.status(403).json({ error: 'You have no remaining sessions left.' });
       }
   
+      // ✅ Ensure `bookedSessions` is an array before pushing
+      if (!Array.isArray(user.bookedSessions)) {
+        user.bookedSessions = [];
+      }
+  
       // ✅ Check if Event Already Exists in User's bookedSessions (Avoid Duplicates)
       const eventAlreadyExists = user.bookedSessions.some(
         (session) => session.calendlyEventUri === eventUri
@@ -117,24 +122,31 @@ exports.calendlyWebhook = async (req, res) => {
         }
       }
   
-      // ✅ Create New Booking Object (Following User's `bookedSessions` Schema)
+      // ✅ Create New Booking Object
       const newBooking = {
         eventName,
         calendlyEventUri: eventUri,
         startTime,
         endTime,
         timezone,
-        status: 'Booked',
+        status: "Booked",
         createdAt: new Date(),
       };
   
       console.log('📢 Storing New Booking:', JSON.stringify(newBooking, null, 2));
   
-      // ✅ Update User's bookedSessions
+      // ✅ Push New Booking into `bookedSessions`
       user.bookedSessions.push(newBooking);
   
-      // ✅ Save User with the updated session and class data
+      // ✅ Debug Logs Before Saving
+      console.log("🔄 Saving User Booking Data...", JSON.stringify(user.bookedSessions, null, 2));
+  
+      // ✅ Force Mongoose to Detect Changes
+      user.markModified("bookedSessions");
+  
+      // ✅ Save Updated User Data
       await user.save();
+      console.log("✅ Booking Successfully Saved!");
   
       console.log(`✅ Successfully Stored Calendly Booking for ${inviteeEmail}`);
       console.log(`✅ Session Booked: Remaining ${purchasedClass.remainingSessions} sessions.`);
@@ -145,6 +157,8 @@ exports.calendlyWebhook = async (req, res) => {
       res.status(500).json({ error: 'Internal Server Error' });
     }
   };
+  
+  
   
 
 exports.getCalendlyBookings = async (req, res) => {
