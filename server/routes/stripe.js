@@ -61,7 +61,7 @@ const sessionMapping = {
   '8 x 30 minutes': 8,
 }
 
-const calendlyMapping = {
+const CALENDLY_LINKS = {
   '3 x 30': 'https://calendly.com/rockstarmathtutoring/30-minute-session',
   '5 - 30': 'https://calendly.com/rockstarmathtutoring/30-minute-session',
   '8 x 30 minutes': 'https://calendly.com/rockstarmathtutoring/30-minute-session',
@@ -473,8 +473,8 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
     const cartSummary = paymentIntent.metadata?.cartSummary?.split(', ') || []
     const userEmail = paymentIntent.metadata?.userEmail || 'No email provided'
 
-      // ✅ Declare `purchasedItems` array before using it
-    let purchasedItems = [];
+    // ✅ Declare `purchasedItems` array before using it
+    let purchasedItems = []
     cartSummary.forEach((item) => {
       const totalSessions = sessionMapping[item] || 0
       if (totalSessions > 0) {
@@ -547,6 +547,7 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
 
       // ✅ **Fetch Calendly Booking Links**
       // ✅ Fetch Calendly Booking Links
+      // ✅ Fetch Calendly Booking Links for Purchased Items
       let calendlyLinks = []
       cartSummary.forEach((item) => {
         const formattedItemName = item.trim().toLowerCase() // 🔹 Normalize Item Name
