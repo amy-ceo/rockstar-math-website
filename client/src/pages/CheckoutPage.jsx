@@ -385,18 +385,19 @@ const CheckoutPage = () => {
         localStorage.setItem("user", JSON.stringify(updatedUser));
       }
   
-      // ✅ **Clear Cart After Successful Payment**
+      // ✅ **Fix: Ensure Cart is Cleared Properly Before Redirect**
       console.log("🛒 Clearing Cart after Successful Payment...");
       localStorage.removeItem("cartItems"); // ✅ Remove from localStorage
-      setCartItems([]); // ✅ Update State
+      await setCartItems([]); // ✅ Ensure state updates before redirection
       window.dispatchEvent(new Event("storage")); // ✅ Trigger update in all tabs
   
       toast.success("🎉 Payment Successful! Redirecting...");
   
+      // ✅ **Ensure cart is empty before redirecting**
+      await new Promise((resolve) => setTimeout(resolve, 500));
+  
       // ✅ **Redirect After Cart is Cleared**
-      setTimeout(() => {
-        navigate("/dashboard"); // ✅ Using navigate instead of window.location.href
-      }, 1000);
+      navigate("/dashboard"); // ✅ Using navigate instead of window.location.href
     } catch (error) {
       console.error("❌ Error in Payment Process:", error);
       toast.error(error.message || "Payment processing error.");
