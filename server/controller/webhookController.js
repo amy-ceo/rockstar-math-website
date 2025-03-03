@@ -54,23 +54,29 @@ exports.calendlyWebhook = async (req, res) => {
 
     console.log('👤 User Found:', user)
 
-     // ✅ Find Matching Purchased Class (Based on Booking Link)
-     const purchasedClass = user.purchasedClasses.find(
-        (cls) => cls.bookingLink === payload.event.uri
-      );
-  
-      if (!purchasedClass) {
-        return res.status(400).json({ error: "No valid purchased class for this booking." });
-      }
-  
-      // ✅ Check if User Has Remaining Sessions
-      if (purchasedClass.remainingSessions <= 0) {
-        console.warn(`⚠️ User ${user.username} has no remaining sessions.`);
-        return res.status(403).json({ error: "You have no remaining sessions left." });
-      }
-  
-      // ✅ Deduct 1 Session
-      purchasedClass.remainingSessions -= 1;
+    // ✅ Find Matching Purchased Class (Based on Booking Link)
+    // ✅ Find Matching Purchased Class (Based on Booking Link)
+    const purchasedClass = user.purchasedClasses.find((cls) => cls.bookingLink === eventUri)
+
+    if (!purchasedClass) {
+      console.warn(`⚠️ No valid purchased class found for user: ${inviteeEmail}`)
+      return res.status(400).json({ error: 'No valid purchased class for this booking.' })
+    }
+
+    // ✅ Check if User Has Remaining Sessions
+    if (purchasedClass.remainingSessions <= 0) {
+      console.warn(`⚠️ User ${user.username} has no remaining sessions.`)
+      return res.status(403).json({ error: 'You have no remaining sessions left.' })
+    }
+
+    // ✅ Deduct 1 Session
+    purchasedClass.remainingSessions -= 1
+
+    // ✅ If Remaining Sessions = 0, Mark as Expired
+    if (purchasedClass.remainingSessions === 0) {
+      purchasedClass.status = 'Expired'
+    }
+
     // ✅ Check if Event Already Exists in User's bookedSessions (Avoid Duplicates)
     const eventAlreadyExists = user.bookedSessions.some(
       (session) => session.calendlyEventUri === eventUri,
@@ -99,8 +105,7 @@ exports.calendlyWebhook = async (req, res) => {
 
     await user.save()
     console.log(`✅ Successfully Stored Calendly Booking for ${inviteeEmail}`)
-    console.log(`✅ Session Booked: Remaining ${purchasedPlan.remainingSessions} sessions.`);
-
+    console.log(`✅ Session Booked: Remaining ${purchasedPlan.remainingSessions} sessions.`)
 
     res.status(200).json({ message: 'Booking stored successfully', updatedUser: user })
   } catch (error) {
