@@ -6,23 +6,32 @@ const purchasedClassSchema = new mongoose.Schema({
   name: { type: String, required: true }, // Product Name
   description: { type: String, required: true }, // Product Description
   purchaseDate: { type: Date, default: Date.now }, // Date of Purchase
-  sessionCount: { type: Number, required: true },  // ✅ Total Purchased
-  remainingSessions: { type: Number, required: true },  // ✅ Sessions Left
+  sessionCount: { type: Number, required: true }, // ✅ Total Purchased
+  remainingSessions: { type: Number, required: true }, // ✅ Sessions Left
   bookingLink: { type: String, default: null }, // ✅ Calendly Booking Link (For Services)
+  status: {
+    type: String,
+    enum: ['Active', 'Expired', 'Completed'],
+    default: 'Active', // ✅ Automatically expires when sessions = 0
+  },
 })
 
 const bookedSessionSchema = new mongoose.Schema({
   eventName: { type: String, required: true }, // ✅ Event Name
-  calendlyEventUri: { type: String, required: true, unique: true,sparse: true }, // ✅ Unique Event URI
+  calendlyEventUri: { type: String, required: true, unique: true, sparse: true }, // ✅ Unique Event URI
   startTime: { type: Date, required: true }, // ✅ Event Start Time
   endTime: { type: Date, required: false }, // ✅ Optional: End Time
   timezone: { type: String, required: false }, // ✅ Timezone (if available)
   // ✅ Event Status
-  status: { type: String, enum: ["Booked", "Completed", "Cancelled", "Active", "Pushed"], default: "Booked" }, // ✅ Booking Status
+  status: {
+    type: String,
+    enum: ['Booked', 'Completed', 'Cancelled', 'Active', 'Pushed'],
+    default: 'Booked',
+  }, // ✅ Booking Status
 
   createdAt: { type: Date, default: Date.now }, // ✅ When Booking Was Stored
-  updatedAt: { type: Date, required: false } // ✅ When Last Updated
-});
+  updatedAt: { type: Date, required: false }, // ✅ When Last Updated
+})
 
 // ✅ Coupon Schema Inside Register Model
 const couponSchema = new mongoose.Schema({
@@ -30,8 +39,7 @@ const couponSchema = new mongoose.Schema({
   percent_off: { type: Number, required: true },
   valid: { type: Boolean, default: true },
   assignedAt: { type: Date, default: Date.now },
-});
-
+})
 
 // ✅ Archived Classes Schema (Same as purchasedClasses)
 const archivedClassSchema = new mongoose.Schema({
@@ -95,6 +103,16 @@ const RegisterSchema = new mongoose.Schema(
   },
   { timestamps: true },
 )
+
+// ✅ Automatically Expire Classes When Sessions = 0
+RegisterSchema.pre('save', function (next) {
+  this.purchasedClasses.forEach((cls) => {
+    if (cls.remainingSessions <= 0) {
+      cls.status = 'Expired'
+    }
+  })
+  next()
+})
 
 // ✅ Password Hashing Before Saving
 RegisterSchema.pre('save', async function (next) {

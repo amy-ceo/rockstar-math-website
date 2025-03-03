@@ -522,7 +522,7 @@ exports.restoreClass = async (req, res) => {
 exports.getRemainingSession = async (req, res) => {
   try {
     const user = await Register.findById(req.params.userId);
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (!user) return res.status(404).json({ message: "User not found" });
 
     // ✅ Send only relevant session data
     const sessionData = user.purchasedClasses.map((item) => ({
@@ -532,10 +532,34 @@ exports.getRemainingSession = async (req, res) => {
 
     res.json({ remainingSessions: sessionData });
   } catch (error) {
-    console.error('❌ Error fetching remaining sessions:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error("❌ Error fetching remaining sessions:", error);
+    res.status(500).json({ message: "Server error" });
   }
-}
+};
+
+
+exports.checkBookingLimit = async (req, res) => {
+  try {
+    const { userId, calendlyEventUri } = req.body;
+
+    const user = await Register.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // ✅ Find Purchased Plan
+    const purchasedPlan = user.purchasedClasses.find((item) => item.bookingLink === calendlyEventUri);
+
+    if (!purchasedPlan || purchasedPlan.remainingSessions <= 0) {
+      return res.status(400).json({ error: "No remaining sessions available. Upgrade your plan." });
+    }
+
+    res.status(200).json({ message: "Booking Allowed", remainingSessions: purchasedPlan.remainingSessions });
+  } catch (error) {
+    console.error("❌ Error checking booking limit:", error);
+    res.status(500).json({ error: "Server Error" });
+  }
+};
 
 exports.cancelSession = async (req, res) => {
   try {

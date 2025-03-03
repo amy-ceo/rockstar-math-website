@@ -55,7 +55,13 @@ const COMMONCORE_ZOOM_LINK = {
   link: 'https://us06web.zoom.us/meeting/register/XsYhADVmQcK8BIIT3Sfbpyg#/registration',
 }
 
-const CALENDLY_LINKS = {
+const sessionMapping = {
+  '3 x 30': 3,
+  '5 - 30': 5,
+  '8 x 30 minutes': 8,
+}
+
+const calendlyMapping = {
   '3 x 30': 'https://calendly.com/rockstarmathtutoring/30-minute-session',
   '5 - 30': 'https://calendly.com/rockstarmathtutoring/30-minute-session',
   '8 x 30 minutes': 'https://calendly.com/rockstarmathtutoring/30-minute-session',
@@ -466,6 +472,17 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
     const userId = paymentIntent.metadata?.userId
     const cartSummary = paymentIntent.metadata?.cartSummary?.split(', ') || []
     const userEmail = paymentIntent.metadata?.userEmail || 'No email provided'
+    cartSummary.forEach((item) => {
+      const totalSessions = sessionMapping[item] || 0
+      if (totalSessions > 0) {
+        purchasedItems.push({
+          name: item,
+          sessionCount: totalSessions,
+          remainingSessions: totalSessions, // ✅ Initially, remaining sessions = total sessions
+          bookingLink: calendlyMapping[item] || null,
+        })
+      }
+    })
 
     console.log('🔹 User ID:', userId)
     console.log('🛒 Purchased Items:', cartSummary)
@@ -581,8 +598,8 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
           $push: { calendlyBookings: { $each: calendlyLinks } },
         })
       }
-      console.log('🛒 Purchased Items from Metadata:', cartSummary);
-console.log('📅 Available Calendly Links:', Object.keys(CALENDLY_LINKS));
+      console.log('🛒 Purchased Items from Metadata:', cartSummary)
+      console.log('📅 Available Calendly Links:', Object.keys(CALENDLY_LINKS))
 
       console.log('📧 Sending Email with Zoom Links & Calendly Links:', zoomLinks, calendlyLinks)
       console.log('🎟 Sending Email with Coupons:', appliedCoupons)

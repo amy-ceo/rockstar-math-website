@@ -1,5 +1,5 @@
 const express = require("express");
-const { registerUser,addPurchasedClass,getPurchasedClasses,getUserCoupons,archiveClass,cancelSession,getArchivedClasses,restoreClass,rescheduleBooking,getRemainingSession  } = require("../controller/registerController");
+const { registerUser,addPurchasedClass,getPurchasedClasses,getUserCoupons,archiveClass,checkBookingLimit,cancelSession,getArchivedClasses,restoreClass,rescheduleBooking,getRemainingSession  } = require("../controller/registerController");
 const { checkUserRegistration } = require("../controller/checkRegisterController");
 
 const router = express.Router();
@@ -12,6 +12,8 @@ router.get("/user-coupons/:userId", getUserCoupons);
 router.get("/user/:userId/remaining-sessions", getRemainingSession);
 router.post('/cancel-booking', cancelSession);
 router.post('/reschedule-booking', rescheduleBooking);
+router.post("/check-booking-limit", checkBookingLimit); // ✅ New Route to Check Before Booking
+
 router.post("/check-registration", checkUserRegistration);
 router.post('/archive-class', archiveClass); // ✅ Archive Class
 router.get('/:userId/archived-classes', getArchivedClasses); // ✅ Fetch Archived Classes

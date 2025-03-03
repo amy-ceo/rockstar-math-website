@@ -89,17 +89,17 @@ const Dashboard = () => {
     const fetchRemainingSessions = async () => {
       try {
         const response = await fetch(
-          `https://backend-production-cbe2.up.railway.app/api/user/${users._id}/remaining-sessions`,
-        )
-        const data = await response.json()
-        if (!response.ok) throw new Error(data.message || 'Failed to fetch remaining sessions.')
-        setRemainingSessions(data.remainingSessions || [])
+          `https://backend-production-cbe2.up.railway.app/api/user/${users._id}/remaining-sessions`
+        );
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || "Failed to fetch remaining sessions.");
+        setRemainingSessions(data.remainingSessions || []);
       } catch (error) {
-        console.error('❌ Error fetching remaining sessions:', error)
-        setRemainingSessions([])
+        console.error("❌ Error fetching remaining sessions:", error);
+        setRemainingSessions([]);
       }
-    }
-    // Fetch Zoom Meeting
+    };
+    
 
     // ✅ Run all API calls in parallel
     Promise.allSettled([
