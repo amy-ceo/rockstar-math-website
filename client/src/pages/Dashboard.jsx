@@ -4,6 +4,8 @@ import AnimatedSection from '../components/AnimatedSection.jsx'
 import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import ClassCard from '../components/ClassCard.jsx'
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 const Dashboard = () => {
   const { users } = useAuth() // ✅ Get user from AuthContext
