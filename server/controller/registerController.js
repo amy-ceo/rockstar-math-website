@@ -590,12 +590,15 @@ exports.rescheduleBooking = async (req, res) => {
           return res.status(404).json({ error: "User or booking not found" });
       }
 
-      // ✅ Update Booking Time
+      // ✅ Find the session index
       const sessionIndex = user.bookedSessions.findIndex(session => session.calendlyEventUri === eventUri);
       if (sessionIndex === -1) return res.status(404).json({ error: "Session not found" });
 
+      // ✅ Update Booking Time & Status
       user.bookedSessions[sessionIndex].startTime = new Date(newDateTime);
+      user.bookedSessions[sessionIndex].status = "Rescheduled"; // ✅ Updating Status
       user.bookedSessions[sessionIndex].rescheduled = true;
+      user.bookedSessions[sessionIndex].updatedAt = new Date(); // ✅ Update last modified time
 
       await user.save();
 
@@ -606,6 +609,7 @@ exports.rescheduleBooking = async (req, res) => {
           <p><strong>User:</strong> ${user.billingEmail}</p>
           <p><strong>New Date/Time:</strong> ${new Date(newDateTime).toLocaleString()}</p>
           <p><strong>Event URI:</strong> ${eventUri}</p>
+          <p><strong>Status:</strong> Rescheduled ✅</p>
       `;
 
       await sendEmail("anchorwebdesigner@gmail.com", subject, '', htmlContent);
@@ -617,6 +621,7 @@ exports.rescheduleBooking = async (req, res) => {
       res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
 
 exports.proxyCalendly = async (req, res) => {
   try {

@@ -23,6 +23,24 @@ const Dashboard = () => {
   const [selectedRescheduleEvent, setSelectedRescheduleEvent] = useState(null)
   const [newDateTime, setNewDateTime] = useState(null)
 
+   // ✅ Allowed Time Slots (3-6 PM, 7-8 PM, 8-9 PM with breaks)
+   const allowedTimes = [
+    new Date().setHours(15, 0, 0, 0), // 3:00 PM
+    new Date().setHours(16, 0, 0, 0), // 4:00 PM
+    new Date().setHours(17, 0, 0, 0), // 5:00 PM
+    new Date().setHours(18, 0, 0, 0), // 6:00 PM
+
+    // Break from 6:00 PM - 7:00 PM (❌ No slots here)
+
+    new Date().setHours(19, 0, 0, 0), // 7:00 PM
+    new Date().setHours(20, 0, 0, 0), // 8:00 PM
+
+    // Break from 8:00 PM - 9:00 PM (❌ No slots here)
+
+    new Date().setHours(21, 0, 0, 0), // 9:00 PM
+  ];
+
+
   // ✅ Redirect user if not logged in
   useEffect(() => {
     if (!users) {
@@ -332,6 +350,7 @@ const Dashboard = () => {
               selected={newDateTime}
               onChange={(date) => setNewDateTime(date)}
               showTimeSelect
+              includeTimes={allowedTimes.map(time => new Date(time))}
               timeFormat="HH:mm"
               timeIntervals={30}
               dateFormat="MMMM d, yyyy h:mm aa"
