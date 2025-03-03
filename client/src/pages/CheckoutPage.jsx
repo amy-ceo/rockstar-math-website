@@ -392,8 +392,10 @@ const CheckoutPage = () => {
       window.dispatchEvent(new Event("storage")); // ✅ Trigger update in all tabs
   
       toast.success("🎉 Payment Successful! Redirecting...");
+  
+      // ✅ **Redirect After Cart is Cleared**
       setTimeout(() => {
-        window.location.href = "/dashboard";
+        navigate("/dashboard"); // ✅ Using navigate instead of window.location.href
       }, 1000);
     } catch (error) {
       console.error("❌ Error in Payment Process:", error);

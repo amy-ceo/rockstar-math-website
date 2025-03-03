@@ -490,6 +490,39 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
         return res.status(404).json({ error: 'User not found' });
       }
 
+      // ✅ **Send Welcome Email**
+      console.log(`📧 Sending Welcome Email to: ${userEmail}`);
+      let welcomeSubject = `🎉 Welcome to Rockstar Math, ${user.username}!`;
+      let welcomeHtml = `<div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
+        <div style="text-align: center; padding-bottom: 20px;">
+          <img src="https://your-logo-url.com/logo.png" alt="Rockstar Math" style="width: 150px; margin-bottom: 10px;">
+          <h2 style="color: #2C3E50;">🎉 Welcome, ${user.username}!</h2>
+          <p style="font-size: 16px;">We're thrilled to have you join <b>Rockstar Math</b>! 🚀</p>
+        </div>
+        <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+          <h3 style="color: #007bff;">📢 Your Account is Ready!</h3>
+          <p>Congratulations! Your account has been successfully created. You now have access to personalized math tutoring, expert guidance, and interactive learning resources.</p>
+          <p><b>Username:</b> ${user.username}</p>
+          <p><b>Email:</b> ${user.email}</p>
+        </div>
+        <p style="text-align: center; font-size: 16px;">Let's make math learning fun and exciting! We can't wait to see you in class. 🚀</p>
+        <div style="text-align: center; margin-top: 20px;">
+          <a href="https://calendly.com/rockstarmathtutoring" target="_blank"
+            style="display:inline-block; padding:12px 24px; background-color:#007bff; color:#fff; text-decoration:none; border-radius:6px; font-weight:bold; font-size:16px;">
+            📅 Schedule Your First Session
+          </a>
+        </div>
+        <p style="text-align: center; font-size: 14px; color: #555; margin-top: 20px;">
+          Best regards,<br>
+          <b>Amy Gemme</b><br>
+          Rockstar Math Tutoring<br>
+          📞 510-410-4963
+        </p>
+      </div>`;
+
+      await sendEmail(userEmail, welcomeSubject, '', welcomeHtml);
+      console.log('✅ Welcome email sent successfully!');
+
       // ✅ Track existing purchased classes to prevent duplicates
       const existingClasses = new Set(user.purchasedClasses.map(cls => cls.name.toLowerCase().trim()));
 

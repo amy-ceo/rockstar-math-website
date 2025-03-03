@@ -5,6 +5,18 @@ const sendEmail = require("../utils/emailSender");
 const paypalClient = require("../config/paypal");
 
 
+const sessionMapping = {
+  '3 x 30': 3,
+  '5 - 30': 5,
+  '8 x 30 minutes': 8,
+}
+
+const calendlyMapping = {
+  '3 x 30': 'https://calendly.com/rockstarmathtutoring/30-minute-session',
+  '5 - 30': 'https://calendly.com/rockstarmathtutoring/30-minute-session',
+  '8 x 30 minutes': 'https://calendly.com/rockstarmathtutoring/30-minute-session',
+}
+
 // ✅ Function to Generate Email HTML
 function generateEmailHtml(user, zoomLinks, userCoupons) {
   let detailsHtml = `
@@ -227,6 +239,80 @@ exports.captureOrder = async (req, res) => {
         return res.status(500).json({ error: "Database error while saving payment.", details: saveError.message });
       }
   
+      // ✅ **Step 1: Send Welcome Email (Same as Stripe)**
+    console.log(`📧 Sending Welcome Email to: ${user.billingEmail}`);
+    let welcomeSubject = `🎉 Welcome to Rockstar Math, ${user.username}!`;
+    let welcomeHtml = `<div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
+      <div style="text-align: center; padding-bottom: 20px;">
+        <img src="https://your-logo-url.com/logo.png" alt="Rockstar Math" style="width: 150px; margin-bottom: 10px;">
+        <h2 style="color: #2C3E50;">🎉 Welcome, ${user.username}!</h2>
+        <p style="font-size: 16px;">We're thrilled to have you join <b>Rockstar Math</b>! 🚀</p>
+      </div>
+      <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+        <h3 style="color: #007bff;">📢 Your Account is Ready!</h3>
+        <p>Congratulations! Your account has been successfully created. You now have access to personalized math tutoring, expert guidance, and interactive learning resources.</p>
+        <p><b>Username:</b> ${user.username}</p>
+        <p><b>Email:</b> ${user.email}</p>
+      </div>
+      <p style="text-align: center; font-size: 16px;">Let's make math learning fun and exciting! We can't wait to see you in class. 🚀</p>
+      <div style="text-align: center; margin-top: 20px;">
+        <a href="https://calendly.com/rockstarmathtutoring" target="_blank"
+          style="display:inline-block; padding:12px 24px; background-color:#007bff; color:#fff; text-decoration:none; border-radius:6px; font-weight:bold; font-size:16px;">
+          📅 Schedule Your First Session
+        </a>
+      </div>
+      <p style="text-align: center; font-size: 14px; color: #555; margin-top: 20px;">
+        Best regards,<br>
+        <b>Amy Gemme</b><br>
+        Rockstar Math Tutoring<br>
+        📞 510-410-4963
+      </p>
+    </div>`;
+
+    await sendEmail(user.billingEmail, welcomeSubject, '', welcomeHtml);
+    console.log('✅ Welcome email sent successfully!');
+
+     // ✅ **Step 2: Send Calendly-Based Email with Remaining Sessions**
+     let calendlyLinks = [];
+     user.cartItems.forEach((item) => {
+       const formattedItemName = item.name.trim().toLowerCase();
+       Object.keys(calendlyMapping).forEach((calendlyKey) => {
+         if (formattedItemName === calendlyKey.toLowerCase().trim()) {
+           calendlyLinks.push({
+             name: item.name,
+             link: calendlyMapping[calendlyKey],
+           });
+         }
+       });
+     });
+ 
+     let purchasedItems = user.cartItems.map(item => ({
+       name: item.name,
+       sessionCount: sessionMapping[item.name] || 0,
+       remainingSessions: sessionMapping[item.name] || 0,
+       bookingLink: calendlyMapping[item.name] || null,
+       status: "Active",
+     }));
+ 
+     if (purchasedItems.length > 0) {
+       await Register.findByIdAndUpdate(user._id, {
+         $push: { purchasedClasses: { $each: purchasedItems } }
+       }, { new: true });
+     }
+ 
+     console.log('✅ Calendly session tracking updated in database.');
+ 
+     const calendlyEmailHtml = `
+       <h2>📅 Your Calendly Booking Details</h2>
+       <p>Below are the details of your purchased sessions:</p>
+       <ul>
+         ${calendlyLinks.map(link => `<li>${link.name}: <a href="${link.link}" target="_blank">Book Now</a></li>`).join('')}
+       </ul>
+       <p>Please schedule your sessions at your convenience.</p>
+     `;
+ 
+     await sendEmail(user.billingEmail, "📚 Your Rockstar Math Booking Details", "", calendlyEmailHtml);
+     console.log('✅ Calendly email sent successfully!');
 
      // ✅ Fetch Active Coupons
      const activeCoupons = await getActiveCoupons();
