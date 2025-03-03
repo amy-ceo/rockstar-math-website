@@ -551,7 +551,7 @@ function generateEmailHtml(user, zoomLinks, userCoupons, calendlyLinks) {
   if (calendlyLinks.length > 0) {
     // ✅ Add structured heading
     detailsHtml += `<h3>📅 Your Scheduled Calendly Sessions:</h3>
-    <p>Thank you for purchasing <b>${productName}</b>! Below is your registration link and important instructions on how to book your sessions:</p>
+    <p>Thank you for purchasing <b>${session.name}</b>! Below is your registration link and important instructions on how to book your sessions:</p>
     
     <ul>`;
 
