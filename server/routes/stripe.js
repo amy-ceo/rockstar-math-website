@@ -472,6 +472,9 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
     const userId = paymentIntent.metadata?.userId
     const cartSummary = paymentIntent.metadata?.cartSummary?.split(', ') || []
     const userEmail = paymentIntent.metadata?.userEmail || 'No email provided'
+
+      // ✅ Declare `purchasedItems` array before using it
+    let purchasedItems = [];
     cartSummary.forEach((item) => {
       const totalSessions = sessionMapping[item] || 0
       if (totalSessions > 0) {
