@@ -17,26 +17,38 @@ exports.calendlyWebhook = async (req, res) => {
       const eventName = payload?.name || payload?.event?.name || '❌ Missing';
       const eventUri = payload?.uri || payload?.event?.uri || '❌ Missing';
   
-      // ✅ Extract `startTime` and `endTime`
-      const startTime = payload?.start_time
-        ? new Date(payload.start_time)
-        : null;
+      // ✅ Extract `startTime` and `endTime` from multiple possible locations
+      const startTime = payload?.start_time ||
+                        payload?.event?.start_time ||
+                        payload?.scheduled_event?.start_time ||
+                        payload?.location?.start_time
+                          ? new Date(payload?.start_time || 
+                                     payload?.event?.start_time || 
+                                     payload?.scheduled_event?.start_time || 
+                                     payload?.location?.start_time)
+                          : null;
   
-      const endTime = payload?.end_time
-        ? new Date(payload.end_time)
-        : startTime
-          ? new Date(startTime.getTime() + 30 * 60000) // Default 30 min duration
-          : null;
+      const endTime = payload?.end_time ||
+                      payload?.event?.end_time ||
+                      payload?.scheduled_event?.end_time ||
+                      payload?.location?.end_time
+                        ? new Date(payload?.end_time || 
+                                   payload?.event?.end_time || 
+                                   payload?.scheduled_event?.end_time || 
+                                   payload?.location?.end_time)
+                        : startTime 
+                          ? new Date(startTime.getTime() + 30 * 60000) // Default 30 min duration
+                          : null;
   
       const timezone = payload?.timezone || payload?.event?.location?.timezone || '❌ Missing';
   
-      // ✅ Validation: Ensure required fields are present
+      // ✅ Validate Required Fields
       if (inviteeEmail === '❌ Missing' || !startTime || !endTime) {
         console.error('❌ Missing required data:', { inviteeEmail, startTime, endTime });
         return res.status(400).json({ error: 'Missing required fields' });
       }
   
-      // ✅ Find user in MongoDB using invitee email
+      // ✅ Find User in MongoDB
       const user = await Register.findOne({ billingEmail: inviteeEmail });
   
       if (!user) {

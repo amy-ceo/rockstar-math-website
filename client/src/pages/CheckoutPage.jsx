@@ -348,14 +348,6 @@ const CheckoutPage = () => {
         throw new Error(result.error || "Stripe payment capture failed.");
       }
   
-      // ✅ Ensure Cart is Cleared Properly
-      if (result.clearCart) {
-        console.log("🛒 Clearing Cart after Successful Payment...");
-        localStorage.removeItem("cartItems"); // ✅ Remove from LocalStorage
-        setCartItems([]); // ✅ Clear React State
-        window.dispatchEvent(new Event("storage")); // ✅ Ensure all open tabs get updated
-      }
-  
       console.log("📡 Calling addPurchasedClass API...");
       const purchaseResponse = await fetch(
         "https://backend-production-cbe2.up.railway.app/api/add-purchased-class",
@@ -380,19 +372,46 @@ const CheckoutPage = () => {
         console.warn("⚠️ Issue updating purchased classes:", purchaseResult.message);
       }
   
-      // ✅ Redirect User Only After Cart is Empty
-      toast.success("🎉 Payment Successful! Redirecting...");
+      console.log("📡 Fetching updated user data...");
+      const userResponse = await fetch(
+        `https://backend-production-cbe2.up.railway.app/api/user/${user._id}`
+      );
   
-      setTimeout(() => {
-        navigate("/dashboard");
-      }, 1000);
+      if (!userResponse.ok) {
+        console.warn("⚠️ Failed to fetch updated user data.");
+      } else {
+        const updatedUser = await userResponse.json();
+        console.log("✅ Updated User Data:", updatedUser);
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+      }
   
+      // ✅ **Step 1: Clear LocalStorage & State**
+      console.log("🛒 Clearing Cart after Successful Payment...");
+      localStorage.removeItem("cartItems"); // ✅ Remove from LocalStorage
+      setCartItems([]); // ✅ Clear React State
+      window.dispatchEvent(new Event("storage")); // ✅ Trigger event for all open tabs
+  
+      // ✅ **Step 2: Wait Until Cart is Confirmed Empty**
+      await new Promise((resolve) => setTimeout(resolve, 500)); // Wait 500ms
+  
+      console.log("🔄 Verifying Cart is Empty...");
+      if (cartItems.length === 0 && !localStorage.getItem("cartItems")) {
+        toast.success("🎉 Payment Successful! Redirecting...");
+  
+        // ✅ **Step 3: Redirect After Confirmation**
+        setTimeout(() => {
+          navigate("/dashboard"); // ✅ Using navigate for smoother transition
+        }, 500);
+      } else {
+        console.warn("❌ Cart Not Empty - Retry Clearing...");
+        setCartItems([]); // Force another update
+        localStorage.removeItem("cartItems"); // Ensure LocalStorage is cleared
+      }
     } catch (error) {
       console.error("❌ Error in Payment Process:", error);
       toast.error(error.message || "Payment processing error.");
     }
   };
-  
   
   
   return (
