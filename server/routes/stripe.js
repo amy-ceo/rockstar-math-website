@@ -61,7 +61,7 @@ const sessionMapping = {
   '8 x 30 minutes': 8,
 }
 
-const CALENDLY_LINKS = {
+const calendlyMapping = {
   '3 x 30': 'https://calendly.com/rockstarmathtutoring/30-minute-session',
   '5 - 30': 'https://calendly.com/rockstarmathtutoring/30-minute-session',
   '8 x 30 minutes': 'https://calendly.com/rockstarmathtutoring/30-minute-session',
@@ -473,8 +473,8 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
     const cartSummary = paymentIntent.metadata?.cartSummary?.split(', ') || []
     const userEmail = paymentIntent.metadata?.userEmail || 'No email provided'
 
-    // ✅ Declare `purchasedItems` array before using it
-    let purchasedItems = []
+      // ✅ Declare `purchasedItems` array before using it
+      let purchasedItems = [];
     cartSummary.forEach((item) => {
       const totalSessions = sessionMapping[item] || 0
       if (totalSessions > 0) {
@@ -547,16 +547,15 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
 
       // ✅ **Fetch Calendly Booking Links**
       // ✅ Fetch Calendly Booking Links
-      // ✅ Fetch Calendly Booking Links for Purchased Items
       let calendlyLinks = []
       cartSummary.forEach((item) => {
         const formattedItemName = item.trim().toLowerCase() // 🔹 Normalize Item Name
 
-        Object.keys(CALENDLY_LINKS).forEach((calendlyKey) => {
+        Object.keys(calendlyMapping).forEach((calendlyKey) => {
           if (formattedItemName === calendlyKey.toLowerCase().trim()) {
             calendlyLinks.push({
               name: item, // ✅ Original Item Name
-              link: CALENDLY_LINKS[calendlyKey], // ✅ Get Correct Calendly Link
+              link: calendlyMapping[calendlyKey], // ✅ Get Correct Calendly Link
             })
           }
         })
@@ -603,7 +602,7 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
         })
       }
       console.log('🛒 Purchased Items from Metadata:', cartSummary)
-      console.log('📅 Available Calendly Links:', Object.keys(CALENDLY_LINKS))
+      console.log('📅 Available Calendly Links:', Object.keys(calendlyMapping))
 
       console.log('📧 Sending Email with Zoom Links & Calendly Links:', zoomLinks, calendlyLinks)
       console.log('🎟 Sending Email with Coupons:', appliedCoupons)
