@@ -587,3 +587,48 @@ exports.cancelSession = async (req, res) => {
     res.status(500).json({ message: 'Server error' })
   }
 }
+
+
+exports.rescheduleBooking = async (req, res) => {
+  try {
+      const { userId, eventUri, newDateTime } = req.body;
+
+      // ✅ Validate Inputs
+      if (!userId || !eventUri || !newDateTime) {
+          return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      // ✅ Find User & Booking
+      const user = await Register.findOne({ _id: userId, "bookedSessions.calendlyEventUri": eventUri });
+
+      if (!user) {
+          return res.status(404).json({ error: "User or booking not found" });
+      }
+
+      // ✅ Update Booking Time
+      const sessionIndex = user.bookedSessions.findIndex(session => session.calendlyEventUri === eventUri);
+      if (sessionIndex === -1) return res.status(404).json({ error: "Session not found" });
+
+      user.bookedSessions[sessionIndex].startTime = new Date(newDateTime);
+      user.bookedSessions[sessionIndex].rescheduled = true;
+
+      await user.save();
+
+      // ✅ Send Email Notification to Admin
+      const subject = "📢 Session Rescheduled Notification";
+      const htmlContent = `
+          <h3>🔄 Session Rescheduled</h3>
+          <p><strong>User:</strong> ${user.billingEmail}</p>
+          <p><strong>New Date/Time:</strong> ${new Date(newDateTime).toLocaleString()}</p>
+          <p><strong>Event URI:</strong> ${eventUri}</p>
+      `;
+
+      await sendEmail("anchorwebdesigner@gmail.com", subject, '', htmlContent);
+
+      res.status(200).json({ message: "Session rescheduled successfully", updatedUser: user });
+
+  } catch (error) {
+      console.error("❌ Error rescheduling session:", error);
+      res.status(500).json({ error: "Internal Server Error" });
+  }
+};

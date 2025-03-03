@@ -17,6 +17,9 @@ const Dashboard = () => {
   // ✅ State for Cancel Confirmation Popup
   const [showCancelPopup, setShowCancelPopup] = useState(false)
   const [selectedEventUri, setSelectedEventUri] = useState(null)
+  const [showReschedulePopup, setShowReschedulePopup] = useState(false)
+  const [selectedRescheduleEvent, setSelectedRescheduleEvent] = useState(null)
+  const [newDateTime, setNewDateTime] = useState(null)
 
   // ✅ Redirect user if not logged in
   useEffect(() => {
@@ -145,6 +148,51 @@ const Dashboard = () => {
     }
   }
 
+  const openReschedulePopup = (eventUri) => {
+    setSelectedRescheduleEvent(eventUri)
+    setShowReschedulePopup(true)
+  }
+
+  const handleReschedule = async () => {
+    if (!selectedRescheduleEvent || !newDateTime) return
+
+    try {
+      const response = await fetch(
+        'https://backend-production-cbe2.up.railway.app/api/reschedule-booking',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: users._id,
+            eventUri: selectedRescheduleEvent,
+            newDateTime,
+          }),
+        },
+      )
+
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.message)
+
+      alert('Session Rescheduled Successfully ✅')
+
+      // ✅ Hide reschedule button
+      setCalendlyBookings(
+        calendlyBookings.map((booking) =>
+          booking.calendlyEventUri === selectedRescheduleEvent
+            ? { ...booking, startTime: newDateTime, rescheduled: true }
+            : booking,
+        ),
+      )
+
+      // ✅ Close popup
+      setShowReschedulePopup(false)
+      setSelectedRescheduleEvent(null)
+      setNewDateTime(null)
+    } catch (error) {
+      console.error('❌ Error rescheduling session:', error)
+    }
+  }
+
   if (loading) return <p>Loading dashboard...</p>
   if (error) return <p className="text-red-600">{error}</p>
 
@@ -212,7 +260,7 @@ const Dashboard = () => {
                       rel="noopener noreferrer"
                       className="text-blue-500 underline"
                     >
-                      📍 View on Calendly
+                      📍 View on x
                     </a>
 
                     {/* ✅ Cancel Button */}
@@ -223,16 +271,15 @@ const Dashboard = () => {
                       ❌ Cancel
                     </button>
 
-
                     {/* ✅ Reschedule Button */}
-                    <a
-                      href={booking.calendlyEventUri}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-2 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700"
-                    >
-                      🔄 Reschedule
-                    </a>
+                    {!booking.rescheduled && (
+                      <button
+                        className="mt-2 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-700"
+                        onClick={() => openReschedulePopup(booking.calendlyEventUri)}
+                      >
+                        🔄 Reschedule
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -259,8 +306,42 @@ const Dashboard = () => {
           )}
         </AnimatedSection>
       </div>
-       {/* ✅ Cancel Confirmation Popup */}
-       {showCancelPopup && (
+
+      {/* ✅ Reschedule Popup */}
+      {showReschedulePopup && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-6 rounded shadow-lg text-center">
+            <h3 className="text-lg font-bold">Reschedule Your Session</h3>
+            <p>Select a new date & time:</p>
+            <DatePicker
+              selected={newDateTime}
+              onChange={(date) => setNewDateTime(date)}
+              showTimeSelect
+              timeFormat="HH:mm"
+              timeIntervals={30}
+              dateFormat="MMMM d, yyyy h:mm aa"
+              className="border p-2 mt-2"
+            />
+            <div className="mt-4 flex justify-center space-x-4">
+              <button
+                className="bg-green-500 text-white px-4 py-2 rounded"
+                onClick={handleReschedule}
+              >
+                ✅ Confirm Reschedule
+              </button>
+              <button
+                className="bg-gray-400 text-white px-4 py-2 rounded"
+                onClick={() => setShowReschedulePopup(false)}
+              >
+                ❌ Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ✅ Cancel Confirmation Popup */}
+      {showCancelPopup && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white p-6 rounded shadow-lg text-center">
             <h3 className="text-lg font-bold">Are you sure you want to cancel this session?</h3>
