@@ -65,11 +65,17 @@ const stripe = require('stripe')(
 // }
 
 // ✅ Define Calendly Booking Links
-const CALENDLY_LINKS = {
+const sessionMapping = {
+  '3 x 30': 3,
+  '5 - 30': 5,
+  '8 x 30 minutes': 8,
+};
+
+const calendlyMapping = {
   '3 x 30': 'https://calendly.com/rockstarmathtutoring/30-minute-session',
-  '5 - 30': 'https://calendly.com/rockstarmathtutoring/60min',
-  '8 x 30': 'https://calendly.com/rockstarmathtutoring/90-minute-sessions',
-}
+  '5 - 30': 'https://calendly.com/rockstarmathtutoring/30-minute-session',
+  '8 x 30 minutes': 'https://calendly.com/rockstarmathtutoring/30-minute-session',
+};
 
 // ✅ Function to Generate Calendly Link with Booking Limits
 // const generateCalendlyLink = async (userId, sessionType) => {
@@ -611,3 +617,45 @@ exports.rescheduleBooking = async (req, res) => {
       res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
+exports.proxyCalendly = async (req, res) => {
+  try {
+    const { userId, session } = req.query;
+
+    if (!userId || !session) {
+      return res.status(400).send("Missing user ID or session.");
+    }
+
+    const user = await Register.findById(userId);
+    if (!user) return res.status(404).send("User not found.");
+
+    // ✅ Check if the user has purchased the specified session
+    const purchasedClass = user.purchasedClasses.find((cls) => cls.name === session);
+
+    if (!purchasedClass) {
+      return res.status(403).send("You have not purchased this session.");
+    }
+
+    // ✅ Check if user has remaining sessions (prevent access if sessions are exhausted)
+    if (purchasedClass.remainingSessions <= 0) {
+      return res.status(403).send("Your session limit has been reached.");
+    }
+
+    // ✅ Fetch the correct Calendly link from the static mapping
+    const calendlyLink = calendlyMapping[session];
+
+    if (!calendlyLink) {
+      return res.status(400).send("Calendly link not available.");
+    }
+
+    console.log(`✅ User ${userId} is being redirected to Calendly for session: ${session}`);
+
+    // ✅ Redirect the user to the Calendly link
+    res.redirect(calendlyLink);
+
+  } catch (error) {
+    console.error("❌ Error in proxyCalendly:", error);
+    res.status(500).send("Internal Server Error.");
+  }
+};
+
