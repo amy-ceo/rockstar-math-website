@@ -643,7 +643,7 @@ exports.proxyCalendly = async (req, res) => {
 
     // ✅ Check if user has remaining sessions (prevent access if sessions are exhausted)
     if (purchasedClass.remainingSessions <= 0) {
-      return res.status(403).send("Your session limit has been reached.");
+      return res.status(403).send("Your Session Booking Limit has been reached. Please return back to www.Rockstarmath.com and log into your dashboard to view and see your scheduled sessions.");
     }
 
     // ✅ Fetch the correct Calendly link from the static mapping

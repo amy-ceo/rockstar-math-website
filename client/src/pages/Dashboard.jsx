@@ -4,8 +4,8 @@ import AnimatedSection from '../components/AnimatedSection.jsx'
 import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import ClassCard from '../components/ClassCard.jsx'
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
+import DatePicker from 'react-datepicker'
+import 'react-datepicker/dist/react-datepicker.css'
 
 const Dashboard = () => {
   const { users } = useAuth() // ✅ Get user from AuthContext
@@ -23,23 +23,28 @@ const Dashboard = () => {
   const [selectedRescheduleEvent, setSelectedRescheduleEvent] = useState(null)
   const [newDateTime, setNewDateTime] = useState(null)
 
-   // ✅ Allowed Time Slots (3-6 PM, 7-8 PM, 8-9 PM with breaks)
-   const allowedTimes = [
+  // ✅ Allowed Time Slots (3-6 PM, 7-8 PM, 8-9 PM with breaks)
+  const allowedTimes = [
     new Date().setHours(15, 0, 0, 0), // 3:00 PM
+    new Date().setHours(15, 30, 0, 0), // 3:30 PM
     new Date().setHours(16, 0, 0, 0), // 4:00 PM
+    new Date().setHours(16, 30, 0, 0), // 4:30 PM
     new Date().setHours(17, 0, 0, 0), // 5:00 PM
+    new Date().setHours(17, 30, 0, 0), // 5:30 PM
     new Date().setHours(18, 0, 0, 0), // 6:00 PM
 
-    // Break from 6:00 PM - 7:00 PM (❌ No slots here)
+    // Break from 6:00 PM - 7:00 PM ❌ (No slots here)
 
     new Date().setHours(19, 0, 0, 0), // 7:00 PM
+    new Date().setHours(19, 30, 0, 0), // 7:30 PM
     new Date().setHours(20, 0, 0, 0), // 8:00 PM
 
-    // Break from 8:00 PM - 9:00 PM (❌ No slots here)
+    // Break from 8:00 PM - 9:00 PM ❌ (No slots here)
 
     new Date().setHours(21, 0, 0, 0), // 9:00 PM
-  ];
+  ]
 
+  console.log(allowedTimes)
 
   // ✅ Redirect user if not logged in
   useEffect(() => {
@@ -283,15 +288,33 @@ const Dashboard = () => {
                       <strong className="text-gray-800">Status:</strong> {booking.status}
                     </p>
 
-                    {/* View on Calendly */}
-                    <a
-                      href={booking.calendlyEventUri}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-block mt-2 text-blue-500 font-medium hover:underline"
-                    >
-                      📍 View on Calendly
-                    </a>
+                    {/* View Links (Calendly & Zoom) */}
+                    <div className="flex items-center mt-3 space-x-4">
+                      {/* View on Calendly */}
+                      <a
+                        href={booking.calendlyEventUri.replace(
+                          'api.calendly.com/scheduled_events',
+                          'calendly.com/event_link',
+                        )}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 font-medium hover:underline"
+                      >
+                        🌐 View on Calendly
+                      </a>
+
+                      {/* View on Zoom (Only if Zoom Link Exists) */}
+                      {booking.zoomMeetingLink && (
+                        <a
+                          href={booking.zoomMeetingLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-green-600 font-medium hover:underline"
+                        >
+                          🎥 View on Zoom
+                        </a>
+                      )}
+                    </div>
 
                     {/* Action Buttons */}
                     <div className="mt-4 flex gap-3">
@@ -350,11 +373,15 @@ const Dashboard = () => {
               selected={newDateTime}
               onChange={(date) => setNewDateTime(date)}
               showTimeSelect
-              includeTimes={allowedTimes.map(time => new Date(time))}
+              includeTimes={allowedTimes.map((time) => new Date(time))}
               timeFormat="HH:mm"
               timeIntervals={30}
               dateFormat="MMMM d, yyyy h:mm aa"
               className="border p-2 mt-2"
+              filterDate={(date) => {
+                const day = date.getDay()
+                return day >= 1 && day <= 4 // Monday (1) to Thursday (4)
+              }}
             />
             <div className="mt-4 flex justify-center space-x-4">
               <button

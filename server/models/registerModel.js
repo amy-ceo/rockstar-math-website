@@ -20,6 +20,7 @@ const bookedSessionSchema = new mongoose.Schema({
   eventName: { type: String, required: true }, // ✅ Event Name
   calendlyEventUri: { type: String, required: true, unique: true, sparse: true }, // ✅ Unique Event URI
   startTime: { type: Date, required: true }, // ✅ Event Start Time
+  zoomMeetingLink: String, // ✅ Add Zoom Link
   endTime: { type: Date, required: false }, // ✅ Optional: End Time
   timezone: { type: String, required: false }, // ✅ Timezone (if available)
   // ✅ Event Status
