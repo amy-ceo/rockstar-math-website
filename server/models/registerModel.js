@@ -91,16 +91,7 @@ const RegisterSchema = new mongoose.Schema(
     purchasedClasses: [purchasedClassSchema], // ✅ Includes both Zoom & Service purchases
     // ✅ New: Calendly Bookings
     bookedSessions: [bookedSessionSchema], // ✅ This will store all booked sessions
-    // ✅ Zoom Meeting Details (For Purchased Classes)
-    zoomMeetings: [
-      {
-        meetingId: { type: String, required: true }, // Zoom Meeting ID
-        topic: { type: String, required: true }, // Meeting Topic
-        startTime: { type: Date, required: true }, // Start Time
-        joinUrl: { type: String, required: true }, // User Join URL
-        createdAt: { type: Date, default: Date.now },
-      },
-    ],
+  
   },
   { timestamps: true },
 )

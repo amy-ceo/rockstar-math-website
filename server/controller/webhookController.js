@@ -3,8 +3,8 @@ const sendEmail = require('../utils/emailSender')
 const axios = require("axios");
 const qs = require("qs");
 
-const ZOOM_CLIENT_ID = "yuplzpP_TbiySZo9i93TnQ";
-const ZOOM_CLIENT_SECRET = "ocxbiTwJLeXGbIvFW2RZxioSulk0uBbx";
+const ZOOM_CLIENT_ID = "y6RMHYpT8Cka7gpE9FViQ";
+const ZOOM_CLIENT_SECRET = "fns0cQF0t3Y3ngjGnjq4rQtkjOFUlkvu";
 
 async function getZoomAccessToken() {
     try {

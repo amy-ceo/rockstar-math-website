@@ -33,24 +33,24 @@ const zoomCourseMapping = [
   },
   {
     name: '📗 Algebra 2 Tutoring',
-    link: 'https://us06web.zoom.us/meeting/register/z2W2vvBHRQK_yEWMTteOrg#/registration',
+    link: 'https://us06web.zoom.us/meeting/register/z2W2vvBHROGK_yEWMTeOrg#/registration',
   },
   {
     name: '📕 Calculus 1 Tutoring',
-    link: 'https://us06web.zoom.us/meeting/register/kejTnKqpTpteWaMN13BAb0#/registration',
+    link: 'https://us06web.zoom.us/meeting/register/kejThKqpTpetwaMNI33bAQ#/registration',
   },
   {
     name: '📙 Pre-Calculus & Trigonometry Tutoring',
-    link: 'https://us06web.zoom.us/meeting/register/jH2N2rFMSXyqX1UDEZAarQ#/registration',
+    link: 'https://us06web.zoom.us/meeting/register/jH2N2rfMSXyqX1UDEZAarQ#/registration',
   },
   {
     name: '📒 Geometry Tutoring',
-    link: 'https://us06web.zoom.us/meeting/register/Lsd_MFiwQpKRKhMZhPIVPw#/registration',
+    link: 'https://us06web.zoom.us/meeting/register/Lsd_MFiwQpKRKhMZhPIYPw#/registration',
   },
 ];
 const COMMONCORE_ZOOM_LINK = {
   name: '📚  Common Core for Parents',
-  link: 'https://us06web.zoom.us/meeting/register/XsYhADVmQcK8BIIT3Sfbpyg#/registration',
+  link: 'https://us06web.zoom.us/meeting/register/XsYhADVmQcK8BIT3Sfbpyg#/registration',
 };
 
 const sessionMapping = {
