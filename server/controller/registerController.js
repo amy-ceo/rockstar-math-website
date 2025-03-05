@@ -524,37 +524,32 @@ exports.cancelSession = async (req, res) => {
   try {
     const { userId, startTime } = req.body;
 
-    // ✅ Log the received startTime
-    console.log("🔍 Searching for session with startTime:", startTime || "❌ Missing");
-
     if (!startTime) {
-      return res.status(400).json({ message: "Start time is required" });
+      return res.status(400).json({ message: "Start time is required to find the session." });
     }
+
+    console.log(`🔍 Searching for session with startTime: ${startTime}`);
 
     // ✅ Find user
     const user = await Register.findById(userId);
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
 
-    // ✅ Fix: Ensure startTime is properly formatted
-    const formattedStartTime = new Date(startTime).toISOString();
-    console.log("🔍 Formatted StartTime:", formattedStartTime);
-
-    // ✅ Find the session by `startTime`
+    // ✅ Find the session to cancel using startTime
     const sessionIndex = user.bookedSessions.findIndex(
-      (session) => new Date(session.startTime).toISOString() === formattedStartTime
+      (session) => new Date(session.startTime).toISOString() === new Date(startTime).toISOString()
     );
 
-    console.log("🔍 Matched session index:", sessionIndex);
-
     if (sessionIndex === -1) {
-      return res.status(404).json({ message: 'Session not found' });
+      return res.status(404).json({ message: "Session not found" });
     }
 
     const canceledSession = user.bookedSessions[sessionIndex];
 
-    // ✅ Restore Session Count
+    console.log(`✅ Found session: ${canceledSession.eventName} at ${canceledSession.startTime}`);
+
+    // ✅ Find the purchased plan linked to this session
     let purchasedPlan = user.purchasedClasses.find(
       (item) => item.name === canceledSession.eventName
     );
@@ -563,36 +558,35 @@ exports.cancelSession = async (req, res) => {
       return res.status(400).json({ message: "Purchased plan not found for this session" });
     }
 
-    purchasedPlan.remainingSessions += 1; // Increase session count back
+    console.log(`📌 Purchased plan found: ${purchasedPlan.name}`);
+
+    // ✅ Restore Session Count
+    purchasedPlan.remainingSessions += 1;
 
     // ✅ Move Session to Archived Classes
     user.archivedClasses.push({
       name: canceledSession.eventName,
       description: "Session was canceled by the user",
       archivedAt: new Date(),
+      sessionCount: purchasedPlan.sessionCount,
+      remainingSessions: purchasedPlan.remainingSessions,
     });
 
     // ✅ Remove session from bookedSessions
     user.bookedSessions.splice(sessionIndex, 1);
     await user.save();
 
-    console.log(`✅ Session canceled: ${canceledSession.eventName}`);
+    console.log(`✅ Session canceled and archived successfully!`);
 
     res.status(200).json({
       message: "Session canceled and archived successfully",
       archivedClasses: user.archivedClasses,
     });
   } catch (error) {
-    console.error('❌ Error canceling session:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error("❌ Error canceling session:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };
-
-
-
-
-
-
 
 exports.rescheduleBooking = async (req, res) => {
   try {
