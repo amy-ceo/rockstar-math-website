@@ -394,36 +394,37 @@ exports.cancelSession = async (req, res) => {
 // ✅ Add Note Controller
 exports.addNoteToSession = async (req, res) => {
   try {
-      const { userId, sessionId, note } = req.body;
+    const { userId, calendlyEventUri, note } = req.body;
 
-      if (!userId || !sessionId || !note) {
-          return res.status(400).json({ error: "All fields are required" });
-      }
+    if (!userId || !calendlyEventUri || !note) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
 
-      // ✅ Find the user
-      const user = await Register.findOne({ _id: userId });
+    // ✅ Find User by ID
+    const user = await Register.findById(userId);
 
-      if (!user) {
-          return res.status(404).json({ error: "User not found" });
-      }
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
 
-      // ✅ Find the session
-      const session = user.bookedSessions.find(s => s.sessionId === sessionId);
+    // ✅ Find the specific session inside bookedSessions
+    const sessionIndex = user.bookedSessions.findIndex(
+      (session) => session.calendlyEventUri === calendlyEventUri
+    );
 
-      if (!session) {
-          return res.status(404).json({ error: "Session not found" });
-      }
+    if (sessionIndex === -1) {
+      return res.status(404).json({ error: "Session not found" });
+    }
 
-      // ✅ Add note to session
-      session.note = note;
+    // ✅ Update the note field in the booked session
+    user.bookedSessions[sessionIndex].note = note;
 
-      // ✅ Save user document
-      await user.save();
+    // ✅ Save the updated user document
+    await user.save();
 
-      return res.status(200).json({ success: true, message: "Note added successfully" });
-
+    res.json({ success: true, message: "Note added successfully!" });
   } catch (error) {
-      console.error("Error saving note:", error);
-      return res.status(500).json({ error: "Failed to save note" });
+    console.error("Error adding note:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
