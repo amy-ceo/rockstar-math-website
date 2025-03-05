@@ -437,7 +437,6 @@ exports.deleteNoteFromSession = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
-
 // ✅ Add or Update Note to a Booked Session
 exports.addOrUpdateNoteToSession = async (req, res) => {
   try {
@@ -462,7 +461,7 @@ exports.addOrUpdateNoteToSession = async (req, res) => {
 
     // ✅ Find the session inside bookedSessions using startTime
     const session = user.bookedSessions.find(
-      (session) => session.startTime.toISOString() === startTime
+      (session) => session.startTime.toISOString() === new Date(startTime).toISOString()
     );
 
     if (!session) {
@@ -472,8 +471,8 @@ exports.addOrUpdateNoteToSession = async (req, res) => {
     // ✅ Update the note field
     session.note = note;
 
-    // ✅ Save the updated user document
-    await user.save();
+    // ✅ Save the updated user document without validating purchasedClasses
+    await user.save({ validateBeforeSave: false });
 
     res.json({ success: true, message: 'Note updated successfully!', updatedSession: session });
   } catch (error) {
