@@ -82,35 +82,40 @@ const UpcomingClasses = () => {
     setNote('')
   }
 
-  // Save Note
-  const saveNote = async () => {
-    if (!selectedSession) return
+ // Save Note
+const saveNote = async () => {
+  if (!selectedSession) return;
 
-    try {
-      await axios.post(`${API_BASE_URL}/api/admin/add-note`, {
-        userId: selectedSession.userId,
-        startTime: selectedSession.startTime, // ✅ Updated Field
-        note,
-      });
+  try {
+    // ✅ Store the API response
+    const response = await axios.post(`${API_BASE_URL}/api/admin/add-note`, {
+      userId: selectedSession.userId,
+      startTime: selectedSession.startTime, // ✅ Correct field
+      note,
+    });
 
-      if (response.data.success) {
-        setSessions(
-          sessions.map((session) =>
-            session.sessionId === selectedSession.sessionId ? { ...session, note } : session,
-          ),
+    // ✅ Check if note was successfully saved
+    if (response.data.success) {
+      setSessions(
+        sessions.map((session) =>
+          session.startTime === selectedSession.startTime // ✅ Match session via startTime
+            ? { ...session, note }
+            : session
         )
+      );
 
-        alert('Note added successfully!')
-      } else {
-        alert('Failed to save note.')
-      }
-    } catch (error) {
-      console.error('Error saving note:', error)
-      alert('Failed to save note.')
+      alert('Note added successfully!');
+    } else {
+      alert('Failed to save note.');
     }
-
-    closeNoteModal()
+  } catch (error) {
+    console.error('Error saving note:', error);
+    alert('Failed to save note.');
   }
+
+  closeNoteModal();
+};
+
 
   return (
     <div className="container mx-auto p-6">

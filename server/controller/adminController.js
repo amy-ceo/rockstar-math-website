@@ -403,8 +403,8 @@ exports.addNoteToSession = async (req, res) => {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    // ✅ Validate userId before using it
-    if (!isValidObjectId(userId)) {
+    // ✅ Validate userId format
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
       return res.status(400).json({ error: "Invalid userId format" });
     }
 
@@ -415,9 +415,12 @@ exports.addNoteToSession = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
+    // ✅ Convert startTime from string to Date object
+    const requestedStartTime = new Date(startTime);
+
     // ✅ Find the specific session inside bookedSessions
     const session = user.bookedSessions.find(
-      (session) => session.startTime === startTime
+      (session) => new Date(session.startTime).getTime() === requestedStartTime.getTime()
     );
 
     if (!session) {
