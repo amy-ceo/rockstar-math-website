@@ -524,7 +524,12 @@ exports.cancelSession = async (req, res) => {
   try {
     const { userId, startTime } = req.body;
 
-    console.log("🔍 Searching for session with startTime:", startTime);
+    // ✅ Log the received startTime
+    console.log("🔍 Searching for session with startTime:", startTime || "❌ Missing");
+
+    if (!startTime) {
+      return res.status(400).json({ message: "Start time is required" });
+    }
 
     // ✅ Find user
     const user = await Register.findById(userId);
@@ -532,9 +537,13 @@ exports.cancelSession = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // ✅ Find the session by `startTime` instead of `eventUri`
+    // ✅ Fix: Ensure startTime is properly formatted
+    const formattedStartTime = new Date(startTime).toISOString();
+    console.log("🔍 Formatted StartTime:", formattedStartTime);
+
+    // ✅ Find the session by `startTime`
     const sessionIndex = user.bookedSessions.findIndex(
-      (session) => new Date(session.startTime).toISOString() === new Date(startTime).toISOString()
+      (session) => new Date(session.startTime).toISOString() === formattedStartTime
     );
 
     console.log("🔍 Matched session index:", sessionIndex);
@@ -578,6 +587,7 @@ exports.cancelSession = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
 
 
 

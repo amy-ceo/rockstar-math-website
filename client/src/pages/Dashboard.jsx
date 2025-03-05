@@ -150,9 +150,19 @@ const cancelBooking = async () => {
     return;
   }
 
+  // ✅ Find the session startTime from calendlyBookings before sending request
+  const sessionToCancel = calendlyBookings.find(
+    (session) => session.calendlyEventUri === selectedEventUri
+  );
+
+  if (!sessionToCancel) {
+    toast.error("Session details not found!");
+    return;
+  }
+
   console.log("📡 Sending cancel request to API...", {
     userId: users._id,
-    startTime: selectedEventUri, // ✅ Ensure this is correct
+    startTime: sessionToCancel.startTime, // ✅ Ensure this is correct
   });
 
   try {
@@ -161,7 +171,10 @@ const cancelBooking = async () => {
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: users._id, startTime: selectedEventUri }), // ✅ Send startTime
+        body: JSON.stringify({
+          userId: users._id,
+          startTime: sessionToCancel.startTime, // ✅ Send startTime
+        }),
       }
     );
 
@@ -176,7 +189,7 @@ const cancelBooking = async () => {
 
     // ✅ Remove canceled session from active bookings
     setCalendlyBookings((prev) =>
-      prev.filter((b) => b.startTime !== selectedEventUri)
+      prev.filter((b) => b.startTime !== sessionToCancel.startTime)
     );
 
     setArchivedClasses((prev) => [...prev, data.archivedSession]);
@@ -188,6 +201,7 @@ const cancelBooking = async () => {
     toast.error("Failed to cancel session. Try again.");
   }
 };
+
 
   
 
