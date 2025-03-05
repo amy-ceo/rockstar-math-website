@@ -5,7 +5,7 @@ const bcrypt = require('bcryptjs')
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY) // Stripe API
 const sendEmail = require('../utils/emailSender') // ✅ Use existing emailSender module
 const crypto = require('crypto')
-
+const mongoose = require("mongoose");
 // ✅ Generate JWT Token
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' })
