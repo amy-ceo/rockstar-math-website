@@ -541,25 +541,31 @@ exports.cancelSession = async (req, res) => {
 
     const canceledSession = user.bookedSessions[sessionIndex];
 
-    // ✅ Find the purchased plan associated with this session
+    console.log("🔍 Canceled Session:", canceledSession);
+
+    // ✅ Fix: Perform a case-insensitive match for purchased classes
     let purchasedPlan = user.purchasedClasses.find(
-      (item) => item.name === canceledSession.eventName
+      (item) => item.name.trim().toLowerCase() === canceledSession.eventName.trim().toLowerCase()
     );
 
+    console.log("🔍 Matched Purchased Plan:", purchasedPlan);
+
     if (!purchasedPlan) {
+      console.error("❌ Purchased plan not found for this session");
+      console.log("🔎 User's Purchased Classes:", user.purchasedClasses);
       return res.status(400).json({ message: "Purchased plan not found for this session" });
     }
 
-    // ✅ Restore Session Count (Increase remaining sessions)
+    // ✅ Restore Session Count
     purchasedPlan.remainingSessions += 1; // Increase count back
 
-    // ✅ Move Session to Archived Classes with required fields
+    // ✅ Move Session to Archived Classes
     user.archivedClasses.push({
       name: canceledSession.eventName,
       description: "Session was canceled by the user",
       archivedAt: new Date(),
-      sessionCount: purchasedPlan.sessionCount, // ✅ Ensure it's added
-      remainingSessions: purchasedPlan.remainingSessions, // ✅ Ensure it's added
+      sessionCount: purchasedPlan.sessionCount, // ✅ Ensure it's included
+      remainingSessions: purchasedPlan.remainingSessions, // ✅ Ensure it's included
     });
 
     // ✅ Remove session from bookedSessions
@@ -587,6 +593,7 @@ exports.cancelSession = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
 
 
 
