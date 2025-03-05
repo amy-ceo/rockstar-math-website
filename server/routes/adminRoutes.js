@@ -19,7 +19,7 @@ router.delete('/users/:id', deleteUser);
 // ✅ Route to Request Password Reset (Admin)
 router.post("/request-password-reset", requestAdminPasswordReset);
 // ✅ Route for Adding or Updating a Note
-router.post('/admin/add-note', addOrUpdateNoteToSession);
+router.post('/add-note', addOrUpdateNoteToSession);
 // ✅ Route to Reset Password (Admin)
 router.post("/reset-password/:token", resetAdminPassword);
 router.get("/booked-sessions", getAllBookedSessions);
