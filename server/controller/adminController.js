@@ -6,6 +6,8 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY) // Stripe API
 const sendEmail = require('../utils/emailSender') // ✅ Use existing emailSender module
 const crypto = require('crypto')
 const mongoose = require("mongoose");
+// ✅ Function to Check if userId is a Valid ObjectId
+const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 // ✅ Generate JWT Token
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' })
@@ -396,13 +398,18 @@ exports.addNoteToSession = async (req, res) => {
   try {
     const { userId, calendlyEventUri, note } = req.body;
 
-    // ✅ Validate Input
+    // ✅ Validate Input Fields
     if (!userId || !calendlyEventUri || !note) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    // ✅ Convert userId to ObjectId correctly
-    const user = await Register.findById(new mongoose.Types.ObjectId(userId));
+    // ✅ Validate userId before using it
+    if (!isValidObjectId(userId)) {
+      return res.status(400).json({ error: "Invalid userId format" });
+    }
+
+    // ✅ Convert userId correctly
+    const user = await Register.findById(userId);
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
