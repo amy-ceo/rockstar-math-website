@@ -1,149 +1,151 @@
-import React, { useEffect, useState } from 'react'
-import axios from 'axios'
-import { FaTrash, FaStickyNote } from 'react-icons/fa'
-import { MdClose } from 'react-icons/md'
-import { toast } from 'react-hot-toast'
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import { FaTrash, FaStickyNote } from "react-icons/fa";
+import { MdClose } from "react-icons/md";
+import toast, { Toaster } from 'react-hot-toast'
+import 'react-toastify/dist/ReactToastify.css'
 
-const API_BASE_URL = 'https://backend-production-cbe2.up.railway.app'
+
+const API_BASE_URL = "https://backend-production-cbe2.up.railway.app"; // ✅ Ensure correct API URL
 
 const UpcomingClasses = () => {
-  const [sessions, setSessions] = useState([])
-  const [selectedSession, setSelectedSession] = useState(null)
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [isNoteModalOpen, setIsNoteModalOpen] = useState(false)
-  const [note, setNote] = useState('')
-  const [loading, setLoading] = useState(true)
+  const [sessions, setSessions] = useState([]);
+  const [selectedSession, setSelectedSession] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
+  const [note, setNote] = useState(""); // ✅ State for note input
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+   // ✅ Fetch sessions with latest notes
+   useEffect(() => {
     const fetchSessions = async () => {
       try {
-        const response = await axios.get(`${API_BASE_URL}/api/admin/booked-sessions`)
-        console.log('API Response:', response.data)
+        const response = await axios.get(`${API_BASE_URL}/api/admin/booked-sessions`);
+        console.log("API Response:", response.data);
 
         if (response.data && Array.isArray(response.data.sessions)) {
-          setSessions(response.data.sessions)
+          setSessions(response.data.sessions);
         } else {
-          console.error('Invalid API response:', response.data)
-          setSessions([])
+          console.error("Invalid API response:", response.data);
+          setSessions([]);
         }
       } catch (error) {
-        console.error('Error fetching sessions:', error)
-        setSessions([])
+        console.error("Error fetching sessions:", error);
+        setSessions([]);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchSessions()
-  }, [])
+    fetchSessions();
+  }, []);
 
-  // Open Cancel Modal
+  // ✅ Open Cancel Modal
   const openModal = (session) => {
-    setSelectedSession(session)
-    setIsModalOpen(true)
-  }
+    setSelectedSession(session);
+    setIsModalOpen(true);
+  };
 
-  // Close Cancel Modal
+  // ✅ Close Cancel Modal
   const closeModal = () => {
-    setSelectedSession(null)
-    setIsModalOpen(false)
-  }
+    setSelectedSession(null);
+    setIsModalOpen(false);
+  };
 
-  // Cancel Session
+  // ✅ Cancel Session
   const cancelSession = async () => {
-    if (!selectedSession) return
+    if (!selectedSession) return;
 
     try {
       await axios.post(`${API_BASE_URL}/api/admin/cancel-session`, {
         userId: selectedSession.userId,
         sessionId: selectedSession.sessionId,
-      })
+      });
 
-      setSessions(sessions.filter((session) => session.sessionId !== selectedSession.sessionId))
-
-      toast.success('Session cancelled successfully & email sent to the user!')
-      closeModal()
+      setSessions(sessions.filter((session) => session.sessionId !== selectedSession.sessionId));
+      toast.success("Session cancelled successfully!");
+      closeModal();
     } catch (error) {
-      console.error('Error cancelling session:', error)
-      toast.error('Failed to cancel session.')
+      console.error("Error cancelling session:", error);
+      toast.error("Failed to cancel session.");
     }
-  }
+  };
 
-  // Open Note Modal
+  // ✅ Open Note Modal (for Add/Edit)
   const openNoteModal = (session) => {
-    setSelectedSession(session)
-    setNote(session.note || '') // Load existing note if any
-    setIsNoteModalOpen(true)
-  }
+    setSelectedSession(session);
+    setNote(session.note || ""); // Load existing note if any
+    setIsNoteModalOpen(true);
+  };
 
-  // Close Note Modal
+  // ✅ Close Note Modal
   const closeNoteModal = () => {
-    setSelectedSession(null)
-    setIsNoteModalOpen(false)
-    setNote('')
-  }
+    setSelectedSession(null);
+    setIsNoteModalOpen(false);
+    setNote("");
+  };
 
-  // Save or Update Note
+  // ✅ Save or Update Note
   const saveNote = async () => {
-    if (!selectedSession) return
+    if (!selectedSession) return;
 
     try {
       const response = await axios.post(`${API_BASE_URL}/api/admin/add-note`, {
         userId: selectedSession.userId,
-        startTime: selectedSession.startTime,
+        startTime: selectedSession.startTime, // ✅ Correct field
         note,
-      })
+      });
 
       if (response.data.success) {
-        setSessions(
-          sessions.map((session) =>
+        setSessions((prevSessions) =>
+          prevSessions.map((session) =>
             session.startTime === selectedSession.startTime
               ? { ...session, note }
               : session
           )
-        )
-
-        toast.success('Note saved successfully!')
+        );
+        toast.success(selectedSession?.note ? "Note updated successfully!" : "Note added successfully!");
       } else {
-        toast.error('Failed to save note.')
+        toast.error("Failed to save note.");
       }
     } catch (error) {
-      console.error('Error saving note:', error)
-      toast.error('Failed to save note.')
+      console.error("Error saving note:", error);
+      toast.error("Failed to save note.");
     }
 
-    closeNoteModal()
-  }
+    closeNoteModal();
+  };
 
-  // Delete Note
+  // ✅ Delete Note (Admin Only)
   const deleteNote = async (session) => {
-    if (!session) return
+    if (!session) return;
 
     try {
       const response = await axios.post(`${API_BASE_URL}/api/admin/delete-note`, {
         userId: session.userId,
-        startTime: session.startTime,
-      })
+        startTime: session.startTime, // ✅ Ensure correct field
+      });
 
       if (response.data.success) {
-        setSessions(
-          sessions.map((s) =>
-            s.startTime === session.startTime ? { ...s, note: '' } : s
+        setSessions((prevSessions) =>
+          prevSessions.map((s) =>
+            s.startTime === session.startTime ? { ...s, note: "" } : s
           )
-        )
-
-        toast.success('Note deleted successfully!')
+        );
+        toast.success("Note deleted successfully!");
       } else {
-        toast.error('Failed to delete note.')
+        toast.error("Failed to delete note.");
       }
     } catch (error) {
-      console.error('Error deleting note:', error)
-      toast.error('Failed to delete note.')
+      console.error("Error deleting note:", error);
+      toast.error("Failed to delete note.");
     }
-  }
+  };
 
   return (
     <div className="container mx-auto p-6">
+        <Toaster position="top-right" />
+
       <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center">Upcoming Classes</h2>
 
       {loading ? (
@@ -172,25 +174,14 @@ const UpcomingClasses = () => {
                     <span className="text-sm text-gray-500">{session.userEmail}</span>
                   </td>
                   <td className="px-4 py-3 text-center flex gap-3 justify-center">
-                    <button
-                      onClick={() => openModal(session)}
-                      className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md flex items-center gap-2"
-                    >
+                    <button onClick={() => openModal(session)} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md flex items-center gap-2">
                       <FaTrash /> Cancel
                     </button>
-                    <button
-                      onClick={() => openNoteModal(session)}
-                      className={`px-4 py-2 rounded-md flex items-center gap-2 ${
-                        session.note ? 'bg-blue-500 hover:bg-blue-600' : 'bg-green-500 hover:bg-green-600'
-                      } text-white`}
-                    >
-                      <FaStickyNote /> {session.note ? 'Edit Note' : 'Add Note'}
+                    <button onClick={() => openNoteModal(session)} className={`px-4 py-2 rounded-md flex items-center gap-2 ${session.note ? "bg-blue-500 hover:bg-blue-600" : "bg-green-500 hover:bg-green-600"} text-white`}>
+                      <FaStickyNote /> {session.note ? "Edit Note" : "Add Note"}
                     </button>
                     {session.note && (
-                      <button
-                        onClick={() => deleteNote(session)}
-                        className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md flex items-center gap-2"
-                      >
+                      <button onClick={() => deleteNote(session)} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md flex items-center gap-2">
                         ❌ Delete Note
                       </button>
                     )}
@@ -203,8 +194,22 @@ const UpcomingClasses = () => {
       ) : (
         <p className="text-center text-gray-500 text-lg">No upcoming sessions available.</p>
       )}
-    </div>
-  )
-}
 
-export default UpcomingClasses
+      {/* ✅ MODAL FOR ADDING/EDITING NOTE */}
+      {isNoteModalOpen && (
+        <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-96 relative">
+            <button onClick={closeNoteModal} className="absolute top-2 right-2 text-gray-500 hover:text-gray-700">
+              <MdClose size={24} />
+            </button>
+            <h3 className="text-xl font-semibold text-gray-800 mb-4">{selectedSession?.note ? "Edit Note" : "Add Note"}</h3>
+            <textarea className="w-full border rounded p-2 text-gray-700" value={note} onChange={(e) => setNote(e.target.value)} />
+            <button onClick={saveNote} className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">{selectedSession?.note ? "Update Note" : "Save Note"}</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default UpcomingClasses;
