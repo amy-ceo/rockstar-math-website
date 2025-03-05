@@ -150,25 +150,23 @@ const cancelBooking = async () => {
     return;
   }
 
-  try {
-    console.log("📡 Sending cancel request to API...", {
-      userId: users._id,
-      startTime: selectedEventUri, // ✅ Now sending startTime
-    });
+  console.log("📡 Sending cancel request to API...", {
+    userId: users._id,
+    startTime: selectedEventUri, // ✅ Ensure this is correct
+  });
 
+  try {
     const response = await fetch(
       "https://backend-production-cbe2.up.railway.app/api/cancel-booking",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: users._id, startTime: selectedEventUri }), // ✅ Send `startTime`
+        body: JSON.stringify({ userId: users._id, startTime: selectedEventUri }), // ✅ Send startTime
       }
     );
 
-    console.log("📥 API Response Status:", response.status);
-
     const data = await response.json();
-    console.log("📥 API Response Data:", data);
+    console.log("📥 API Response:", data);
 
     if (!response.ok) {
       throw new Error(data.message || "Failed to cancel session.");
@@ -178,10 +176,9 @@ const cancelBooking = async () => {
 
     // ✅ Remove canceled session from active bookings
     setCalendlyBookings((prev) =>
-      prev.filter((b) => b.startTime !== selectedEventUri) // ✅ Compare using `startTime`
+      prev.filter((b) => b.startTime !== selectedEventUri)
     );
 
-    // ✅ Add canceled session to archived list
     setArchivedClasses((prev) => [...prev, data.archivedSession]);
 
     setShowCancelPopup(false);

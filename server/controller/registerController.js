@@ -522,80 +522,60 @@ exports.checkBookingLimit = async (req, res) => {
 
 exports.cancelSession = async (req, res) => {
   try {
-    const { userId, startTime } = req.body; // ✅ Now using startTime
+    const { userId, startTime } = req.body;
 
-    // ✅ Find the user
+    console.log("🔍 Searching for session with startTime:", startTime);
+
+    // ✅ Find user
     const user = await Register.findById(userId);
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ message: 'User not found' });
     }
 
-    // ✅ Convert `startTime` to a Date object for proper comparison
-    const sessionStartTime = new Date(startTime);
-    console.log("🔍 Searching session with startTime:", sessionStartTime);
-
-    // ✅ Find the session by `startTime`
+    // ✅ Find the session by `startTime` instead of `eventUri`
     const sessionIndex = user.bookedSessions.findIndex(
-      (session) => new Date(session.startTime).getTime() === sessionStartTime.getTime()
+      (session) => new Date(session.startTime).toISOString() === new Date(startTime).toISOString()
     );
 
+    console.log("🔍 Matched session index:", sessionIndex);
+
     if (sessionIndex === -1) {
-      console.error("❌ Session not found with startTime:", startTime);
-      return res.status(404).json({ message: "Session not found" });
+      return res.status(404).json({ message: 'Session not found' });
     }
 
     const canceledSession = user.bookedSessions[sessionIndex];
 
-    console.log("✅ Canceled Session Found:", canceledSession);
-
     // ✅ Restore Session Count
     let purchasedPlan = user.purchasedClasses.find(
-      (item) => item.name.trim().toLowerCase() === canceledSession.eventName.trim().toLowerCase()
+      (item) => item.name === canceledSession.eventName
     );
 
     if (!purchasedPlan) {
-      console.error("❌ Purchased plan not found for this session");
-      console.log("🔎 User's Purchased Classes:", user.purchasedClasses);
-      console.log("🔍 Session Event Name:", canceledSession.eventName);
       return res.status(400).json({ message: "Purchased plan not found for this session" });
     }
 
-    console.log("🔍 Matched Purchased Plan:", purchasedPlan);
-
-    purchasedPlan.remainingSessions += 1; // Increase count back
+    purchasedPlan.remainingSessions += 1; // Increase session count back
 
     // ✅ Move Session to Archived Classes
     user.archivedClasses.push({
       name: canceledSession.eventName,
       description: "Session was canceled by the user",
       archivedAt: new Date(),
-      sessionCount: purchasedPlan.sessionCount,
-      remainingSessions: purchasedPlan.remainingSessions,
     });
 
     // ✅ Remove session from bookedSessions
     user.bookedSessions.splice(sessionIndex, 1);
     await user.save();
 
-    console.log(`✅ Session canceled by ${user.billingEmail}: ${canceledSession.eventName}`);
-
-    // ✅ Send email to Admin
-    const emailContent = `
-              <h3>🚨 Session Canceled</h3>
-              <p><strong>User:</strong> ${user.billingEmail}</p>
-              <p><strong>Session:</strong> ${canceledSession.eventName}</p>
-              <p><strong>Time:</strong> ${new Date(canceledSession.startTime).toLocaleString()}</p>
-          `;
-
-    await sendEmail("anchorwebdesigner@gmail.com", "🚨 Session Canceled", "", emailContent);
+    console.log(`✅ Session canceled: ${canceledSession.eventName}`);
 
     res.status(200).json({
       message: "Session canceled and archived successfully",
       archivedClasses: user.archivedClasses,
     });
   } catch (error) {
-    console.error("❌ Error canceling session:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    console.error('❌ Error canceling session:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
