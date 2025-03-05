@@ -89,7 +89,7 @@ const UpcomingClasses = () => {
     try {
       await axios.post(`${API_BASE_URL}/api/admin/add-note`, {
         userId: selectedSession.userId,
-        calendlyEventUri: selectedSession.calendlyEventUri, // ✅ Updated Field
+        startTime: selectedSession.startTime, // ✅ Updated Field
         note,
       });
 
