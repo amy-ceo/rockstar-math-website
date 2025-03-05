@@ -195,10 +195,10 @@ const RegisterBeforeCheckout = () => {
     checkUserRegistration()
   }, [navigate])
 
-  // const openSmsPopup = (e) => {
-  //   e.preventDefault()
-  //   setIsSmsPopupOpen(true)
-  // }
+  const openSmsPopup = (e) => {
+    e.preventDefault()
+    setIsSmsPopupOpen(true)
+  }
 
   const handleAgreeSms = () => {
     setFormData((prev) => ({ ...prev, didUserApproveSMS: true }))
