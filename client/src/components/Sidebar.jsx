@@ -11,6 +11,7 @@ import {
   FaArchive 
 } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
+import { CgProfile } from "react-icons/cg";
 
 const Sidebar = () => {
   const { logout } = useAuth();
@@ -81,6 +82,15 @@ const Sidebar = () => {
             ${isExpanded && !isMobile ? "justify-start" : "justify-center"}`}
           >
             <FaArchive  className="text-xl" /> {!isMobile && isExpanded && "Archive"}
+          </Link>
+        </li>
+        <li>
+          <Link
+            to="/dashboard/profile"
+            className={`flex items-center gap-3 px-4 py-2 text-lg rounded-lg hover:bg-blue-600 transition-all duration-300 
+            ${isExpanded && !isMobile ? "justify-start" : "justify-center"}`}
+          >
+            <CgProfile  className="text-xl" /> {!isMobile && isExpanded && "Profile"}
           </Link>
         </li>
         {/* <li>

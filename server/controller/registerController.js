@@ -425,22 +425,20 @@ exports.archiveClass = async (req, res) => {
   }
 }
 
-// ✅ Fetch Archived Classes
 exports.getArchivedClasses = async (req, res) => {
   try {
-    const { userId } = req.params
-    console.log('📂 Fetching Archived Classes for User ID:', userId)
+    const { userId } = req.params;
+    console.log("📂 Fetching Archived Classes for User ID:", userId);
 
-    const user = await Register.findById(userId)
-    if (!user) return res.status(404).json({ message: 'User not found' })
+    const user = await Register.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-    res.status(200).json({ archivedClasses: user.archivedClasses || [] })
+    res.status(200).json({ archivedClasses: user.archivedClasses || [] });
   } catch (error) {
-    console.error('❌ Error fetching archived classes:', error)
-    res.status(500).json({ message: 'Server error' })
+    console.error("❌ Error fetching archived classes:", error);
+    res.status(500).json({ message: "Server error" });
   }
-}
-
+};
 // ✅ Restore a Class
 exports.restoreClass = async (req, res) => {
   try {
@@ -550,6 +548,13 @@ exports.cancelSession = async (req, res) => {
       purchasedPlan.remainingSessions += 1 // Increase count back
     }
 
+      // ✅ Move Session to Archived Classes
+      user.archivedClasses.push({
+        name: canceledSession.eventName,
+        description: "Session was canceled by the user",
+        archivedAt: new Date(),
+      });
+
     // ✅ Remove session from bookedSessions
     user.bookedSessions.splice(sessionIndex, 1)
     await user.save()
@@ -566,7 +571,10 @@ exports.cancelSession = async (req, res) => {
 
     await sendEmail('anchorwebdesigner@gmail.com', '🚨 Session Canceled', '', emailContent)
 
-    res.status(200).json({ message: 'Session canceled successfully' })
+    res.status(200).json({
+      message: "Session canceled and archived successfully",
+      archivedClasses: user.archivedClasses,
+    });
   } catch (error) {
     console.error('❌ Error canceling session:', error)
     res.status(500).json({ message: 'Server error' })

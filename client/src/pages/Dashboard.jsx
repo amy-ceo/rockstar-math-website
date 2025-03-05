@@ -16,7 +16,7 @@ const Dashboard = () => {
   const [coupons, setCoupons] = useState([]) // ✅ State for Coupons
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  // ✅ State for Cancel Confirmation Popup
+  const [archivedClasses, setArchivedClasses] = useState([]); // ✅ New State for Archive
   const [showCancelPopup, setShowCancelPopup] = useState(false)
   const [selectedEventUri, setSelectedEventUri] = useState(null)
   const [showReschedulePopup, setShowReschedulePopup] = useState(false)
@@ -140,42 +140,35 @@ const Dashboard = () => {
     setShowCancelPopup(true)
   }
 
-  // ✅ Cancel Booking Function (After Confirmation)
   const cancelBooking = async () => {
-    if (!selectedEventUri) return
-
+    if (!selectedEventUri) return;
+  
     try {
-      const response = await fetch(
-        'https://backend-production-cbe2.up.railway.app/api/cancel-booking',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: users._id, eventUri: selectedEventUri }),
-        },
-      )
-
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.message)
-
-      alert('Session Canceled Successfully')
-
-      // ✅ Remove the canceled session from UI
-      setCalendlyBookings(
-        calendlyBookings.filter((booking) => booking.calendlyEventUri !== selectedEventUri),
-      )
-
-      // ✅ Hide the popup after canceling
-      setShowCancelPopup(false)
-      setSelectedEventUri(null) // ✅ Reset Selected Event
+      const response = await fetch("https://backend-production-cbe2.up.railway.app/api/user/cancel-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: users._id, eventUri: selectedEventUri }),
+      });
+  
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message);
+  
+      toast.success("Session Canceled & Moved to Archive! ✅");
+  
+      // ✅ Remove canceled session from active bookings
+      setCalendlyBookings((prev) => prev.filter((b) => b.calendlyEventUri !== selectedEventUri));
+  
+      // ✅ Add canceled session to archived list
+      setArchivedClasses((prev) => [...prev, data.archivedSession]);
+  
+      setShowCancelPopup(false);
+      setSelectedEventUri(null);
     } catch (error) {
-      console.error('❌ Error canceling session:', error)
+      console.error("❌ Error canceling session:", error);
+      toast.error("Failed to cancel session. Try again.");
     }
-  }
-
-  const openReschedulePopup = (eventUri) => {
-    setSelectedRescheduleEvent(eventUri)
-    setShowReschedulePopup(true)
-  }
+  };
+  
 
   const handleReschedule = async () => {
     if (!selectedRescheduleEvent || !newDateTime) return

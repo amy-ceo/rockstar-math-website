@@ -22,6 +22,7 @@ import AdminNewsLetter from './admin/pages/AdminNewsLetter.jsx'
 import UpcomingClasses from './admin/pages/UpcomingClasses.jsx'
 import AdminForgotPassword from './admin/pages/AdminForgotPassword.jsx'
 import AdminResetPassword from './admin/pages/AdminResetPassword.jsx'
+import Profile from './pages/Profile.jsx'
 
 // Function to check admin authentication
 const isAdminAuthenticated = () => !!localStorage.getItem('adminToken')
@@ -192,6 +193,11 @@ root.render(
                   <Route path="archive" element={   <>
                       <Navbar />
                       <Archive />
+                      <Footer />
+                    </>} />
+                    <Route path="profile" element={   <>
+                      <Navbar />
+                      <Profile />
                       <Footer />
                     </>} />
                     

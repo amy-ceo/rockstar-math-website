@@ -1,12 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { FaUndo, FaArchive, FaClock } from 'react-icons/fa';
+import React, { useEffect, useState } from "react";
+import { useAuth } from "../context/AuthContext";
+import { FaUndo, FaArchive, FaClock } from "react-icons/fa";
+import toast, { Toaster } from "react-hot-toast"; // ✅ React-Hot-Toast for notifications
 
 const Archive = () => {
   const { users } = useAuth(); // ✅ Get logged-in user from AuthContext
   const [archivedClasses, setArchivedClasses] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (!users || !users._id) {
@@ -18,7 +19,7 @@ const Archive = () => {
 
     const fetchArchivedData = async () => {
       try {
-        const response = await fetch(`https://backend-production-cbe2.up.railway.app/api/${users._id}/archived-classes`);
+        const response = await fetch(`https://backend-production-cbe2.up.railway.app/api/user/archived-classes/${users._id}`);
         const data = await response.json();
 
         if (!response.ok) throw new Error(data.message || "Failed to fetch archived data.");
@@ -40,9 +41,9 @@ const Archive = () => {
     if (!window.confirm(`Are you sure you want to restore ${className}?`)) return;
 
     try {
-      const response = await fetch(`https://backend-production-cbe2.up.railway.app/api/restore-class`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch(`https://backend-production-cbe2.up.railway.app/api/user/restore-class`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: users._id, className }),
       });
 
@@ -52,19 +53,21 @@ const Archive = () => {
       // ✅ Remove Restored Class from Archived List
       setArchivedClasses((prev) => prev.filter((c) => c.name !== className));
 
-      alert(`✅ ${className} restored successfully!`);
+      toast.success(`✅ ${className} restored successfully!`);
     } catch (error) {
       console.error("❌ Error restoring class:", error);
-      alert("Failed to restore class. Try again.");
+      toast.error("Failed to restore class. Try again.");
     }
   };
 
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
+      <Toaster position="top-center" reverseOrder={false} /> {/* ✅ React-Hot-Toast */}
       <h3 className="text-3xl font-bold mb-6 text-gray-800 flex items-center gap-2">
         <FaArchive className="text-blue-500" /> Archived Classes & Expired Sessions
       </h3>
 
+      {/* ✅ Loading & Error Handling */}
       {loading ? (
         <p className="text-gray-600 text-lg">Loading archived data...</p>
       ) : error ? (
@@ -74,12 +77,13 @@ const Archive = () => {
           {archivedClasses.map((classItem, index) => (
             <div
               key={index}
-              className="bg-white border p-5 rounded-lg shadow-lg transition transform hover:scale-105"
+              className="bg-white border p-5 rounded-lg shadow-lg transition transform hover:scale-105 hover:shadow-xl"
             >
               <h4 className="text-xl font-semibold text-gray-800">{classItem.name}</h4>
               <p className="text-gray-600 mt-1">{classItem.description}</p>
               <p className="text-gray-500 text-sm mt-2">
-                📅 Archived On: <strong>{new Date(classItem.archivedDate || Date.now()).toLocaleDateString()}</strong>
+                📅 Archived On:{" "}
+                <strong>{new Date(classItem.archivedAt || Date.now()).toLocaleDateString()}</strong>
               </p>
 
               {/* ✅ Calendly Booking Info (If Available) */}

@@ -16,7 +16,7 @@ const courses = [
   { id: "trigonometry", Icon: TbGeometry, title: "Algebra II", link: "/subscription", tooltip: "⭐ Join group tutoring for Algebra II on our subscription page" },
   { id: "math-analysis", Icon: BiAnalyse, title: "Calc", link: "/subscription", tooltip: "⭐ Join group tutoring for Calc  on our subscription page" },
   { id: "precalculus", Icon: TbMath, title: "Geometry Tutoring", link: "/subscription", tooltip: "⭐ Join group tutoring for Geometry on our subscription page" },
-  { id: "business-calculus", Icon: TbBusinessplan, title: "Common Core For Parents", link: "/subscription", tooltip: "⭐ oin group tutoring for Common Core For Parents on our subscription page" },
+  { id: "business-calculus", Icon: TbBusinessplan, title: "Common Core For Parents", link: "/subscription", tooltip: "⭐ Join group tutoring for Common Core For Parents on our subscription page" },
   { id: "calculus-1", Icon: TbMath, title: "PreCalc and Trig", link: "/subscription" ,tooltip: "⭐ Join group tutoring for PreCalc and Trig on our subscription page" },
   { id: "calculus-2", Icon: RiFunctionLine, title: "Sacred Geometry (10+)", link: "/courses/calculus-2" },
   { id: "calculus-3", Icon: GiStairs, title: "Euclid Elements (10+)", link: "/courses/calculus-3" },

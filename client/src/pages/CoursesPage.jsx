@@ -188,6 +188,39 @@ const CoursesPage = () => {
     })),
   )
 
+  // ✅ Spring Break Courses Data
+  const springBreakCourses = [
+    {
+      courseName: 'Rubik’s Cube Mastery',
+      ageGroup: 'Ages 10+',
+      price: '$125',
+      duration: '5 Days (45-60 min)',
+      description: 'Learn to solve a Rubik Cube together. Materials needed: Rubik’s Cube.',
+    },
+    {
+      courseName: 'Number Ninja (Ages 6-9)',
+      ageGroup: 'Ages 6-9',
+      price: '$125',
+      duration: '5 Days (45-60 min)',
+      description:
+        'Master Mental Math! Topics: Additions up to 100, Multiplication up to 10, Division & Fractions.',
+    },
+    {
+      courseName: 'Number Ninja (Ages 9-11)',
+      ageGroup: 'Ages 9-11',
+      price: '$125',
+      duration: '5 Days (45-60 min)',
+      description: 'Master Mental Math! Topics: Decimals, Division, and Fractions mastered!',
+    },
+    {
+      courseName: 'Private Tutoring (Spring Break)',
+      ageGroup: 'Any Age',
+      price: '$225 (normally $275)',
+      duration: '5 Days (30 min each)',
+      description: 'Need to catch up on math over spring break? Book 5 sessions and save $50!',
+    },
+  ]
+
   const openModal = (videoUrl) => {
     setCurrentVideo(videoUrl)
     setIsModalOpen(true)
@@ -324,6 +357,36 @@ const CoursesPage = () => {
               </div>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* ✅ Spring Break Banner */}
+      <div className="bg-blue-600 text-white text-center py-6">
+        <h1 className="text-4xl font-bold">🌸 Spring Break 2025 🌸</h1>
+        <p className="text-lg mt-2">March 21 - April 4th | Oakland, CA</p>
+        <p className="mt-1">5-Day Courses (45-60 min per session) | Min 3 Students Required</p>
+      </div>
+
+      {/* ✅ Spring Break Courses Section */}
+      <div className="py-16 bg-gray-50">
+        <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">Spring Break Courses</h2>
+        <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-6 px-4">
+          {springBreakCourses.map((course, index) => (
+            <div key={index} className="p-6 bg-white shadow-md rounded-lg">
+              <h3 className="text-xl font-bold text-gray-800">{course.courseName}</h3>
+              <p className="text-gray-600 mt-1">{course.ageGroup}</p>
+              <p className="text-gray-500">{course.price}</p>
+              <p className="text-gray-500">{course.duration}</p>
+              <p className="mt-2">{course.description}</p>
+              {/* ✅ Waitlist Button */}
+              <button
+                onClick={() => setIsFormModalOpen(true)}
+                className="mt-4 bg-deepBlue text-white px-4 py-2 rounded-lg shadow-md hover:bg-sky-600 transition duration-300"
+              >
+                Join Waitlist
+              </button>
+            </div>
+          ))}
         </div>
       </div>
 

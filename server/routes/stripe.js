@@ -609,7 +609,7 @@
     const proxyBaseUrl = "https://backend-production-cbe2.up.railway.app/api/proxy-calendly";
     let detailsHtml = `
         <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
-            <h2 style="color: #2C3E50;">🎉 Hello ${user.username}!</h2>
+            <h2 style="color: #2C3E50;">🎉 Hello!</h2>
             <p>We're excited to have you on board! 🚀 Below are your registration details.</p>
             <h3 style="color: #007bff;">🔗 Available Courses & Registration Links:</h3>
             <ul style="list-style-type: none; padding: 0;">`;
@@ -638,7 +638,7 @@
           const proxyLink = `${proxyBaseUrl}?userId=${user._id}&session=${encodeURIComponent(session.name)}`;
 
           detailsHtml += `<li>
-              📚 <b>${session.name}</b> – Click the link below <b>${session.quantity}</b> times to book all of your sessions.
+              📚 – Click the link below to book all of your sessions.
               <br/>
               <a href="${proxyLink}" target="_blank"><b>Book Now</b></a>
           </li>`;

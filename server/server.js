@@ -155,6 +155,8 @@ app.use("/api", subscribeRoute);
 app.use('/api/contact', contactRoutes);
 app.use("/api/stripe", stripeRoutes); // Set up route
 app.use("/api", registerRoutes);
+app.use("/api", userRoutes);
+
 // ✅ **Use Webhook Route Properly**
 // app.use("/api/otp", otpRoutes);
 app.use("/api/webhook", webhookRoutes);
@@ -163,7 +165,6 @@ app.use('/api/blogs', blogRoutes);
 app.use("/api/paypal", paypalRoutes);
 app.use("/api/consultation", consultationRoutes);
 app.use("/api", waitlist);
-app.use('/api/users', userRoutes); // ✅ Now users API will work properly
 app.use("/api/orders", ordersRoute); // ✅ Set orders route
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
