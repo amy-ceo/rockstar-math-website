@@ -19,6 +19,7 @@ const Dashboard = () => {
   const [error, setError] = useState('')
   const [archivedClasses, setArchivedClasses] = useState([]); // ✅ New State for Archive
   const [showCancelPopup, setShowCancelPopup] = useState(false)
+  const [selectedEventUri, setSelectedEventUri] = useState(null)
   const [selectedStartTime, setSelectedStartTime] = useState(null);
   const [showReschedulePopup, setShowReschedulePopup] = useState(false)
   const [selectedRescheduleEvent, setSelectedRescheduleEvent] = useState(null)
