@@ -1,5 +1,5 @@
 const express = require("express");
-const { loginAdmin, getAdminStats,getAnalytics ,updateUser,deleteUser,addNoteToSession,getAllBookedSessions,cancelSession,getAllUsers,getStripePayments,refundPayment,requestAdminPasswordReset, resetAdminPassword} = require("../controller/adminController");
+const { loginAdmin, getAdminStats,getAnalytics ,updateUser,deleteUser,addOrUpdateNoteToSession,deleteNoteFromSession,getAllBookedSessions,cancelSession,getAllUsers,getStripePayments,refundPayment,requestAdminPasswordReset, resetAdminPassword} = require("../controller/adminController");
 const { protectAdmin } = require("../middlewares/authMiddleware");
 
 const router = express.Router();
@@ -18,13 +18,13 @@ router.post('/refund-payment', refundPayment);
 router.delete('/users/:id', deleteUser);
 // ✅ Route to Request Password Reset (Admin)
 router.post("/request-password-reset", requestAdminPasswordReset);
-
+// ✅ Route for Adding or Updating a Note
+router.post('/admin/add-note', addOrUpdateNoteToSession);
 // ✅ Route to Reset Password (Admin)
 router.post("/reset-password/:token", resetAdminPassword);
 router.get("/booked-sessions", getAllBookedSessions);
 router.post("/cancel-session", cancelSession);
 // ✅ Route for adding note to a booked session
-router.post("/add-note", addNoteToSession);
-
+router.post("/delete-note", deleteNoteFromSession);
 
 module.exports = router;

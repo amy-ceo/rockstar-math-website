@@ -393,28 +393,30 @@ exports.cancelSession = async (req, res) => {
 };
 
 
-exports.addNoteToSession = async (req, res) => {
+
+
+// ✅ DELETE NOTE FROM A BOOKED SESSION
+exports.deleteNoteFromSession = async (req, res) => {
   try {
-    const { userId, startTime, note } = req.body;
+    const { userId, startTime } = req.body;
 
     // ✅ Validate Input Fields
-    if (!userId || !startTime || !note) {
+    if (!userId || !startTime) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    // ✅ Validate userId before using it
+    // ✅ Validate userId format
     if (!mongoose.Types.ObjectId.isValid(userId)) {
       return res.status(400).json({ error: "Invalid userId format" });
     }
 
-    // ✅ Convert userId correctly
+    // ✅ Find User
     const user = await Register.findById(userId);
-
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // ✅ Find the specific session inside bookedSessions
+    // ✅ Find the specific session in `bookedSessions`
     const session = user.bookedSessions.find(
       (session) => session.startTime.toISOString() === new Date(startTime).toISOString()
     );
@@ -423,15 +425,59 @@ exports.addNoteToSession = async (req, res) => {
       return res.status(404).json({ error: "Session not found" });
     }
 
-    // ✅ Update the note field in the booked session
-    session.note = note;
+    // ✅ Remove the note
+    session.note = ""; // Clear the note
 
     // ✅ Save the updated user document without validating `purchasedClasses`
     await user.save({ validateBeforeSave: false });
 
-    res.json({ success: true, message: "Note added successfully!", updatedSession: session });
+    res.json({ success: true, message: "Note deleted successfully!", updatedSession: session });
   } catch (error) {
-    console.error("Error adding note:", error);
+    console.error("Error deleting note:", error);
     res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// ✅ Add or Update Note to a Booked Session
+exports.addOrUpdateNoteToSession = async (req, res) => {
+  try {
+    const { userId, startTime, note } = req.body;
+
+    // ✅ Validate Input Fields
+    if (!userId || !startTime || note === undefined) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // ✅ Validate userId format
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ error: 'Invalid userId format' });
+    }
+
+    // ✅ Find the user by ID
+    const user = await Register.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // ✅ Find the session inside bookedSessions using startTime
+    const session = user.bookedSessions.find(
+      (session) => session.startTime.toISOString() === startTime
+    );
+
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    // ✅ Update the note field
+    session.note = note;
+
+    // ✅ Save the updated user document
+    await user.save();
+
+    res.json({ success: true, message: 'Note updated successfully!', updatedSession: session });
+  } catch (error) {
+    console.error('Error adding/updating note:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 };
