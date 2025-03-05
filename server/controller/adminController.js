@@ -396,12 +396,13 @@ exports.addNoteToSession = async (req, res) => {
   try {
     const { userId, calendlyEventUri, note } = req.body;
 
+    // ✅ Validate Input
     if (!userId || !calendlyEventUri || !note) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    // ✅ Find User by ID
-    const user = await Register.findById(mongoose.Types.ObjectId(userId));
+    // ✅ Convert userId to ObjectId correctly
+    const user = await Register.findById(new mongoose.Types.ObjectId(userId));
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
