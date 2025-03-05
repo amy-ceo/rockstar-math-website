@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { FaTrash } from "react-icons/fa";
+import { FaTrash, FaStickyNote } from "react-icons/fa"; // Added note icon
 import { MdClose } from "react-icons/md";
 
 const API_BASE_URL = "https://backend-production-cbe2.up.railway.app"; // ✅ Ensure correct API URL
@@ -9,39 +9,41 @@ const UpcomingClasses = () => {
   const [sessions, setSessions] = useState([]);
   const [selectedSession, setSelectedSession] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [loading, setLoading] = useState(true); // ✅ Loading state
+  const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
+  const [note, setNote] = useState(""); // ✅ State for note input
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchSessions = async () => {
       try {
         const response = await axios.get(`${API_BASE_URL}/api/admin/booked-sessions`);
 
-        console.log("API Response:", response.data); // ✅ Debugging log
+        console.log("API Response:", response.data);
 
         if (response.data && Array.isArray(response.data.sessions)) {
           setSessions(response.data.sessions);
         } else {
           console.error("Invalid API response:", response.data);
-          setSessions([]); // Fallback
+          setSessions([]);
         }
       } catch (error) {
         console.error("Error fetching sessions:", error);
-        setSessions([]); // Prevent undefined error
+        setSessions([]);
       } finally {
-        setLoading(false); // ✅ Stop loading after API response
+        setLoading(false);
       }
     };
 
     fetchSessions();
   }, []);
 
-  // Open Modal & Set Selected Session
+  // Open Cancel Modal
   const openModal = (session) => {
     setSelectedSession(session);
     setIsModalOpen(true);
   };
 
-  // Close Modal
+  // Close Cancel Modal
   const closeModal = () => {
     setSelectedSession(null);
     setIsModalOpen(false);
@@ -57,7 +59,6 @@ const UpcomingClasses = () => {
         sessionId: selectedSession.sessionId,
       });
 
-      // ✅ Remove cancelled session from UI
       setSessions(sessions.filter(session => session.sessionId !== selectedSession.sessionId));
 
       alert("Session cancelled successfully & email sent to the user!");
@@ -65,6 +66,45 @@ const UpcomingClasses = () => {
     } catch (error) {
       console.error("Error cancelling session:", error);
       alert("Failed to cancel session.");
+    }
+  };
+
+  // Open Note Modal
+  const openNoteModal = (session) => {
+    setSelectedSession(session);
+    setNote(session.note || ""); // Load existing note if any
+    setIsNoteModalOpen(true);
+  };
+
+  // Close Note Modal
+  const closeNoteModal = () => {
+    setSelectedSession(null);
+    setIsNoteModalOpen(false);
+    setNote("");
+  };
+
+  // Save Note
+  const saveNote = async () => {
+    if (!selectedSession) return;
+
+    try {
+      await axios.post(`${API_BASE_URL}/api/admin/add-note`, {
+        userId: selectedSession.userId,
+        sessionId: selectedSession.sessionId,
+        note,
+      });
+
+      setSessions(sessions.map(session =>
+        session.sessionId === selectedSession.sessionId
+          ? { ...session, note }
+          : session
+      ));
+
+      alert("Note added successfully!");
+      closeNoteModal();
+    } catch (error) {
+      console.error("Error saving note:", error);
+      alert("Failed to save note.");
     }
   };
 
@@ -83,7 +123,7 @@ const UpcomingClasses = () => {
                 <th className="px-4 py-3 text-left">Start Time</th>
                 <th className="px-4 py-3 text-left">End Time</th>
                 <th className="px-4 py-3 text-left">User</th>
-                <th className="px-4 py-3 text-center">Action</th>
+                <th className="px-4 py-3 text-center">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -97,12 +137,18 @@ const UpcomingClasses = () => {
                     <br />
                     <span className="text-sm text-gray-500">{session.userEmail}</span>
                   </td>
-                  <td className="px-4 py-3 text-center">
+                  <td className="px-4 py-3 text-center flex gap-3 justify-center">
                     <button
                       onClick={() => openModal(session)}
-                      className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md flex items-center justify-center gap-2 transition-all duration-200"
+                      className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md flex items-center gap-2"
                     >
                       <FaTrash /> Cancel
+                    </button>
+                    <button
+                      onClick={() => openNoteModal(session)}
+                      className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md flex items-center gap-2"
+                    >
+                      <FaStickyNote /> Add Note
                     </button>
                   </td>
                 </tr>
@@ -114,6 +160,7 @@ const UpcomingClasses = () => {
         <p className="text-center text-gray-500 text-lg">No upcoming sessions available.</p>
       )}
 
+      {/* ✅ MODAL FOR SESSION CANCELLATION */}
       {isModalOpen && (
         <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
           <div className="bg-white rounded-lg shadow-lg p-6 w-96 relative">
@@ -131,17 +178,42 @@ const UpcomingClasses = () => {
             </p>
 
             <div className="flex justify-end mt-4 gap-2">
-              <button
-                onClick={closeModal}
-                className="px-4 py-2 text-gray-600 bg-gray-200 rounded-md hover:bg-gray-300 transition-all"
-              >
+              <button onClick={closeModal} className="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300">
                 No
               </button>
-              <button
-                onClick={cancelSession}
-                className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-all"
-              >
+              <button onClick={cancelSession} className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600">
                 Yes, Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ✅ MODAL FOR ADDING NOTE */}
+      {isNoteModalOpen && (
+        <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-96 relative">
+            <button
+              onClick={closeNoteModal}
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+            >
+              <MdClose size={24} />
+            </button>
+
+            <h3 className="text-xl font-semibold text-gray-800 mb-4">Add Note</h3>
+            <textarea
+              className="w-full border rounded p-2 text-gray-700"
+              placeholder="Write a note for the user..."
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+            />
+
+            <div className="flex justify-end mt-4 gap-2">
+              <button onClick={closeNoteModal} className="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300">
+                Cancel
+              </button>
+              <button onClick={saveNote} className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
+                Save Note
               </button>
             </div>
           </div>

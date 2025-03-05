@@ -316,6 +316,14 @@ const Dashboard = () => {
                       )}
                     </div>
 
+                     {/* ✅ Display Admin Notes Below View on Calendly */}
+                     {booking.note && (
+                      <div className="mt-3 p-3 border border-gray-300 rounded bg-gray-100">
+                        <h5 className="text-gray-800 font-bold">📌 Admin Note:</h5>
+                        <p className="text-gray-700">{booking.note}</p>
+                      </div>
+                    )}
+
                     {/* Action Buttons */}
                     <div className="mt-4 flex gap-3">
                       {/* Cancel Button */}

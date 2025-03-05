@@ -334,15 +334,16 @@ exports.resetAdminPassword = async (req, res) => {
 
 exports.getAllBookedSessions = async (req, res) => {
   try {
-    const users = await Register.find({}, "bookedSessions email name");
+    const users = await Register.find({}, "bookedSessions email username");
+
     let allSessions = [];
 
     users.forEach(user => {
       user.bookedSessions.forEach(session => {
         allSessions.push({
           userId: user._id,
-          userEmail: user.email,
-          userName: user.name,
+          userEmail: user.billingEmail,
+          userName: user.username,  // ✅ Now Including Username
           sessionId: session._id,
           eventName: session.eventName,
           startTime: session.startTime,
@@ -358,6 +359,7 @@ exports.getAllBookedSessions = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch booked sessions" });
   }
 };
+
 
 
 exports.cancelSession = async (req, res) => {
@@ -385,5 +387,44 @@ exports.cancelSession = async (req, res) => {
   } catch (error) {
     console.error("Error cancelling session:", error);
     res.status(500).json({ message: "Failed to cancel session" });
+  }
+};
+
+
+// ✅ Add Note Controller
+exports.addNoteToSession = async (req, res) => {
+  try {
+    const { userId, sessionId, note } = req.body;
+
+    if (!userId || !sessionId || !note) {
+      return res.status(400).json({ message: "Missing required fields." });
+    }
+
+    // ✅ Find the user who has booked the session
+    const user = await Register.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    // ✅ Find the specific session inside user's booked sessions
+    const sessionIndex = user.bookedSessions.findIndex(
+      (session) => session._id.toString() === sessionId
+    );
+
+    if (sessionIndex === -1) {
+      return res.status(404).json({ message: "Session not found." });
+    }
+
+    // ✅ Add the note to the session
+    user.bookedSessions[sessionIndex].note = note;
+
+    // ✅ Save the updated user document
+    await user.save();
+
+    res.status(200).json({ message: "Note added successfully!", note });
+  } catch (error) {
+    console.error("Error adding note:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
