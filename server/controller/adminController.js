@@ -393,7 +393,6 @@ exports.cancelSession = async (req, res) => {
 };
 
 
-// ✅ Add Note to a Booked Session
 exports.addNoteToSession = async (req, res) => {
   try {
     const { userId, startTime, note } = req.body;
@@ -403,7 +402,7 @@ exports.addNoteToSession = async (req, res) => {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    // ✅ Validate userId format
+    // ✅ Validate userId before using it
     if (!mongoose.Types.ObjectId.isValid(userId)) {
       return res.status(400).json({ error: "Invalid userId format" });
     }
@@ -415,12 +414,9 @@ exports.addNoteToSession = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // ✅ Convert startTime from string to Date object
-    const requestedStartTime = new Date(startTime);
-
     // ✅ Find the specific session inside bookedSessions
     const session = user.bookedSessions.find(
-      (session) => new Date(session.startTime).getTime() === requestedStartTime.getTime()
+      (session) => session.startTime.toISOString() === new Date(startTime).toISOString()
     );
 
     if (!session) {
@@ -430,8 +426,8 @@ exports.addNoteToSession = async (req, res) => {
     // ✅ Update the note field in the booked session
     session.note = note;
 
-    // ✅ Save the updated user document
-    await user.save();
+    // ✅ Save the updated user document without validating `purchasedClasses`
+    await user.save({ validateBeforeSave: false });
 
     res.json({ success: true, message: "Note added successfully!", updatedSession: session });
   } catch (error) {
