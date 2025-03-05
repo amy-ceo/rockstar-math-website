@@ -644,7 +644,7 @@ const RegisterBeforeCheckout = () => {
       )}
 
       {/* ✅ OTP Popup */}
-      {/* {isOtpPopupOpen && (
+      {isOtpPopupOpen && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white p-8 rounded-lg shadow-2xl w-96 text-center">
             <h3 className="text-2xl font-bold text-gray-800">Enter Verification Code</h3>
@@ -676,7 +676,7 @@ const RegisterBeforeCheckout = () => {
               </button>
           </div>
         </div>
-      )} */}
+      )}
     </div>
   )
 }
