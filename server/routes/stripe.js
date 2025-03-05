@@ -409,39 +409,42 @@
   router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req, res) => {
     let event;
     const sig = req.headers['stripe-signature'];
+
     try {
-      event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+        event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
     } catch (err) {
-      console.error('❌ Webhook Signature Verification Failed:', err.message);
-      return res.status(400).send(`Webhook Error: ${err.message}`);
+        console.error('❌ Webhook Signature Verification Failed:', err.message);
+        return res.status(400).send(`Webhook Error: ${err.message}`);
     }
+
     console.log('🔔 Received Stripe Webhook Event:', event.type);
+
     if (event.type === 'payment_intent.succeeded') {
+        const paymentIntent = event.data.object; // ✅ Define paymentIntent before logging it
 
-      console.log('✅ Stripe Webhook - Payment Succeeded:', paymentIntent.id);
-      
-      const paymentIntent = event.data.object;
-      // ✅ Store Payment in Database
-      try {
-          const newPayment = new Payment({
-              orderId: `stripe_${Date.now()}`,
-              paymentIntentId: paymentIntent.id,
-              userId: paymentIntent.metadata?.userId,
-              billingEmail: paymentIntent.metadata?.userEmail || 'No email',
-              amount: paymentIntent.amount / 100,
-              currency: paymentIntent.currency.toUpperCase(),
-              status: 'Completed',
-              paymentMethod: 'Stripe',
-              cartItems: JSON.parse(paymentIntent.metadata?.cartItemIds || '[]'),
-          });
+        console.log('✅ Stripe Webhook - Payment Succeeded:', paymentIntent.id);
+        
+        // ✅ Store Payment in Database
+        try {
+            const newPayment = new Payment({
+                orderId: `stripe_${Date.now()}`,
+                paymentIntentId: paymentIntent.id,
+                userId: paymentIntent.metadata?.userId,
+                billingEmail: paymentIntent.metadata?.userEmail || 'No email',
+                amount: paymentIntent.amount / 100,
+                currency: paymentIntent.currency.toUpperCase(),
+                status: 'Completed',
+                paymentMethod: 'Stripe',
+                cartItems: JSON.parse(paymentIntent.metadata?.cartItemIds || '[]'),
+            });
 
-          await newPayment.save();
-          console.log('✅ Payment Recorded via Webhook');
-      } catch (error) {
-          console.error('❌ Error Saving Webhook Payment:', error);
-      }
+            await newPayment.save();
+            console.log('✅ Payment Recorded via Webhook');
+        } catch (error) {
+            console.error('❌ Error Saving Webhook Payment:', error);
+        }
 
-      console.log('✅ Payment Intent Succeeded Event Triggered');
+        console.log('✅ Payment Intent Succeeded Event Triggered');
       // ✅ Extract User & Cart Data
       const userId = paymentIntent.metadata?.userId;
       const cartSummary = paymentIntent.metadata?.cartSummary?.split(', ') || [];
