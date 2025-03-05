@@ -2,7 +2,9 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { FaTrash, FaStickyNote } from "react-icons/fa";
 import { MdClose } from "react-icons/md";
-import { toast } from "react-hot-toast"; // ✅ React Hot Toast for better alerts
+import toast, { Toaster } from 'react-hot-toast'
+import 'react-toastify/dist/ReactToastify.css'
+
 
 const API_BASE_URL = "https://backend-production-cbe2.up.railway.app"; // ✅ Ensure correct API URL
 
@@ -141,6 +143,8 @@ const UpcomingClasses = () => {
 
   return (
     <div className="container mx-auto p-6">
+        <Toaster position="top-right" />
+
       <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center">Upcoming Classes</h2>
 
       {loading ? (
