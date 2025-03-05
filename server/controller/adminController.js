@@ -396,10 +396,10 @@ exports.cancelSession = async (req, res) => {
 // ✅ Add Note to a Booked Session
 exports.addNoteToSession = async (req, res) => {
   try {
-    const { userId, calendlyEventUri, note } = req.body;
+    const { userId, startTime, note } = req.body;
 
     // ✅ Validate Input Fields
-    if (!userId || !calendlyEventUri || !note) {
+    if (!userId || !startTime || !note) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
@@ -417,7 +417,7 @@ exports.addNoteToSession = async (req, res) => {
 
     // ✅ Find the specific session inside bookedSessions
     const session = user.bookedSessions.find(
-      (session) => session.calendlyEventUri === calendlyEventUri
+      (session) => session.startTime === startTime
     );
 
     if (!session) {
