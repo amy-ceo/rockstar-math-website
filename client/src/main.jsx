@@ -194,6 +194,7 @@ root.render(
                       <Archive />
                       <Footer />
                     </>} />
+                    
                 </Route>
 
                 {/* ✅ Admin Authentication */}

@@ -24,9 +24,9 @@ const RegisterBeforeCheckout = () => {
     didUserApproveWebcam: false,
   })
 
-  // const [otp, setOtp] = useState('') // OTP input field
-  // const [isOtpPopupOpen, setIsOtpPopupOpen] = useState(false) // OTP popup state
-  // const [isOtpVerified, setIsOtpVerified] = useState(false) // OTP verification state
+  const [otp, setOtp] = useState('') // OTP input field
+  const [isOtpPopupOpen, setIsOtpPopupOpen] = useState(false) // OTP popup state
+  const [isOtpVerified, setIsOtpVerified] = useState(false) // OTP verification state
   const [generatedOtp, setGeneratedOtp] = useState('') // Store received OTP for comparison
   const [isWebcamPopupOpen, setIsWebcamPopupOpen] = useState(false)
   const [isSmsPopupOpen, setIsSmsPopupOpen] = useState(false)
@@ -92,29 +92,29 @@ const RegisterBeforeCheckout = () => {
 
   // ✅ Open OTP Popup (Checkbox or Text Click)
   // ✅ Open OTP Popup and Send OTP
-  // const openOtpPopup = async () => {
-  //   if (!formData.phone || formData.phone === '') {
-  //     toast.error('Please enter a valid phone number!')
-  //     return
-  //   }
+  const openOtpPopup = async () => {
+    if (!formData.phone || formData.phone === '') {
+      toast.error('Please enter a valid phone number!')
+      return
+    }
 
-  //   setIsOtpPopupOpen(true)
+    setIsOtpPopupOpen(true)
 
-  //   try {
-  //     const response = await axios.post('https://backend-production-cbe2.up.railway.app/api/send-otp', {
-  //       phone: formData.phone,
-  //     })
+    try {
+      const response = await axios.post('https://backend-production-cbe2.up.railway.app/api/send-otp', {
+        phone: formData.phone,
+      })
 
-  //     if (response.data.success) {
-  //       toast.success('OTP sent successfully!')
-  //       setGeneratedOtp(response.data.otp) // ⚠️ Store OTP securely (Remove this in production!)
-  //     } else {
-  //       toast.error('Failed to send OTP. Try again!')
-  //     }
-  //   } catch (error) {
-  //     toast.error(error.response?.data?.error || 'Error sending OTP.')
-  //   }
-  // }
+      if (response.data.success) {
+        toast.success('OTP sent successfully!')
+        setGeneratedOtp(response.data.otp) // ⚠️ Store OTP securely (Remove this in production!)
+      } else {
+        toast.error('Failed to send OTP. Try again!')
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Error sending OTP.')
+    }
+  }
 
   // ✅ Handle Webcam Agreement
   const openWebcamPopup = (e) => {
@@ -128,46 +128,46 @@ const RegisterBeforeCheckout = () => {
   }
 
   // ✅ Verify OTP Dynamically
-  // const verifyOtp = async () => {
-  //   try {
-  //     const response = await axios.post('https://backend-production-cbe2.up.railway.app/api/verify-otp', {
-  //       phone: formData.phone,
-  //       otp,
-  //     })
+  const verifyOtp = async () => {
+    try {
+      const response = await axios.post('https://backend-production-cbe2.up.railway.app/api/verify-otp', {
+        phone: formData.phone,
+        otp,
+      })
 
-  //     if (response.data.success) {
-  //       toast.success('OTP Verified Successfully!')
-  //       setIsOtpVerified(true)
-  //       setIsOtpPopupOpen(false)
-  //     } else {
-  //       toast.error('Invalid OTP. Try again.')
-  //     }
-  //   } catch (error) {
-  //     toast.error(error.response?.data?.error || 'OTP Verification Failed.')
-  //   }
-  // }
+      if (response.data.success) {
+        toast.success('OTP Verified Successfully!')
+        setIsOtpVerified(true)
+        setIsOtpPopupOpen(false)
+      } else {
+        toast.error('Invalid OTP. Try again.')
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'OTP Verification Failed.')
+    }
+  }
   // ✅ Handle SMS Checkbox & Open OTP Popup
-  // const handleSmsCheckboxChange = async (e) => {
-  //   const isChecked = e.target.checked
-  //   setFormData((prev) => ({ ...prev, didUserApproveSMS: isChecked }))
+  const handleSmsCheckboxChange = async (e) => {
+    const isChecked = e.target.checked
+    setFormData((prev) => ({ ...prev, didUserApproveSMS: isChecked }))
 
-  //   if (isChecked) {
-  //     setIsOtpPopupOpen(true)
-  //     try {
-  //       const response = await axios.post('https://backend-production-cbe2.up.railway.app/api/send-otp', {
-  //         phone: formData.phone,
-  //       })
+    if (isChecked) {
+      setIsOtpPopupOpen(true)
+      try {
+        const response = await axios.post('https://backend-production-cbe2.up.railway.app/api/send-otp', {
+          phone: formData.phone,
+        })
 
-  //       if (response.data.success) {
-  //         toast.success('OTP sent successfully!')
-  //       } else {
-  //         toast.error('Failed to send OTP. Try again!')
-  //       }
-  //     } catch (error) {
-  //       toast.error(error.response?.data?.error || 'Error sending OTP.')
-  //     }
-  //   }
-  // }
+        if (response.data.success) {
+          toast.success('OTP sent successfully!')
+        } else {
+          toast.error('Failed to send OTP. Try again!')
+        }
+      } catch (error) {
+        toast.error(error.response?.data?.error || 'Error sending OTP.')
+      }
+    }
+  }
 
   // ✅ Page load hone pe check karein ke user pehle register ho chuka hai ya nahi
   useEffect(() => {
@@ -536,7 +536,7 @@ const RegisterBeforeCheckout = () => {
             )} */}
           {/* ✅ Checkboxes */}
           <div className="col-span-2 flex items-center justify-between">
-            {/* <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-4">
               <input
                 type="checkbox"
                 name="didUserApproveSMS"
@@ -550,7 +550,7 @@ const RegisterBeforeCheckout = () => {
               >
                 I agree to receive SMS notifications
               </Link>
-            </div> */}
+            </div>
             <div className="flex items-center space-x-4">
               <input
                 type="checkbox"

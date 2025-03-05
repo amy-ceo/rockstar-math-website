@@ -10,6 +10,7 @@ import {
   FaChartBar,
 } from "react-icons/fa";
 import { GiLoveLetter } from "react-icons/gi";
+import { MdUpcoming } from "react-icons/md";
 
 
 const AdminSidebar = () => {
@@ -101,7 +102,7 @@ const AdminSidebar = () => {
             className={`flex items-center gap-3 px-4 py-2 text-lg rounded-lg hover:bg-gray-700 transition-all duration-300 
             ${isExpanded && !isMobile ? "justify-start" : "justify-center"}`}
           >
-            <GiLoveLetter className="text-xl" /> {!isMobile && isExpanded && "Upcoming Sessions"}
+            <MdUpcoming className="text-xl" /> {!isMobile && isExpanded && "Upcoming Sessions"}
           </Link>
         </li>
       </ul>

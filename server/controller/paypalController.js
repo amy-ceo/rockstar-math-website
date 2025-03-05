@@ -6,16 +6,36 @@ const paypalClient = require("../config/paypal");
 
 
 const sessionMapping = {
-  '3 x 30': 3,
-  '5 - 30': 5,
+  '3 x 30 minutes': 3,
+  '5 - 30 minutes': 5,
   '8 x 30 minutes': 8,
-}
+  '8 x 60 minutes': 8,
+  '5 x 60 minutes': 5,
+  '3 x 60 minutes': 3,
+  '8 x 90 minutes': 8,
+  '5 x 90 minutes': 5,
+  '3 x 90 minutes': 3,
+  '90 Minute Tutoring Session': 1,
+  '60 Minute Tutoring Session': 1,
+  '30 Minute Tutoring Session': 1,
+
+};
 
 const calendlyMapping = {
-  '3 x 30': 'https://calendly.com/rockstarmathtutoring/30-minute-session',
-  '5 - 30': 'https://calendly.com/rockstarmathtutoring/30-minute-session',
+  '3 x 30 minutes': 'https://calendly.com/rockstarmathtutoring/30-minute-session',
+  '5 - 30 minutes': 'https://calendly.com/rockstarmathtutoring/30-minute-session',
   '8 x 30 minutes': 'https://calendly.com/rockstarmathtutoring/30-minute-session',
-}
+  '8 x 60 minutes': 'https://calendly.com/rockstarmathtutoring/60min',
+  '5 x 60 minutes': 'https://calendly.com/rockstarmathtutoring/60min',
+  '3 x 60 minutes': 'https://calendly.com/rockstarmathtutoring/60min',
+  '8 x 90 minutes': 'https://calendly.com/rockstarmathtutoring/90-minute-sessions',
+  '5 x 90 minutes': 'https://calendly.com/rockstarmathtutoring/90-minute-sessions',
+  '3 x 90 minutes': 'https://calendly.com/rockstarmathtutoring/90-minute-sessions',
+  '90 Minute Tutoring Session': 'https://calendly.com/rockstarmathtutoring/90-minute-sessions',
+  '60 Minute Tutoring Session': 'https://calendly.com/rockstarmathtutoring/60min',
+  '30 Minute Tutoring Session': 'https://calendly.com/rockstarmathtutoring/30-minute-session',
+
+};
 
 // ✅ Function to Generate Email HTML
 function generateEmailHtml(user, zoomLinks, userCoupons) {
@@ -76,33 +96,32 @@ async function getActiveCoupons() {
   }
 }
 
-// ✅ Define Zoom Course Links
-const zoomCourseMapping = [
+ // ✅ Define Zoom Course Links
+ const zoomCourseMapping = [
   {
     name: '📘 Algebra 1 Tutoring',
     link: 'https://us06web.zoom.us/meeting/register/mZHoQiy9SqqHx69f4dejgg#/registration',
   },
   {
     name: '📗 Algebra 2 Tutoring',
-    link: 'https://us06web.zoom.us/meeting/register/z2W2vvBHRQK_yEWMTteOrg#/registration',
+    link: 'https://us06web.zoom.us/meeting/register/z2W2vvBHROGK_yEWMTeOrg#/registration',
   },
   {
     name: '📕 Calculus 1 Tutoring',
-    link: 'https://us06web.zoom.us/meeting/register/kejTnKqpTpteWaMN13BAb0#/registration',
+    link: 'https://us06web.zoom.us/meeting/register/kejThKqpTpetwaMNI33bAQ#/registration',
   },
   {
     name: '📙 Pre-Calculus & Trigonometry Tutoring',
-    link: 'https://us06web.zoom.us/meeting/register/jH2N2rFMSXyqX1UDEZAarQ#/registration',
+    link: 'https://us06web.zoom.us/meeting/register/jH2N2rfMSXyqX1UDEZAarQ#/registration',
   },
   {
     name: '📒 Geometry Tutoring',
-    link: 'https://us06web.zoom.us/meeting/register/Lsd_MFiwQpKRKhMZhPIVPw#/registration',
+    link: 'https://us06web.zoom.us/meeting/register/Lsd_MFiwQpKRKhMZhPIYPw#/registration',
   },
-]
-
+];
 const COMMONCORE_ZOOM_LINK = {
   name: '📚  Common Core for Parents',
-  link: 'https://us06web.zoom.us/meeting/register/XsYhADVmQcK8BIIT3Sfbpyg#/registration',
+  link: 'https://us06web.zoom.us/meeting/register/XsYhADVmQcK8BIT3Sfbpyg#/registration',
 }
 
 // 🎯 Create PayPal Order
@@ -173,56 +192,54 @@ exports.createOrder = async (req, res) => {
 
 // 🎯 Capture PayPal Order & Update Purchased Classes
 exports.captureOrder = async (req, res) => {
-    try {
+  try {
       const { orderId, user } = req.body;
-  
+
       if (!orderId || !user || !user._id || !user.billingEmail || !Array.isArray(user.cartItems) || user.cartItems.length === 0) {
-        console.error("❌ Missing required fields:", { orderId, user });
-        return res.status(400).json({ error: "Missing required fields or empty cart items" });
+          console.error("❌ Missing required fields:", { orderId, user });
+          return res.status(400).json({ error: "Missing required fields or empty cart items" });
       }
-  
+
       console.log("🛒 Capturing PayPal Order:", orderId);
       const captureRequest = new paypal.orders.OrdersCaptureRequest(orderId);
       captureRequest.requestBody({});
-      
+
       let captureResponse;
       try {
-        captureResponse = await paypalClient.execute(captureRequest);
-        console.log("✅ Capture Response:", captureResponse.result);
+          captureResponse = await paypalClient.execute(captureRequest);
+          console.log("✅ Capture Response:", captureResponse.result);
       } catch (captureError) {
-        console.error("❌ PayPal Capture Error:", captureError);
-        return res.status(400).json({ error: "PayPal capture failed", details: captureError.message });
+          console.error("❌ PayPal Capture Error:", captureError);
+          return res.status(400).json({ error: "PayPal capture failed", details: captureError.message });
       }
-  
+
       if (!captureResponse.result || captureResponse.result.status !== "COMPLETED") {
-        console.error("❌ PayPal Capture Failed - Status:", captureResponse.result.status);
-        return res.status(400).json({ error: "Payment capture failed", details: captureResponse.result });
+          console.error("❌ PayPal Capture Failed - Status:", captureResponse.result.status);
+          return res.status(400).json({ error: "Payment capture failed", details: captureResponse.result });
       }
-  
+
       const captureDetails = captureResponse.result.purchase_units[0].payments?.captures?.[0];
-  
+
       if (!captureDetails) {
-        console.error("❌ Capture Details Missing:", captureResponse.result);
-        return res.status(400).json({ error: "Capture details missing from PayPal response" });
+          console.error("❌ Capture Details Missing:", captureResponse.result);
+          return res.status(400).json({ error: "Capture details missing from PayPal response" });
       }
-  
+
       const amount = captureDetails.amount.value;
       const currency = captureDetails.amount.currency_code;
-      const paymentIntentId = captureDetails.id; // ✅ Use PayPal capture ID as `paymentIntentId`
-  
-      // ✅ Ensure `paymentIntentId` is unique before saving
+      const paymentIntentId = captureDetails.id;
+
+      // ✅ Ensure paymentIntentId is unique before saving
       const existingPayment = await Payment.findOne({ paymentIntentId });
       if (existingPayment) {
-        console.warn("⚠️ Duplicate Payment Detected, Skipping Save:", paymentIntentId);
-        return res.json({ message: "Payment already recorded.", payment: captureResponse.result });
+          console.warn("⚠️ Duplicate Payment Detected, Skipping Save:", paymentIntentId);
+          return res.json({ message: "Payment already recorded.", payment: captureResponse.result });
       }
-  
+
       // ✅ Save Payment Record
-      try {
-        console.log("🔹 Saving Payment Details...");
-        const newPayment = new Payment({
+      const newPayment = new Payment({
           orderId,
-          paymentIntentId, // ✅ Save unique payment ID
+          paymentIntentId,
           userId: user._id,
           billingEmail: user.billingEmail,
           amount,
@@ -230,206 +247,150 @@ exports.captureOrder = async (req, res) => {
           status: "Completed",
           paymentMethod: "PayPal",
           cartItems: user.cartItems || [],
-        });
-  
-        await newPayment.save();
-        console.log("✅ Payment Record Saved!");
-      } catch (saveError) {
-        console.error("❌ Error Saving Payment:", saveError);
-        return res.status(500).json({ error: "Database error while saving payment.", details: saveError.message });
+      });
+
+      await newPayment.save();
+      console.log("✅ Payment Record Saved!");
+
+      // ✅ **Fetch Active Coupons**
+      const activeCoupons = await getActiveCoupons();
+      console.log("🎟 Active Coupons from Stripe:", activeCoupons);
+
+      // ✅ **Generate Calendly & Zoom Links**
+      const proxyBaseUrl = "https://backend-production-cbe2.up.railway.app/api/proxy-calendly";
+      let calendlyLinks = [];
+      user.cartItems.forEach((item) => {
+          const formattedItemName = item.name.trim().toLowerCase();
+          Object.keys(calendlyMapping).forEach((calendlyKey) => {
+              if (formattedItemName === calendlyKey.toLowerCase().trim()) {
+                  calendlyLinks.push({
+                      name: item.name,
+                      link: `${proxyBaseUrl}?userId=${user._id}&session=${encodeURIComponent(item.name)}`,
+                      quantity: sessionMapping[item.name] || 1
+                  });
+              }
+          });
+      });
+
+      let zoomLinks = [];
+      if (["Learn", "Achieve", "Excel"].some((course) => user.cartItems.map((item) => item.name).includes(course))) {
+          zoomLinks = zoomCourseMapping;
       }
-  
-      // ✅ **Step 1: Send Welcome Email (Same as Stripe)**
-    console.log(`📧 Sending Welcome Email to: ${user.billingEmail}`);
-    let welcomeSubject = `🎉 Welcome to Rockstar Math, ${user.username}!`;
-    let welcomeHtml = `<div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
+
+      const hasCommonCore = user.cartItems.some((item) => item.name.toLowerCase() === "common core for parents");
+      if (hasCommonCore) {
+          zoomLinks.push(COMMONCORE_ZOOM_LINK);
+      }
+
+      // ✅ **Match Coupons with Purchased Courses**
+      let appliedCoupons = [];
+      user.cartItems.forEach((item) => {
+          let matchedCoupon = activeCoupons.find((coupon) => {
+              if (item.name === "Learn" && coupon.percent_off === 10) return true;
+              if (item.name === "Achieve" && coupon.percent_off === 30) return true;
+              if (item.name === "Excel" && coupon.percent_off === 20) return true;
+              return false;
+          });
+
+          if (matchedCoupon && matchedCoupon.code) {
+              appliedCoupons.push({
+                  code: matchedCoupon.code,
+                  percent_off: matchedCoupon.percent_off,
+                  expires: matchedCoupon.expires,
+              });
+          }
+      });
+
+      if (appliedCoupons.length > 0) {
+          appliedCoupons = appliedCoupons.filter((coupon) => coupon.code && coupon.code.trim() !== "");
+          if (appliedCoupons.length > 0) {
+              await Register.findByIdAndUpdate(user._id, {
+                  $push: { coupons: { $each: appliedCoupons } },
+              });
+          }
+      }
+
+      // ✅ **Send Welcome Email (MUST HAVE)**
+      let welcomeHtml = `
+    <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
+      
       <div style="text-align: center; padding-bottom: 20px;">
         <img src="https://your-logo-url.com/logo.png" alt="Rockstar Math" style="width: 150px; margin-bottom: 10px;">
-        <h2 style="color: #2C3E50;">🎉 Welcome, ${user.username}!</h2>
-        <p style="font-size: 16px;">We're thrilled to have you join <b>Rockstar Math</b>! 🚀</p>
-      </div>
-      <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-        <h3 style="color: #007bff;">📢 Your Account is Ready!</h3>
-        <p>Congratulations! Your account has been successfully created. You now have access to personalized math tutoring, expert guidance, and interactive learning resources.</p>
-        <p><b>Username:</b> ${user.username}</p>
-        <p><b>Email:</b> ${user.email}</p>
-      </div>
-      <p style="text-align: center; font-size: 16px;">Let's make math learning fun and exciting! We can't wait to see you in class. 🚀</p>
-      <div style="text-align: center; margin-top: 20px;">
-        <a href="https://calendly.com/rockstarmathtutoring" target="_blank"
-          style="display:inline-block; padding:12px 24px; background-color:#007bff; color:#fff; text-decoration:none; border-radius:6px; font-weight:bold; font-size:16px;">
-          📅 Schedule Your First Session
-        </a>
-      </div>
-      <p style="text-align: center; font-size: 14px; color: #555; margin-top: 20px;">
-        Best regards,<br>
-        <b>Amy Gemme</b><br>
-        Rockstar Math Tutoring<br>
-        📞 510-410-4963
-      </p>
-    </div>`;
+      <h2 style="color: #2C3E50;">🎉 Welcome, ${user.username}!</h2>
+      <p style="font-size: 16px;">We're thrilled to have you join <b>Rockstar Math</b>! 🚀</p>
+    </div>
 
-    await sendEmail(user.billingEmail, welcomeSubject, '', welcomeHtml);
-    console.log('✅ Welcome email sent successfully!');
+    <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+      <h3 style="color: #007bff;">📢 Your Account is Ready!</h3>
+      <p>Congratulations! Your account has been successfully created. You now have access to personalized math tutoring, expert guidance, and interactive learning resources.</p>
+      <p><b>Username:</b> ${user.username}</p>
+      <p><b>Email:</b> ${user.email}</p>
+    </div>
 
-     // ✅ **Step 2: Send Calendly-Based Email with Remaining Sessions**
-     let calendlyLinks = [];
-     user.cartItems.forEach((item) => {
-       const formattedItemName = item.name.trim().toLowerCase();
-       Object.keys(calendlyMapping).forEach((calendlyKey) => {
-         if (formattedItemName === calendlyKey.toLowerCase().trim()) {
-           calendlyLinks.push({
-             name: item.name,
-             link: calendlyMapping[calendlyKey],
-           });
-         }
-       });
-     });
- 
-     let purchasedItems = user.cartItems.map(item => ({
-       name: item.name,
-       sessionCount: sessionMapping[item.name] || 0,
-       remainingSessions: sessionMapping[item.name] || 0,
-       bookingLink: calendlyMapping[item.name] || null,
-       status: "Active",
-     }));
- 
-     if (purchasedItems.length > 0) {
-       await Register.findByIdAndUpdate(user._id, {
-         $push: { purchasedClasses: { $each: purchasedItems } }
-       }, { new: true });
-     }
- 
-     console.log('✅ Calendly session tracking updated in database.');
- 
-     const calendlyEmailHtml = `
-       <h2>📅 Your Calendly Booking Details</h2>
-       <p>Below are the details of your purchased sessions:</p>
-       <ul>
-         ${calendlyLinks.map(link => `<li>${link.name}: <a href="${link.link}" target="_blank">Book Now</a></li>`).join('')}
-       </ul>
-       <p>Please schedule your sessions at your convenience.</p>
-     `;
- 
-     await sendEmail(user.billingEmail, "📚 Your Rockstar Math Booking Details", "", calendlyEmailHtml);
-     console.log('✅ Calendly email sent successfully!');
+    <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+      <h3 style="color: #007bff;">📌 What's Next?</h3>
+      <p>Start your learning journey today by logging into your dashboard, exploring available sessions, and scheduling your first class!</p>
+      <p><b>Access your dashboard here:</b> <a href="https://your-website.com/login" target="_blank" style="color: #007bff;">Go to Dashboard</a></p>
+    </div>
 
-     // ✅ Fetch Active Coupons
-     const activeCoupons = await getActiveCoupons();
-     console.log("🎟 Active Coupons from Stripe:", activeCoupons);
- 
-     // ✅ Match Coupons Based on Course Name
-     let userCoupons = activeCoupons.filter((coupon) => {
-       return user.cartItems.some((item) => {
-         return item.name.toLowerCase().includes(coupon.code.toLowerCase());
-       });
-     });
- 
-     console.log("🛒 Purchased Items from Cart:", user.cartItems.map((item) => item.name));
- 
-     // ✅ Fetch Zoom Links
-     let zoomLinks = [];
-     if (["Learn", "Achieve", "Excel"].some((course) => user.cartItems.map((item) => item.name).includes(course))) {
-       zoomLinks = zoomCourseMapping;
-     }
- 
-     // ✅ **Check if User Purchased "Common Core for Parents" Course**
-     const hasCommonCore = user.cartItems.some((item) => item.name.toLowerCase() === "common core for parents");
-     if (hasCommonCore) {
-       zoomLinks.push(COMMONCORE_ZOOM_LINK); // ✅ Add the specific Common Core Zoom link
-     }
- 
-     // ✅ Apply Discount Coupons Based on Course Name (Same Logic as `addPurchasedClass`)
-     let appliedCoupons = [];
-     user.cartItems.forEach((item) => {
-       let matchedCoupon = activeCoupons.find((coupon) => {
-         if (item.name === "Learn" && coupon.percent_off === 10) return true;
-         if (item.name === "Achieve" && coupon.percent_off === 30) return true;
-         if (item.name === "Excel" && coupon.percent_off === 20) return true;
-         return false;
-       });
- 
-       if (matchedCoupon && matchedCoupon.code) {
-         appliedCoupons.push({
-           code: matchedCoupon.code,
-           percent_off: matchedCoupon.percent_off,
-           expires: matchedCoupon.expires,
-         });
-       }
-     });
- 
-     // ✅ Save Coupons in User's Database
-     if (appliedCoupons.length > 0) {
-       appliedCoupons = appliedCoupons.filter((coupon) => coupon.code && coupon.code.trim() !== "");
-       if (appliedCoupons.length > 0) {
-         await Register.findByIdAndUpdate(user._id, {
-           $push: { coupons: { $each: appliedCoupons } },
-         });
-       }
-     }
- 
-     console.log("📧 Sending Email with Zoom Links:", zoomLinks);
-     console.log("🎟 Sending Email with Coupons:", appliedCoupons);
- 
-     const emailHtml = generateEmailHtml(user, zoomLinks, appliedCoupons);
- 
- 
+    <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+      <h3 style="color: #007bff;">💡 Need Help?</h3>
+      <p>Our team is always here to assist you! If you have any questions, reach out to us at <b>support@rockstarmath.com</b>.</p>
+    </div>
 
+    <p style="text-align: center; font-size: 16px;">Let's make math learning fun and exciting! We can't wait to see you in class. 🚀</p>
 
-      // ✅ Call `addPurchasedClass` API to add purchased items
-      try {
-        console.log("📡 Calling addPurchasedClass API...");
-        const purchaseResponse = await fetch(
-          `https://backend-production-cbe2.up.railway.app/api/add-purchased-class`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              userId: user._id,
-              purchasedItems: user.cartItems.map(item => ({
-                name: item.name,
-                description: item.description || "No description available",
-              })),
-              userEmail: user.billingEmail,
-            }),
-          }
-        );
-  
-        const purchaseResult = await purchaseResponse.json();
-        console.log("✅ Purchased Classes API Response:", purchaseResult);
-  
-        if (!purchaseResponse.ok) {
-          console.warn("⚠️ Issue updating purchased classes:", purchaseResult.message);
-        }
-      } catch (purchaseError) {
-        console.error("❌ Error calling addPurchasedClass API:", purchaseError);
-      }
-  
-      // ✅ Send Confirmation Email
-      try {
-        await sendEmail(
-          user.billingEmail,
-          `Order Confirmation - Your Purchase is Successful!`,
-          `Your order ${orderId} was successful.`,
-          "<h3>Thank you!</h3>"
-        );
-        console.log("✅ Confirmation Email Sent");
-      } catch (emailError) {
-        console.error("❌ Email Sending Failed:", emailError);
-      }
-      await sendEmail(user.billingEmail, "📚 Your Rockstar Math Purchase Details", "", emailHtml);
+    <div style="text-align: center; margin-top: 20px;">
+      <a href="https://calendly.com/rockstarmathtutoring" target="_blank"
+        style="display:inline-block; padding:12px 24px; background-color:#007bff; color:#fff; text-decoration:none; border-radius:6px; font-weight:bold; font-size:16px;">
+        📅 Schedule Your First Session
+      </a>
+    </div>
 
+    <p style="text-align: center; font-size: 14px; color: #555; margin-top: 20px;">
+      Best regards,<br>
+      <b>Amy Gemme</b><br>
+      Rockstar Math Tutoring<br>
+      📞 510-410-4963
+    </p>
+  </div>
+  `;
 
-      // ✅ Cart Empty ka Response Frontend ko bhejna
-      // res.json({ message: "Payment captured & records updated successfully.", clearCart: true });
+      await sendEmail(user.billingEmail, "🎉 Welcome to Rockstar Math", "", welcomeHtml);
+      console.log("✅ Welcome Email Sent!");
 
-      res.json({ message: "Payment captured & records updated successfully.", payment: captureResponse.result });
-  
-    } catch (error) {
+      // ✅ **Send Email with Calendly Links**
+      let detailsHtml = `<h3>📅 Your Scheduled Calendly Sessions:</h3>
+      <p>Thank you for purchasing! Below is your registration link and important instructions on how to book your sessions:</p>
+      <ul>`;
+
+      calendlyLinks.forEach((session) => {
+          detailsHtml += `<li>📚 <b>${session.name}</b> – Click the link below <b>${session.quantity}</b> times to book all your sessions.
+          <br/>
+          <a href="${session.link}" target="_blank"><b>Book Now</b></a></li>`;
+      });
+
+      detailsHtml += `</ul>
+      <p>📌 Once you have booked all your sessions, head over to your <b>RockstarMath Dashboard</b> where you can:</p>
+      <ul>
+          <li>📅 View all your scheduled sessions</li>
+          <li>✏️ Reschedule sessions if needed</li>
+          <li>❌ Cancel any session</li>
+          <li>🛒 Purchase additional sessions</li>
+      </ul>`;
+
+      await sendEmail(user.billingEmail, "📚 Your Rockstar Math Purchase Details", "", detailsHtml);
+      console.log("✅ Purchase Confirmation Email Sent!");
+
+      // ✅ **Ensure Frontend Clears Cart**
+      res.json({ message: "Payment captured & records updated successfully.", clearCart: true });
+
+  } catch (error) {
       console.error("❌ Error Capturing PayPal Payment:", error);
       res.status(500).json({ error: "Internal Server Error", details: error.message || error });
-    }
-  };
+  }
+};
+
   
 
 // 🎯 PayPal Webhook for Order Capture

@@ -379,9 +379,11 @@ const Dashboard = () => {
               dateFormat="MMMM d, yyyy h:mm aa"
               className="border p-2 mt-2"
               filterDate={(date) => {
-                const day = date.getDay()
-                return day >= 1 && day <= 4 // Monday (1) to Thursday (4)
+                const day = date.getDay();
+                return day >= 0 && day <= 4; // ✅ Allow only Sunday (0) to Thursday (4)
               }}
+              minDate={new Date()} // ✅ Prevent past dates from being selected
+              disabledKeyboardNavigation // ✅ Prevent user from manually typing invalid dates
             />
             <div className="mt-4 flex justify-center space-x-4">
               <button

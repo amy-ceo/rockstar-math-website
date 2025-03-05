@@ -330,3 +330,60 @@ exports.resetAdminPassword = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
+
+exports.getAllBookedSessions = async (req, res) => {
+  try {
+    const users = await Register.find({}, "bookedSessions email name");
+    let allSessions = [];
+
+    users.forEach(user => {
+      user.bookedSessions.forEach(session => {
+        allSessions.push({
+          userId: user._id,
+          userEmail: user.email,
+          userName: user.name,
+          sessionId: session._id,
+          eventName: session.eventName,
+          startTime: session.startTime,
+          endTime: session.endTime,
+          status: session.status,
+        });
+      });
+    });
+
+    res.json({ success: true, sessions: allSessions });
+  } catch (error) {
+    console.error("Error fetching booked sessions:", error);
+    res.status(500).json({ message: "Failed to fetch booked sessions" });
+  }
+};
+
+
+exports.cancelSession = async (req, res) => {
+  try {
+    const { userId, sessionId } = req.body;
+
+    // ✅ Remove session from user's bookedSessions array
+    const updatedUser = await Register.findByIdAndUpdate(
+      userId,
+      { $pull: { bookedSessions: { _id: sessionId } } },
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // ✅ Send email notification to the user
+    const emailSubject = "Your Scheduled Session Has Been Cancelled";
+    const emailMessage = `Dear ${updatedUser.name},\n\nYour session has been cancelled by the admin. If you have any concerns, please contact support.\n\nBest regards,\nSupport Team`;
+
+    await sendEmail(updatedUser.email, emailSubject, emailMessage);
+
+    res.json({ success: true, message: "Session cancelled and email sent" });
+  } catch (error) {
+    console.error("Error cancelling session:", error);
+    res.status(500).json({ message: "Failed to cancel session" });
+  }
+};
