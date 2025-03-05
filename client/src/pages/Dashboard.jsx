@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom'
 import ClassCard from '../components/ClassCard.jsx'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
+import toast, { Toaster } from 'react-hot-toast'
 
 const Dashboard = () => {
   const { users } = useAuth() // ✅ Get user from AuthContext
@@ -143,22 +144,41 @@ const Dashboard = () => {
   }
 
   const cancelBooking = async () => {
-    if (!selectedEventUri) return;
+    if (!selectedEventUri) {
+      toast.error("No session selected to cancel!");
+      return;
+    }
   
     try {
-      const response = await fetch("https://backend-production-cbe2.up.railway.app/api/cancel-session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: users._id, eventUri: selectedEventUri }),
+      console.log("📡 Sending cancel request to API...", {
+        userId: users._id,
+        eventUri: selectedEventUri,
       });
   
+      const response = await fetch(
+        "https://backend-production-cbe2.up.railway.app/api/cancel-booking",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: users._id, eventUri: selectedEventUri }),
+        }
+      );
+  
+      console.log("📥 API Response Status:", response.status);
+  
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message);
+      console.log("📥 API Response Data:", data);
+  
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to cancel session.");
+      }
   
       toast.success("Session Canceled & Moved to Archive! ✅");
   
       // ✅ Remove canceled session from active bookings
-      setCalendlyBookings((prev) => prev.filter((b) => b.calendlyEventUri !== selectedEventUri));
+      setCalendlyBookings((prev) =>
+        prev.filter((b) => b.calendlyEventUri !== selectedEventUri)
+      );
   
       // ✅ Add canceled session to archived list
       setArchivedClasses((prev) => [...prev, data.archivedSession]);
@@ -166,10 +186,11 @@ const Dashboard = () => {
       setShowCancelPopup(false);
       setSelectedEventUri(null);
     } catch (error) {
-      console.error("❌ Error canceling session:", error);
+      console.error("❌ Error canceling session:", error.message);
       toast.error("Failed to cancel session. Try again.");
     }
   };
+  
   
 
   const handleReschedule = async () => {
@@ -235,6 +256,8 @@ const Dashboard = () => {
 
   return (
     <div className="flex min-h-auto">
+            <Toaster position="top-right" />
+      
       <div className="flex-grow bg-gray-100">
         <AnimatedSection direction="right">
           {/* ✅ Display Purchased Classes */}

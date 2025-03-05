@@ -33,7 +33,7 @@
     },
     {
       name: '📗 Algebra 2 Tutoring',
-      link: 'https://us06web.zoom.us/meeting/register/z2W2vvBHROGK_yEWMTeOrg#/registration',
+      link: 'https://us06web.zoom.us/meeting/register/kejThKqpTpetwaMNI33bAQ#/registration',
     },
     {
       name: '📕 Calculus 1 Tutoring',
@@ -336,7 +336,10 @@
         clearCart: true, // 🔥 Tell frontend to clear the cart
       });
       
-
+      console.log("🛒 Backend Response:", {
+        message: "Payment captured & records updated successfully.",
+        clearCart: true,
+      });
 
     } catch (error) {
       console.error('❌ Error Capturing Stripe Payment:', error);
