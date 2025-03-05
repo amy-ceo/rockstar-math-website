@@ -43,12 +43,15 @@ const couponSchema = new mongoose.Schema({
   assignedAt: { type: Date, default: Date.now },
 })
 
-// ✅ Archived Classes Schema (Same as purchasedClasses)
+// ✅ Archived Classes Schema (Fix: Add `remainingSessions` & `sessionCount`)
 const archivedClassSchema = new mongoose.Schema({
   name: { type: String, required: true },
   description: { type: String },
   archivedAt: { type: Date, default: Date.now },
-})
+  sessionCount: { type: Number, required: true }, // ✅ Fix: Ensure sessionCount is included
+  remainingSessions: { type: Number, required: true }, // ✅ Fix: Ensure remainingSessions is included
+});
+
 
 // ✅ Define Schema
 const RegisterSchema = new mongoose.Schema(

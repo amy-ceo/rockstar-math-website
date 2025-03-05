@@ -33,7 +33,7 @@
     },
     {
       name: '📗 Algebra 2 Tutoring',
-      link: 'https://us06web.zoom.us/meeting/register/kejThKqpTpetwaMNI33bAQ#/registration',
+      link: 'https://us06web.zoom.us/meeting/register/z2W2vvBHROGK_yEWMTeOrg#/registration',
     },
     {
       name: '📕 Calculus 1 Tutoring',
