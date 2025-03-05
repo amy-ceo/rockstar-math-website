@@ -3,51 +3,61 @@ import axios from "axios";
 import { FaTrash } from "react-icons/fa";
 import { MdClose } from "react-icons/md";
 
+const API_BASE_URL = "https://backend-production-cbe2.up.railway.app"; // ✅ Ensure correct API URL
+
 const UpcomingClasses = () => {
   const [sessions, setSessions] = useState([]);
   const [selectedSession, setSelectedSession] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [loading, setLoading] = useState(true); // ✅ Loading state
 
   useEffect(() => {
     const fetchSessions = async () => {
       try {
-        const response = await axios.get("/api/admin/booked-sessions");
+        const response = await axios.get(`${API_BASE_URL}/api/admin/booked-sessions`);
+
+        console.log("API Response:", response.data); // ✅ Debugging log
 
         if (response.data && Array.isArray(response.data.sessions)) {
           setSessions(response.data.sessions);
         } else {
-          console.error("Unexpected API response:", response.data);
+          console.error("Invalid API response:", response.data);
           setSessions([]); // Fallback
         }
-
       } catch (error) {
         console.error("Error fetching sessions:", error);
-        setSessions([]); // Prevent undefined issue
+        setSessions([]); // Prevent undefined error
+      } finally {
+        setLoading(false); // ✅ Stop loading after API response
       }
     };
 
     fetchSessions();
   }, []);
 
+  // Open Modal & Set Selected Session
   const openModal = (session) => {
     setSelectedSession(session);
     setIsModalOpen(true);
   };
 
+  // Close Modal
   const closeModal = () => {
     setSelectedSession(null);
     setIsModalOpen(false);
   };
 
+  // Cancel Session
   const cancelSession = async () => {
     if (!selectedSession) return;
 
     try {
-      await axios.post("/api/admin/cancel-session", {
+      await axios.post(`${API_BASE_URL}/api/admin/cancel-session`, {
         userId: selectedSession.userId,
         sessionId: selectedSession.sessionId,
       });
 
+      // ✅ Remove cancelled session from UI
       setSessions(sessions.filter(session => session.sessionId !== selectedSession.sessionId));
 
       alert("Session cancelled successfully & email sent to the user!");
@@ -62,7 +72,9 @@ const UpcomingClasses = () => {
     <div className="container mx-auto p-6">
       <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center">Upcoming Classes</h2>
 
-      {sessions?.length > 0 ? (
+      {loading ? (
+        <p className="text-center text-gray-500 text-lg">Loading sessions...</p>
+      ) : sessions?.length > 0 ? (
         <div className="overflow-x-auto">
           <table className="w-full bg-white border border-gray-200 shadow-md rounded-lg">
             <thead className="bg-gray-800 text-white">
