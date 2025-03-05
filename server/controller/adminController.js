@@ -391,7 +391,7 @@ exports.cancelSession = async (req, res) => {
 };
 
 
-// ✅ Add Note Controller
+// ✅ Add Note to a Booked Session
 exports.addNoteToSession = async (req, res) => {
   try {
     const { userId, calendlyEventUri, note } = req.body;
@@ -401,28 +401,28 @@ exports.addNoteToSession = async (req, res) => {
     }
 
     // ✅ Find User by ID
-    const user = await Register.findById(userId);
+    const user = await Register.findById(mongoose.Types.ObjectId(userId));
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
     // ✅ Find the specific session inside bookedSessions
-    const sessionIndex = user.bookedSessions.findIndex(
+    const session = user.bookedSessions.find(
       (session) => session.calendlyEventUri === calendlyEventUri
     );
 
-    if (sessionIndex === -1) {
+    if (!session) {
       return res.status(404).json({ error: "Session not found" });
     }
 
     // ✅ Update the note field in the booked session
-    user.bookedSessions[sessionIndex].note = note;
+    session.note = note;
 
     // ✅ Save the updated user document
     await user.save();
 
-    res.json({ success: true, message: "Note added successfully!" });
+    res.json({ success: true, message: "Note added successfully!", updatedSession: session });
   } catch (error) {
     console.error("Error adding note:", error);
     res.status(500).json({ error: "Internal server error" });

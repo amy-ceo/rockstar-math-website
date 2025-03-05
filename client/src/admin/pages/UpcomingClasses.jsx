@@ -91,7 +91,7 @@ const UpcomingClasses = () => {
         userId: selectedSession.userId,
         calendlyEventUri: selectedSession.calendlyEventUri, // ✅ Updated Field
         note,
-      })
+      });
 
       if (response.data.success) {
         setSessions(
