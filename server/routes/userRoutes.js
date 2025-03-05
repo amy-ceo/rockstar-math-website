@@ -6,6 +6,8 @@ const router = express.Router();
 // ✅ Update User Profile Route
 router.put("/user/update/:userId", updateUserProfile);
 router.put("/user/update-password/:userId", updateUserPassword);
+router.put("/user/update-password/:userId", updateUserPassword);
+
 
 
 module.exports = router;

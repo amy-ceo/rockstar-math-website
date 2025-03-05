@@ -146,7 +146,7 @@ const Dashboard = () => {
     if (!selectedEventUri) return;
   
     try {
-      const response = await fetch("https://backend-production-cbe2.up.railway.app/api/user/cancel-session", {
+      const response = await fetch("https://backend-production-cbe2.up.railway.app/api/cancel-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: users._id, eventUri: selectedEventUri }),
