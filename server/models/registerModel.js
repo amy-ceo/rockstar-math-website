@@ -29,7 +29,7 @@ const bookedSessionSchema = new mongoose.Schema({
     enum: ['Booked', 'Completed', 'Cancelled', 'Active', 'Pushed', 'Rescheduled'], // ✅ Added "Rescheduled"
     default: 'Booked',
 },
-note: { type: String, default: "" }, // ✅ New Field for Notes
+note: { type: String, default: "" }, // ✅ New Field for Notes  
 
   createdAt: { type: Date, default: Date.now }, // ✅ When Booking Was Stored
   updatedAt: { type: Date, required: false }, // ✅ When Last Updated

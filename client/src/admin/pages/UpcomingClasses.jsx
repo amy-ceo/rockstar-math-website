@@ -17,7 +17,6 @@ const UpcomingClasses = () => {
     const fetchSessions = async () => {
       try {
         const response = await axios.get(`${API_BASE_URL}/api/admin/booked-sessions`);
-
         console.log("API Response:", response.data);
 
         if (response.data && Array.isArray(response.data.sessions)) {
@@ -88,24 +87,29 @@ const UpcomingClasses = () => {
     if (!selectedSession) return;
 
     try {
-      await axios.post(`${API_BASE_URL}/api/admin/add-note`, {
+      const response = await axios.post(`${API_BASE_URL}/api/admin/add-note`, {
         userId: selectedSession.userId,
         sessionId: selectedSession.sessionId,
         note,
       });
 
-      setSessions(sessions.map(session =>
-        session.sessionId === selectedSession.sessionId
-          ? { ...session, note }
-          : session
-      ));
+      if (response.data.success) {
+        setSessions(sessions.map(session =>
+          session.sessionId === selectedSession.sessionId
+            ? { ...session, note }
+            : session
+        ));
 
-      alert("Note added successfully!");
-      closeNoteModal();
+        alert("Note added successfully!");
+      } else {
+        alert("Failed to save note.");
+      }
     } catch (error) {
       console.error("Error saving note:", error);
       alert("Failed to save note.");
     }
+
+    closeNoteModal();
   };
 
   return (
@@ -164,19 +168,14 @@ const UpcomingClasses = () => {
       {isModalOpen && (
         <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
           <div className="bg-white rounded-lg shadow-lg p-6 w-96 relative">
-            <button
-              onClick={closeModal}
-              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
-            >
+            <button onClick={closeModal} className="absolute top-2 right-2 text-gray-500 hover:text-gray-700">
               <MdClose size={24} />
             </button>
-
             <h3 className="text-xl font-semibold text-gray-800 mb-4">Cancel Session?</h3>
             <p className="text-gray-600">
               Are you sure you want to cancel this session:{" "}
               <span className="font-semibold">{selectedSession?.eventName || "Unknown"}</span>?
             </p>
-
             <div className="flex justify-end mt-4 gap-2">
               <button onClick={closeModal} className="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300">
                 No
@@ -193,13 +192,9 @@ const UpcomingClasses = () => {
       {isNoteModalOpen && (
         <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
           <div className="bg-white rounded-lg shadow-lg p-6 w-96 relative">
-            <button
-              onClick={closeNoteModal}
-              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
-            >
+            <button onClick={closeNoteModal} className="absolute top-2 right-2 text-gray-500 hover:text-gray-700">
               <MdClose size={24} />
             </button>
-
             <h3 className="text-xl font-semibold text-gray-800 mb-4">Add Note</h3>
             <textarea
               className="w-full border rounded p-2 text-gray-700"
@@ -207,7 +202,6 @@ const UpcomingClasses = () => {
               value={note}
               onChange={(e) => setNote(e.target.value)}
             />
-
             <div className="flex justify-end mt-4 gap-2">
               <button onClick={closeNoteModal} className="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300">
                 Cancel

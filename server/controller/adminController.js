@@ -394,37 +394,36 @@ exports.cancelSession = async (req, res) => {
 // ✅ Add Note Controller
 exports.addNoteToSession = async (req, res) => {
   try {
-    const { userId, sessionId, note } = req.body;
+      const { userId, sessionId, note } = req.body;
 
-    if (!userId || !sessionId || !note) {
-      return res.status(400).json({ message: "Missing required fields." });
-    }
+      if (!userId || !sessionId || !note) {
+          return res.status(400).json({ error: "All fields are required" });
+      }
 
-    // ✅ Find the user who has booked the session
-    const user = await Register.findById(userId);
+      // ✅ Find the user
+      const user = await Register.findOne({ _id: userId });
 
-    if (!user) {
-      return res.status(404).json({ message: "User not found." });
-    }
+      if (!user) {
+          return res.status(404).json({ error: "User not found" });
+      }
 
-    // ✅ Find the specific session inside user's booked sessions
-    const sessionIndex = user.bookedSessions.findIndex(
-      (session) => session._id.toString() === sessionId
-    );
+      // ✅ Find the session
+      const session = user.bookedSessions.find(s => s.sessionId === sessionId);
 
-    if (sessionIndex === -1) {
-      return res.status(404).json({ message: "Session not found." });
-    }
+      if (!session) {
+          return res.status(404).json({ error: "Session not found" });
+      }
 
-    // ✅ Add the note to the session
-    user.bookedSessions[sessionIndex].note = note;
+      // ✅ Add note to session
+      session.note = note;
 
-    // ✅ Save the updated user document
-    await user.save();
+      // ✅ Save user document
+      await user.save();
 
-    res.status(200).json({ message: "Note added successfully!", note });
+      return res.status(200).json({ success: true, message: "Note added successfully" });
+
   } catch (error) {
-    console.error("Error adding note:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
+      console.error("Error saving note:", error);
+      return res.status(500).json({ error: "Failed to save note" });
   }
 };
