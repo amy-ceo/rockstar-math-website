@@ -331,7 +331,7 @@
           toast.error('User authentication required!')
           return
         }
-
+    
         console.log('📡 Capturing Stripe Payment...')
         const response = await fetch(
           'https://backend-production-cbe2.up.railway.app/api/stripe/capture-stripe-payment',
@@ -356,21 +356,24 @@
             }),
           },
         )
-
+    
         const result = await response.json()
         console.log('📡 Stripe Capture Response:', result)
-
-
-        // ✅ **CLEAR CART IMMEDIATELY AFTER SUCCESSFUL PAYMENT**
-        console.log("🛒 Clearing Cart after Successful Payment...");
-        localStorage.removeItem("cartItems");
-        setCartItems([]); // Update State
-        window.dispatchEvent(new Event("storage")); // Trigger update in all tabs
-
+    
+        // ✅ **Check if Backend Sends `{ clearCart: true }`**
+        if (result.clearCart) {
+          console.log("🛒 Clearing Cart after Successful Payment...");
+          localStorage.removeItem("cartItems"); // ✅ Clear Local Storage
+          setCartItems([]); // ✅ Update State
+          window.dispatchEvent(new Event("storage")); // ✅ Trigger update in all tabs
+        } else {
+          console.warn('❌ Backend did not send `{ clearCart: true }`');
+        }
+    
         if (!response.ok) {
           throw new Error(result.error || 'Stripe payment capture failed.')
         }
-
+    
         console.log('📡 Calling addPurchasedClass API...')
         const purchaseResponse = await fetch(
           'https://backend-production-cbe2.up.railway.app/api/add-purchased-class',
@@ -387,19 +390,19 @@
             }),
           },
         )
-
+    
         const purchaseResult = await purchaseResponse.json()
         console.log('✅ Purchased Classes API Response:', purchaseResult)
-
+    
         if (!purchaseResponse.ok) {
           console.warn('⚠️ Issue updating purchased classes:', purchaseResult.message)
         }
-
+    
         console.log('📡 Fetching updated user data...')
         const userResponse = await fetch(
           `https://backend-production-cbe2.up.railway.app/api/user/${user._id}`,
         )
-
+    
         if (!userResponse.ok) {
           console.warn('⚠️ Failed to fetch updated user data.')
         } else {
@@ -407,21 +410,20 @@
           console.log('✅ Updated User Data:', updatedUser)
           localStorage.setItem('user', JSON.stringify(updatedUser))
         }
-        
-
-        // ✅ **Step 2: Wait Until Cart is Confirmed Empty**
+    
+        // ✅ **Final Check: Verify Cart is Empty Before Redirecting**
         await new Promise((resolve) => setTimeout(resolve, 500)) // Wait 500ms
-
+    
         console.log('🔄 Verifying Cart is Empty...')
         if (cartItems.length === 0 && !localStorage.getItem('cartItems')) {
           toast.success('🎉 Payment Successful! Redirecting...')
-
-          // ✅ **Step 3: Redirect After Confirmation**
+    
+          // ✅ **Redirect to Dashboard**
           setTimeout(() => {
             navigate('/dashboard') // ✅ Using navigate for smoother transition
           }, 500)
         } else {
-          console.warn('❌ Cart Not Empty - Retry Clearing...')
+          console.warn('❌ Cart Not Empty - Retrying...')
           setCartItems([]) // Force another update
           localStorage.removeItem('cartItems') // Ensure LocalStorage is cleared
         }
@@ -430,6 +432,7 @@
         toast.error(error.message || 'Payment processing error.')
       }
     }
+    
 
     return (
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-32">

@@ -332,9 +332,10 @@
 
       // ✅ **Ensure the response includes `{ clearCart: true }`**
       return res.json({
-        message: 'Payment captured & records updated successfully.',
-        clearCart: true, // 🔥 Explicitly tell frontend to clear the cart
+        message: "Payment captured & records updated successfully.",
+        clearCart: true, // 🔥 Tell frontend to clear the cart
       });
+      
 
 
     } catch (error) {

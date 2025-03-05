@@ -38,6 +38,8 @@ const Dashboard = () => {
     new Date().setHours(19, 0, 0, 0), // 7:00 PM
     new Date().setHours(19, 30, 0, 0), // 7:30 PM
     new Date().setHours(20, 0, 0, 0), // 8:00 PM
+    new Date().setHours(20, 30, 0, 0), // 8:00 PM
+
 
     // Break from 8:00 PM - 9:00 PM ❌ (No slots here)
 
@@ -393,7 +395,7 @@ const Dashboard = () => {
               onChange={(date) => setNewDateTime(date)}
               showTimeSelect
               includeTimes={allowedTimes.map((time) => new Date(time))}
-              timeFormat="HH:mm"
+              timeFormat="hh:mm aa" // ✅ Change to 12-hour format with AM/PM
               timeIntervals={30}
               dateFormat="MMMM d, yyyy h:mm aa"
               className="border p-2 mt-2"
