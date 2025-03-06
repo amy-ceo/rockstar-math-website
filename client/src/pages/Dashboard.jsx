@@ -59,13 +59,23 @@ const Dashboard = () => {
     }
   }, [users, navigate])
 
+  // ✅ Fetch User from LocalStorage on component mount
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user') // Retrieve user from localStorage
+    if (storedUser) {
+      setUsers(JSON.parse(storedUser)) // Parse and set user state
+      console.log('✅ User fetched from localStorage:', JSON.parse(storedUser))
+    } else {
+      console.warn('❌ No user found in localStorage, redirecting to login...')
+      navigate('/login') // Redirect if no user is found
+    }
+  }, [navigate])
   // ✅ Fetch all user data when component mounts
   useEffect(() => {
-    if (!users || !users._id) {
-      console.warn('❌ User is not available, skipping API calls.')
-      return // Prevent API calls if user is not available
+    if (!users?._id) {
+      console.warn('⚠️ User ID not found, skipping API calls.')
+      return
     }
-
     setLoading(true)
 
     // Fetch Purchased Classes
@@ -117,8 +127,6 @@ const Dashboard = () => {
       }
     }
 
-   
-
     // Fetch Coupons
     const fetchCoupons = async () => {
       try {
@@ -166,7 +174,7 @@ const Dashboard = () => {
       fetchPurchasedClasses(),
       fetchCalendlyBookings(),
       fetchRemainingSessions(), // ✅ Fetch remaining sessions
-   
+
       fetchCoupons(),
     ]).finally(() => setLoading(false))
   }, [users]) // ✅ Depend only on `users`
