@@ -59,23 +59,35 @@ const Dashboard = () => {
       navigate('/login')
     }
   }, [users, navigate])
-// ✅ Fetch User from LocalStorage on component mount
-useEffect(() => {
-  const storedUser = localStorage.getItem('user') // Retrieve user from localStorage
-  if (storedUser) {
-    setUser(JSON.parse(storedUser)) // ✅ Corrected: Use setUser, not setUsers
-    console.log('✅ User fetched from localStorage:', JSON.parse(storedUser))
-  } else {
-    console.warn('❌ No user found in localStorage, redirecting to login...')
-    navigate('/login') // Redirect if no user is found
-  }
-}, [navigate])
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user'); // Get user from localStorage
+    if (storedUser) {
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        if (parsedUser && parsedUser._id) {
+          setUser(parsedUser);
+          console.log('✅ User fetched from localStorage:', parsedUser);
+        } else {
+          console.warn('⚠️ User ID missing in stored data. Redirecting to login...');
+          navigate('/login');
+        }
+      } catch (error) {
+        console.error('❌ Error parsing user data from localStorage:', error);
+        navigate('/login');
+      }
+    } else {
+      console.warn('❌ No user found in localStorage. Redirecting to login...');
+      navigate('/login');
+    }
+  }, [navigate]);
+  
   // ✅ Fetch all user data when component mounts
   useEffect(() => {
-    if (!user?._id) {
-      console.warn('⚠️ User ID not found, skipping API calls.')
-      return
+    if (!user || !user._id) {
+      console.warn('⚠️ User ID not found, skipping API calls.');
+      return; // Stop execution if user is not set
     }
+  
     setLoading(true)
 
     // Fetch Purchased Classes
