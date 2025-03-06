@@ -20,7 +20,7 @@ const bookedSessionSchema = new mongoose.Schema({
   eventName: { type: String, required: true }, // ✅ Event Name
   calendlyEventUri: { type: String, required: true, unique: true, sparse: true }, // ✅ Unique Event URI
   startTime: { type: Date, required: true }, // ✅ Event Start Time
-  // zoomMeetingLink: String, // ✅ Add Zoom Link
+  zoomMeetingLink: String, // ✅ Add Zoom Link
   endTime: { type: Date, required: false }, // ✅ Optional: End Time
   timezone: { type: String, required: false }, // ✅ Timezone (if available)
   // ✅ Event Status
@@ -29,25 +29,10 @@ const bookedSessionSchema = new mongoose.Schema({
     enum: ['Booked', 'Completed', 'Cancelled', 'Active', 'Pushed', 'Rescheduled'], // ✅ Added "Rescheduled"
     default: 'Booked',
 },
-note: { type: String, default: "" }, // ✅ New Field for Notes  
 
   createdAt: { type: Date, default: Date.now }, // ✅ When Booking Was Stored
   updatedAt: { type: Date, required: false }, // ✅ When Last Updated
 })
-
-const zoomSessionSchema = new mongoose.Schema({
-  eventName: { type: String, required: true }, // ✅ Event Name
-  zoomMeetingLink: { type: String, required: true }, // ✅ Unique Zoom Meeting Link
-  startTime: { type: Date, required: true }, // ✅ Event Start Time
-  endTime: { type: Date, required: false }, // ✅ Optional: End Time
-  timezone: { type: String, required: false }, // ✅ Timezone (if available)
-  status: {
-    type: String,
-    enum: ['Booked', 'Completed', 'Cancelled'],
-    default: 'Booked',
-  },
-  createdAt: { type: Date, default: Date.now }, // ✅ When Booking Was Stored
-});
 
 // ✅ Coupon Schema Inside Register Model
 const couponSchema = new mongoose.Schema({
@@ -57,15 +42,12 @@ const couponSchema = new mongoose.Schema({
   assignedAt: { type: Date, default: Date.now },
 })
 
-// ✅ Archived Classes Schema (Fix: Add `remainingSessions` & `sessionCount`)
+// ✅ Archived Classes Schema (Same as purchasedClasses)
 const archivedClassSchema = new mongoose.Schema({
   name: { type: String, required: true },
   description: { type: String },
   archivedAt: { type: Date, default: Date.now },
-  sessionCount: { type: Number, required: true }, // ✅ Fix: Ensure sessionCount is included
-  remainingSessions: { type: Number, required: true }, // ✅ Fix: Ensure remainingSessions is included
-});
-
+})
 
 // ✅ Define Schema
 const RegisterSchema = new mongoose.Schema(
@@ -109,6 +91,16 @@ const RegisterSchema = new mongoose.Schema(
     purchasedClasses: [purchasedClassSchema], // ✅ Includes both Zoom & Service purchases
     // ✅ New: Calendly Bookings
     bookedSessions: [bookedSessionSchema], // ✅ This will store all booked sessions
+    // ✅ Zoom Meeting Details (For Purchased Classes)
+    zoomMeetings: [
+      {
+        meetingId: { type: String, required: true }, // Zoom Meeting ID
+        topic: { type: String, required: true }, // Meeting Topic
+        startTime: { type: Date, required: true }, // Start Time
+        joinUrl: { type: String, required: true }, // User Join URL
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
   
   },
   { timestamps: true },
