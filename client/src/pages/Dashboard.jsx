@@ -55,7 +55,7 @@ const Dashboard = () => {
 
   // ✅ Redirect user if not logged in
   useEffect(() => {
-    if (!users) {
+    if (!user) {
       navigate('/login')
     }
   }, [users, navigate])
