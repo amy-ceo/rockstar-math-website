@@ -55,10 +55,11 @@ const Dashboard = () => {
 
   // ✅ Redirect user if not logged in
   useEffect(() => {
-    if (!user) {
+    if (!users) {
       navigate('/login')
     }
   }, [users, navigate])
+  
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
