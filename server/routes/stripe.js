@@ -488,7 +488,7 @@
     <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
       <h3 style="color: #007bff;">📌 What's Next?</h3>
       <p>Start your learning journey today by logging into your dashboard, exploring available sessions, and scheduling your first class!</p>
-      <p><b>Access your dashboard here:</b> <a href="https://your-website.com/login" target="_blank" style="color: #007bff;">Go to Dashboard</a></p>
+      <p><b>Access your dashboard here:</b> <a href="https://www.rockstarmath.com/login" target="_blank" style="color: #007bff;">Go to Dashboard</a></p>
     </div>
 
     <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
