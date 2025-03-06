@@ -463,30 +463,30 @@ exports.captureOrder = async (req, res) => {
       
           <div style="text-align: center; padding-bottom: 20px;">
           <h2 style="color: #2C3E50;">Home tab</h2>
-            <img src="https://media.discordapp.net/attachments/1342205365160513606/1347268823023357962/image.png?ex=67cb355e&is=67c9e3de&hm=827b9dd763ffb93b43636063994c4393c58abafdebcac242af2a649f7de173ba&=&format=webp&quality=lossless&width=960&height=423" alt="Rockstar Math" style="width: 200px; margin-bottom: 10px;">
+            <img src="https://media.discordapp.net/attachments/1342205365160513606/1347268823023357962/image.png?ex=67cb355e&is=67c9e3de&hm=827b9dd763ffb93b43636063994c4393c58abafdebcac242af2a649f7de173ba&=&format=webp&quality=lossless&width=960&height=423" alt="Rockstar Math" style="width: 500px; margin-bottom: 10px;">
           </div>
       <br/>
           <div style="text-align: center; padding-bottom: 20px;">
           <h2 style="color: #2C3E50;">My Classes</h2>
-            <img src="https://media.discordapp.net/attachments/1342205365160513606/1347263992153903174/image.png?ex=67cb30de&is=67c9df5e&hm=a25b7b982e6ebf5ab53a0bf800647a586aa3fea7f13853914ede7ea1bf58f591&=&format=webp&quality=lossless&width=847&height=423" alt="Rockstar Math" style="width: 200px; margin-bottom: 10px;">
+            <img src="https://media.discordapp.net/attachments/1342205365160513606/1347263992153903174/image.png?ex=67cb30de&is=67c9df5e&hm=a25b7b982e6ebf5ab53a0bf800647a586aa3fea7f13853914ede7ea1bf58f591&=&format=webp&quality=lossless&width=847&height=423" alt="Rockstar Math" style="width: 500px; margin-bottom: 10px;">
           </div>
       
            <br/>
           <div style="text-align: center; padding-bottom: 20px;">
           <h2 style="color: #2C3E50;">Schedule</h2>
-            <img src="https://media.discordapp.net/attachments/1342205365160513606/1347264195657469969/image.png?ex=67cb310f&is=67c9df8f&hm=92dafeccde2eb0ab06361c092b7f671e0f5a4673d0bcc1494ce1df05c8a77e1e&=&format=webp&quality=lossless&width=842&height=423" alt="Rockstar Math" style="width: 200px; margin-bottom: 10px;">
+            <img src="https://media.discordapp.net/attachments/1342205365160513606/1347264195657469969/image.png?ex=67cb310f&is=67c9df8f&hm=92dafeccde2eb0ab06361c092b7f671e0f5a4673d0bcc1494ce1df05c8a77e1e&=&format=webp&quality=lossless&width=842&height=423" alt="Rockstar Math" style="width: 500px; margin-bottom: 10px;">
           </div>
       
             <br/>
           <div style="text-align: center; padding-bottom: 20px;">
           <h2 style="color: #2C3E50;">Archive</h2>
-            <img src="https://media.discordapp.net/attachments/1342205365160513606/1347269423693693121/image.png?ex=67cb35ed&is=67c9e46d&hm=3ea0974b2f7938f8a12c50a4a8db2f049480c83ba6243035281cd25e72ed12cd&=&format=webp&quality=lossless&width=842&height=423" alt="Rockstar Math" style="width: 200px; margin-bottom: 10px;">
+            <img src="https://media.discordapp.net/attachments/1342205365160513606/1347269423693693121/image.png?ex=67cb35ed&is=67c9e46d&hm=3ea0974b2f7938f8a12c50a4a8db2f049480c83ba6243035281cd25e72ed12cd&=&format=webp&quality=lossless&width=842&height=423" alt="Rockstar Math" style="width: 500px; margin-bottom: 10px;">
           </div>
       
             <br/>
           <div style="text-align: center; padding-bottom: 20px;">
           <h2 style="color: #2C3E50;">Profile</h2>
-            <img src="https://media.discordapp.net/attachments/1342205365160513606/1347264471894331422/image.png?ex=67cb3151&is=67c9dfd1&hm=8032ef7c5ff44c9e2d8370cbe377fe50df237883587434d879d468dda008277d&=&format=webp&quality=lossless&width=852&height=423" alt="Rockstar Math" style="width: 200px; margin-bottom: 10px;">
+            <img src="https://media.discordapp.net/attachments/1342205365160513606/1347264471894331422/image.png?ex=67cb3151&is=67c9dfd1&hm=8032ef7c5ff44c9e2d8370cbe377fe50df237883587434d879d468dda008277d&=&format=webp&quality=lossless&width=852&height=423" alt="Rockstar Math" style="width: 500px; margin-bottom: 10px;">
           </div>
 
           <h3 style="color: #007bff;">📞 Need Assistance?</h3>
