@@ -97,12 +97,22 @@ exports.calendlyWebhook = async (req, res) => {
 
     // ✅ Check if User Has Remaining Sessions
     if (purchasedClass.remainingSessions <= 0) {
-      console.warn(`⚠️ User ${user.username} has no remaining sessions.`)
-      return res.status(403).json({ error: 'You have no remaining sessions left.' })
+      console.warn(`⚠️ User ${user.username} has no remaining sessions.`);
+      
+      // Optional: Offer session renewal or notify the user
+      return res.status(403).json({ 
+        error: 'You have no remaining sessions left. Please purchase more sessions to continue booking.' 
+      });
     }
-
+    
     // ✅ Deduct 1 Session
-    purchasedClass.remainingSessions -= 1
+    if (purchasedClass.remainingSessions > 0) {
+      purchasedClass.remainingSessions -= 1;
+    } else {
+      console.warn(`⚠️ No remaining sessions to deduct for ${user.username}`);
+      return res.status(403).json({ error: 'No sessions left to deduct from. Please purchase more.' });
+    }
+    
     user.markModified('purchasedClasses') // Ensure change is detected by Mongoose
 
     // ✅ If Remaining Sessions = 0, Mark as Expired
