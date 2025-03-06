@@ -13,7 +13,7 @@ exports.calendlyWebhook = async (req, res) => {
     const payload = req.body.payload
 
     // ✅ Extract Invitee & Event Details
-    const inviteeEmail = payload?.invitee?.email || '❌ Missing';
+    const inviteeEmail = payload?.invitee?.email || '❌ Missing'
     const eventName = payload?.name || payload?.event?.name || '❌ Missing'
     const eventUri = payload?.uri || payload?.event?.uri || '❌ Missing'
     // ✅ Extract `startTime` and `endTime`
@@ -77,19 +77,16 @@ exports.calendlyWebhook = async (req, res) => {
       console.warn(`⚠️ No valid purchased class found for user: ${inviteeEmail}`)
 
       if (user.purchasedClasses.length > 0) {
-        // ✅ Update only the first available purchased class (DO NOT deduct session)
         // ✅ Update the first available purchased class with the Calendly event URI
         user.purchasedClasses[0].bookingLink = normalizedEventUri
-        user.purchasedClasses[0].description =
-          user.purchasedClasses[0].description || 'Calendly Booking'
         user.purchasedClasses[0].description =
           user.purchasedClasses[0].description || 'Calendly Booking'
         user.markModified('purchasedClasses') // Ensure Mongoose detects the change
         await user.save()
         console.log(`🔄 Updated booking link to: ${normalizedEventUri}`)
 
-        return res.status(200).json({ message: 'Booking link updated. Please rebook the session.' })
-        purchasedClass = user.purchasedClasses[0] // Now proceed with the booking
+        // ✅ Continue to session storage instead of exiting early
+        purchasedClass = user.purchasedClasses[0]
       } else {
         return res.status(400).json({ error: 'No valid purchased class for this booking.' })
       }
@@ -97,8 +94,8 @@ exports.calendlyWebhook = async (req, res) => {
 
     // ✅ Check if User Has Remaining Sessions
     if (purchasedClass.remainingSessions <= 0) {
-      console.warn(`⚠️ User ${user.username} has no remaining sessions.`);
-    
+      console.warn(`⚠️ User ${user.username} has no remaining sessions.`)
+
       // ✅ Still store the event in bookedSessions, even if no sessions remain
       const newBooking = {
         eventName,
@@ -108,28 +105,30 @@ exports.calendlyWebhook = async (req, res) => {
         timezone,
         status: 'Pending - No Sessions Left', // ✅ Mark it differently
         createdAt: new Date(),
-      };
-    
-      user.bookedSessions.push(newBooking);
-      user.markModified('bookedSessions');
-      await user.save();
-    
-      return res.status(403).json({ 
-        error: 'You have no remaining sessions left. Please purchase more sessions to continue booking.',
+      }
+
+      user.bookedSessions.push(newBooking)
+      user.markModified('bookedSessions')
+      await user.save()
+
+      return res.status(403).json({
+        error:
+          'You have no remaining sessions left. Please purchase more sessions to continue booking.',
         message: 'Session stored as pending due to no available sessions.',
-        updatedUser: user
-      });
+        updatedUser: user,
+      })
     }
-    
-    
+
     // ✅ Deduct 1 Session
     if (purchasedClass.remainingSessions > 0) {
-      purchasedClass.remainingSessions -= 1;
+      purchasedClass.remainingSessions -= 1
     } else {
-      console.warn(`⚠️ No remaining sessions to deduct for ${user.username}`);
-      return res.status(403).json({ error: 'No sessions left to deduct from. Please purchase more.' });
+      console.warn(`⚠️ No remaining sessions to deduct for ${user.username}`)
+      return res
+        .status(403)
+        .json({ error: 'No sessions left to deduct from. Please purchase more.' })
     }
-    
+
     user.markModified('purchasedClasses') // Ensure change is detected by Mongoose
 
     // ✅ If Remaining Sessions = 0, Mark as Expired
@@ -148,7 +147,7 @@ exports.calendlyWebhook = async (req, res) => {
     }
 
     // ✅ Create New Booking Object
-    // ✅ Create New Booking Object (Following User's `bookedSessions` Schema)
+    // ✅ Create New Booking Object
     const newBooking = {
       eventName,
       calendlyEventUri: eventUri,
@@ -159,15 +158,12 @@ exports.calendlyWebhook = async (req, res) => {
       createdAt: new Date(),
     }
 
-    console.log('📢 Storing New Booking:', JSON.stringify(newBooking, null, 2))
-
     // ✅ Push New Booking into `bookedSessions`
-    // ✅ Update User's bookedSessions
     user.bookedSessions.push(newBooking)
+    user.markModified('bookedSessions')
 
     // ✅ Save User with the updated session and class data
     await user.save()
-
     console.log(`✅ Successfully Stored Calendly Booking for ${inviteeEmail}`)
     console.log(`✅ Session Booked: Remaining ${purchasedClass.remainingSessions} sessions.`)
 
