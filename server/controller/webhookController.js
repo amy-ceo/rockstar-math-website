@@ -98,12 +98,29 @@ exports.calendlyWebhook = async (req, res) => {
     // ✅ Check if User Has Remaining Sessions
     if (purchasedClass.remainingSessions <= 0) {
       console.warn(`⚠️ User ${user.username} has no remaining sessions.`);
-      
-      // Optional: Offer session renewal or notify the user
+    
+      // ✅ Still store the event in bookedSessions, even if no sessions remain
+      const newBooking = {
+        eventName,
+        calendlyEventUri: eventUri,
+        startTime,
+        endTime,
+        timezone,
+        status: 'Pending - No Sessions Left', // ✅ Mark it differently
+        createdAt: new Date(),
+      };
+    
+      user.bookedSessions.push(newBooking);
+      user.markModified('bookedSessions');
+      await user.save();
+    
       return res.status(403).json({ 
-        error: 'You have no remaining sessions left. Please purchase more sessions to continue booking.' 
+        error: 'You have no remaining sessions left. Please purchase more sessions to continue booking.',
+        message: 'Session stored as pending due to no available sessions.',
+        updatedUser: user
       });
     }
+    
     
     // ✅ Deduct 1 Session
     if (purchasedClass.remainingSessions > 0) {
