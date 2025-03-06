@@ -310,6 +310,7 @@ exports.captureOrder = async (req, res) => {
       zoomLinks.push(COMMONCORE_ZOOM_LINK)
     }
 
+    // ✅ Apply Discount Coupons Based on Course Name (Ensure all relevant coupons are applied)
     let appliedCoupons = []
 
     user.cartItems.forEach((item) => {
@@ -321,37 +322,39 @@ exports.captureOrder = async (req, res) => {
         return false
       })
 
-      matchedCoupons.forEach((coupon) => {
-        appliedCoupons.push({
-          code: coupon.code,
-          percent_off: coupon.percent_off,
-          expires: coupon.expires,
+      if (matchedCoupons.length > 0) {
+        matchedCoupons.forEach((coupon) => {
+          appliedCoupons.push({
+            code: coupon.code,
+            percent_off: coupon.percent_off,
+            expires: coupon.expires,
+          })
         })
-      })
+      }
 
-      // ✅ **Manually Add Achieve Free Session Coupon (if not already added)**
-      if (item.name === 'Achieve' && !appliedCoupons.some((c) => c.percent_off === 100)) {
-        appliedCoupons.push({
-          code: 'fs4n9tti', // 🎟 Free Session Coupon Code
-          percent_off: 100,
-          expires: 'Jun 15', // Expiry Date
-        })
+      // ✅ **Ensure both 30% and 100% Achieve coupons are applied**
+      if (item.name === 'Achieve') {
+        appliedCoupons.push(
+          { code: 'fs4n9tti', percent_off: 100, }, // ✅ 100% Off Coupon
+          { code: 'qRBcEmgS', percent_off: 30,  }, // ✅ 30% Off Coupon
+        )
       }
     })
 
-    console.log('🎟 Final Applied Coupons:', appliedCoupons)
+    // ✅ Ensure duplicates are removed (if any)
+    appliedCoupons = appliedCoupons.filter(
+      (coupon, index, self) => index === self.findIndex((c) => c.code === coupon.code),
+    )
 
+    console.log('🎟 Final Applied Coupons:', appliedCoupons)
     if (appliedCoupons.length > 0) {
       appliedCoupons = appliedCoupons.filter((coupon) => coupon.code && coupon.code.trim() !== '')
 
+      // ✅ Step 7: Save Coupons in User's Database
       if (appliedCoupons.length > 0) {
-        console.log('💾 Saving Multiple Coupons to User Database:', appliedCoupons)
-        await Register.findByIdAndUpdate(
-          user._id,
-          { $push: { coupons: { $each: appliedCoupons } } },
-          { new: true },
-        )
-        console.log('✅ Multiple Coupons Saved Successfully!')
+        await Register.findByIdAndUpdate(user._id, {
+          $push: { coupons: { $each: appliedCoupons } },
+        })
       }
     }
 
@@ -493,7 +496,7 @@ exports.captureOrder = async (req, res) => {
           <p>If you have any questions or need help, feel free to reach out to us:</p>
           <ul>
             <li>📧 Reply to this email</li>
-            <li>📞 Call us at <b>510-410-2233</b></li>
+            <li>📞 Call us at <b>510-410-4963</b></li>
           </ul>
       
           <p>Thank you again for choosing RockstarMath! We can’t wait to see you excel! 🚀</p>
@@ -547,7 +550,7 @@ exports.captureOrder = async (req, res) => {
             <p>If you have any questions or need help, feel free to reach out to us:</p>
             <ul>
               <li>📧 Reply to this email</li>
-              <li>📞 Call us at <b>510-410-2233</b></li>
+              <li>📞 Call us at <b>510-410-4963</b></li>
             </ul>
       
             <p>Thank you again for choosing RockstarMath! We can’t wait to see you excel! 🚀</p>
@@ -615,14 +618,15 @@ function generateEmailHtml(user, zoomLinks, userCoupons, calendlyLinks) {
     detailsHtml += `</ul>`
   }
 
-  // ✅ Add Discount Coupons (if available)
-  // ✅ Add Discount Coupons (if available)
-  if (userCoupons.length > 0) {
-    detailsHtml += `<h3 style="color: #d9534f;">🎟 Your Exclusive Discount Coupons:</h3>`
-    userCoupons.forEach((coupon) => {
-      detailsHtml += `<p><b>Coupon Code:</b> ${coupon.code} - <b>${coupon.percent_off}% off</b> (Expires: ${coupon.expires})</p>`
-    })
-  }
+ 
+ // ✅ Add Discount Coupons (if available)
+if (userCoupons.length > 0) {
+  detailsHtml += `<h3 style="color: #d9534f;">🎟 Your Exclusive Discount Coupons:</h3>`;
+  userCoupons.forEach((coupon) => {
+    detailsHtml += `<p><b>Coupon Code:</b> ${coupon.code} - <b>${coupon.percent_off}% off</b> (Expires: ${coupon.expires})</p>`;
+  });
+}
+
 
   // ✅ Add Calendly Proxy Links (if available)
   if (calendlyLinks.length > 0) {

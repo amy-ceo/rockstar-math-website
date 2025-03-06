@@ -53,31 +53,48 @@ const Dashboard = () => {
   // ❌ Courses that should NOT appear in "Remaining Sessions"
   const excludedPlans = ['Learn', 'Achieve', 'Excel']
 
- 
-  
+  // ✅ Redirect user if not logged in
+  useEffect(() => {
+    if (!users) {
+      navigate('/login')
+    }
+  }, [users, navigate])
+  // ✅ Load user from `localStorage`
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
+
     if (storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser);
-        console.log("🛠️ Parsed User from LocalStorage:", parsedUser);
-  
+        
         if (parsedUser && parsedUser._id) {
-          setUser(parsedUser); // ✅ Set user in state before API calls
-        } 
+          console.log("✅ User ID found:", parsedUser._id);
+          setUser(parsedUser);
+        } else {
+          console.warn('⚠️ User ID missing in stored data. Redirecting to login...');
+          navigate('/login'); // Redirect only if user ID is missing
+        }
       } catch (error) {
         console.error('❌ Error parsing user data from localStorage:', error);
+        navigate('/login');
       }
-    } 
+    } else {
+      console.warn('❌ No user found in localStorage. Redirecting to login...');
+      navigate('/login');
+    }
   }, [navigate]);
+
   
   
   // ✅ Fetch all user data when component mounts
   useEffect(() => {
     if (!user || !user._id) {
       console.warn("⚠️ User ID not found, skipping API calls.");
-      return; // Stop execution if user is not set
+      setLoading(false);
+      return;
     }
+
+    console.log("📡 Fetching data for User ID:", user._id);
   
     setLoading(true)
 
