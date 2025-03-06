@@ -70,23 +70,23 @@ exports.calendlyWebhook = async (req, res) => {
         return normalizeUrl(cls.bookingLink) === normalizedEventUri;
       });
 
-      // ✅ If no match, update the booking link and proceed with booking
       if (!purchasedClass) {
         console.warn(`⚠️ No valid purchased class found for user: ${inviteeEmail}`);
-
+    
         if (user.purchasedClasses.length > 0) {
-          // ✅ Update the first available purchased class with the Calendly event URI
-          user.purchasedClasses[0].bookingLink = normalizedEventUri;
-          user.purchasedClasses[0].description = user.purchasedClasses[0].description || "Calendly Booking";
-          user.markModified('purchasedClasses'); // Ensure Mongoose detects the change
-          await user.save();
-          console.log(`🔄 Updated booking link to: ${normalizedEventUri}`);
-
-          purchasedClass = user.purchasedClasses[0]; // Now proceed with the booking
+            // ✅ Ensure 'description' is not missing
+            user.purchasedClasses[0].bookingLink = normalizedEventUri;
+            user.purchasedClasses[0].description = user.purchasedClasses[0].description || "Calendly Booking"; // <-- Add this line
+            user.markModified('purchasedClasses'); // Ensure Mongoose detects the change
+            await user.save();
+            console.log(`🔄 Updated booking link to: ${normalizedEventUri}`);
+    
+            purchasedClass = user.purchasedClasses[0]; // Now proceed with the booking
         } else {
-          return res.status(400).json({ error: "No valid purchased class for this booking." });
+            return res.status(400).json({ error: "No valid purchased class for this booking." });
         }
-      }
+    }
+    
 
       // ✅ Check if User Has Remaining Sessions
       if (purchasedClass.remainingSessions <= 0) {

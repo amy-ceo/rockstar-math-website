@@ -4,7 +4,7 @@ const crypto = require('crypto')
 
 const purchasedClassSchema = new mongoose.Schema({
   name: { type: String, required: true }, // Product Name
-  description: { type: String, required: true }, // Product Description
+  description: { type: String, }, // Product Description
   purchaseDate: { type: Date, default: Date.now }, // Date of Purchase
   sessionCount: { type: Number, required: true }, // ✅ Total Purchased
   remainingSessions: { type: Number, required: true }, // ✅ Sessions Left
