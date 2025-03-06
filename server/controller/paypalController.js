@@ -257,7 +257,7 @@ exports.captureOrder = async (req, res) => {
 
     <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
       <h3 style="color: #007bff;">💡 Need Help?</h3>
-      <p>Our team is always here to assist you! If you have any questions, reach out to us at <b>support@rockstarmath.com</b>.</p>
+      <p>Our team is always here to assist you! If you have any questions, reach out to us at <b>rockstarmathtutoring@gmail.com</b>.</p>
     </div>
 
     <p style="text-align: center; font-size: 16px;">Let's make math learning fun and exciting! We can't wait to see you in class. 🚀</p>
@@ -513,7 +513,6 @@ exports.captureOrder = async (req, res) => {
       )
 
       // ✅ Send the same email to schedulingEmails if available
-      if (user.schedulingEmails && user.schedulingEmails.length > 0) {
         await sendEmail(
           user.schedulingEmails,
           `🎉 Thank You for Your Purchase – Welcome to RockstarMath!`,
@@ -565,7 +564,6 @@ exports.captureOrder = async (req, res) => {
           </div>
           `,
         )
-      }
 
       console.log('✅ Confirmation Email Sent')
     } catch (emailError) {
@@ -574,14 +572,12 @@ exports.captureOrder = async (req, res) => {
     // ✅ Send Emails (Only if schedulingEmails exist)
     await sendEmail(user.billingEmail, '📚 Your Rockstar Math Purchase Details', '', emailHtml)
 
-    if (user.schedulingEmails && user.schedulingEmails.length > 0) {
       await sendEmail(
         user.schedulingEmails,
         '📚 Your Rockstar Math Purchase Details',
         '',
         emailHtml,
       )
-    }
 
     console.log('✅ Purchase confirmation email sent success')
 
@@ -622,10 +618,28 @@ function generateEmailHtml(user, zoomLinks, userCoupons, calendlyLinks) {
  // ✅ Add Discount Coupons (if available)
 if (userCoupons.length > 0) {
   detailsHtml += `<h3 style="color: #d9534f;">🎟 Your Exclusive Discount Coupons:</h3>`;
+
   userCoupons.forEach((coupon) => {
-    detailsHtml += `<p><b>Coupon Code:</b> ${coupon.code} - <b>${coupon.percent_off}% off</b> (Expires: ${coupon.expires})</p>`;
+    if (coupon.percent_off === 100) {
+      detailsHtml += `
+        <p>
+          <b>Coupon Code:</b> ${coupon.code} - <b>${coupon.percent_off}% off</b> (Expires: ${coupon.expires || 'undefined'})  
+          For a Free 60-minute session valued at $100.00 Purchase here ---> 
+          <a href="https://www.rockstarmath.com/services" target="_blank">https://www.rockstarmath.com/services</a>
+        </p>
+      `;
+    } else if (coupon.percent_off === 30) {
+      detailsHtml += `
+        <p>
+          <b>Coupon Code:</b> ${coupon.code} - <b>${coupon.percent_off}% off</b> (Expires: ${coupon.expires || 'undefined'})  
+          Applies to all products on the Tutoring Page Here ---> 
+          <a href="https://www.rockstarmath.com/services" target="_blank">https://www.rockstarmath.com/services</a>
+        </p>
+      `;
+    }
   });
 }
+
 
 
   // ✅ Add Calendly Proxy Links (if available)

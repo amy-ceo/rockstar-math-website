@@ -53,12 +53,6 @@ const Dashboard = () => {
   // ❌ Courses that should NOT appear in "Remaining Sessions"
   const excludedPlans = ['Learn', 'Achieve', 'Excel']
 
-  // ✅ Redirect user if not logged in
-  useEffect(() => {
-    if (!users) {
-      navigate('/login')
-    }
-  }, [users, navigate])
   // ✅ Load user from `localStorage`
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
