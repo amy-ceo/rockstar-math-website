@@ -630,37 +630,40 @@
       });
     }
     if (calendlyLinks.length > 0) {
-      // ✅ Add structured heading
       detailsHtml += `<h3>📅 Your Scheduled Calendly Sessions:</h3>
-      <p>Thank you for purchasing! Below is your registration link and important instructions on how to book your sessions:</p>
-      
-      <ul>`;
-
+        <p>Thank you for your purchase! Below is your registration link and important instructions on how to book your sessions</p>
+        <ul>`;
+  
       calendlyLinks.forEach((session) => {
-          // ✅ Create the proxy link with user ID and session name parameters
-          const proxyLink = `${proxyBaseUrl}?userId=${user._id}&session=${encodeURIComponent(session.name)}`;
-
-          detailsHtml += `<li>
-              📚 – Click the link below to book all of your sessions.
-              <br/>
-              <a href="${proxyLink}" target="_blank"><b>Book Now</b></a>
-          </li>`;
+        const proxyLink = `${proxyBaseUrl}?userId=${user._id}&session=${encodeURIComponent(session.name)}`;
+  
+        // ✅ Get the session count from sessionMapping
+        const sessionCount = sessionMapping[session.name.trim()] ?? 1;
+  
+        detailsHtml += `<li>📚 <b>${session.name}</b> – <a href="${proxyLink}" target="_blank"><b>Book Now</b></a> (${sessionCount} sessions)</li>`;
       });
-
+  
+      // ✅ Display dynamic session count in email
+      const totalSessions = calendlyLinks.reduce((sum, session) => sum + (sessionMapping[session.name.trim()] ?? 1), 0);
+  
       detailsHtml += `</ul>
+        <p>Please click the "BOOK NOW" link <b>${totalSessions}</b> times to book all of your sessions and get started.</p>
+        <ul>`;
+  
+      detailsHtml += `</ul>
+        <p>📌Once you have booked all of your sessions, head over to your RockstarMath Dashboard where you can:</p>
+        <ul>
+            <li>📅 View all your scheduled sessions</li>
+            <li>✏️ Reschedule sessions if needed</li>
+            <li>❌ Cancel any session</li>
+            <li>🛒 Purchase additional sessions</li>
+        </ul>`;
 
-      <p>📌 Once you have booked all your sessions, head over to your <b>RockstarMath Dashboard</b> where you can:</p>
-      <ul>
-          <li>📅 View all your scheduled sessions</li>
-          <li>✏️ Reschedule sessions if needed</li>
-          <li>❌ Cancel any session</li>
-          <li>🛒 Purchase additional sessions</li>
-      </ul>
-
-      <p>🚀 Start your learning journey now!</p>
-      <p>Best Regards, <br/> Rockstar Math Team</p>`;
-  }
-
+        detailsHtml += `</ul>
+        <p>📌If you have any questions please feel free to contact us at: rockstartmathtutoring@gmail.com or (510) 410-4963</p>
+       `;
+    }
+  
     detailsHtml += `</div>`;
     return detailsHtml;
   }
