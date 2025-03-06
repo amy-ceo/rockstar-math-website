@@ -28,7 +28,8 @@ const RegisterBeforeCheckout = () => {
   const [isOtpPopupOpen, setIsOtpPopupOpen] = useState(false) // OTP popup state
   const [isOtpVerified, setIsOtpVerified] = useState(false) // OTP verification state
   const [generatedOtp, setGeneratedOtp] = useState('') // Store received OTP for comparison
-  const [isWebcamPopupOpen, setIsWebcamPopupOpen] = useState(false)
+  const [isWebcamPopupOpen, setIsWebcamPopupOpen] = useState(false);
+  const [isWebcamAgreed, setIsWebcamAgreed] = useState(false);
   const [isSmsPopupOpen, setIsSmsPopupOpen] = useState(false)
   const { users } = useAuth();
   const navigate = useNavigate()
@@ -123,9 +124,11 @@ const RegisterBeforeCheckout = () => {
   }
 
   const handleAgreeWebcam = () => {
-    setFormData((prev) => ({ ...prev, didUserApproveWebcam: true }))
-    setIsWebcamPopupOpen(false)
-  }
+    setIsWebcamAgreed(true); // ✅ Enable checkbox
+    setFormData((prev) => ({ ...prev, didUserApproveWebcam: true }));
+    setIsWebcamPopupOpen(false);
+  };
+  
 
   // ✅ Verify OTP Dynamically
   const verifyOtp = async () => {
@@ -148,6 +151,13 @@ const RegisterBeforeCheckout = () => {
   }
   // ✅ Handle SMS Checkbox & Open OTP Popup
   const handleSmsCheckboxChange = async (e) => {
+
+    if (!formData.phone || formData.phone.length < 10) {
+      toast.error('Please enter a valid phone number first!')
+      return
+    }
+    setIsSmsPopupOpen(true)
+
     const isChecked = e.target.checked
     setFormData((prev) => ({ ...prev, didUserApproveSMS: isChecked }))
 
@@ -557,6 +567,7 @@ const RegisterBeforeCheckout = () => {
                 name="didUserApproveWebcam"
                 checked={formData.didUserApproveWebcam}
                 onChange={handleChange}
+                disabled={!isWebcamAgreed} // ✅ Disable checkbox until agreement
               />
               <Link
                 to="#"

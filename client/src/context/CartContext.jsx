@@ -6,93 +6,86 @@ const CartContext = createContext();
 
 // ✅ Cart Provider Component
 export const CartProvider = ({ children }) => {
-  const [cart, setCart] = useState([]);
-
-  // ✅ Load cart from localStorage when the page loads (With Error Handling)
-  useEffect(() => {
+  // ✅ Load cart from localStorage when the page loads
+  const [cart, setCart] = useState(() => {
     try {
-      const storedCart = JSON.parse(localStorage.getItem("cartItems")) || [];
-      setCart(storedCart);
+      return JSON.parse(localStorage.getItem("cartItems")) || [];
     } catch (error) {
-      console.error("❌ Failed to load cart from localStorage:", error);
-      setCart([]); // Ensure fallback to empty cart
+      console.error("❌ Failed to parse cart from localStorage:", error);
+      return [];
     }
-  }, []);
+  });
 
   // ✅ Save cart to localStorage only when the cart state changes
   useEffect(() => {
     try {
       localStorage.setItem("cartItems", JSON.stringify(cart));
+      console.log("🛒 Cart saved to localStorage:", cart);
     } catch (error) {
       console.error("❌ Failed to save cart to localStorage:", error);
     }
   }, [cart]);
 
-  // ✅ Function to add item to cart (Fix for "Cannot add plan without price" error)
- const addToCart = (service) => {
-  setCart((prevCart) => {
-    const exists = prevCart.some((item) => item.id === service.id);
-    if (exists) {
-      console.warn(`⚠️ Item already exists in the cart: ${service.name}`);
-      return prevCart;
-    }
+  // ✅ Function to add item to cart
+  const addToCart = (service) => {
+    setCart((prevCart) => {
+      const exists = prevCart.some((item) => item.id === service.id);
+      if (exists) {
+        console.warn(`⚠️ Item already exists in the cart: ${service.name}`);
+        return prevCart;
+      }
 
-    // ✅ Handle Both Subscription & Services Price Data Structure
-    let price = null;
-    let currency = "USD";
+      let price = null;
+      let currency = "USD";
 
-    // Subscription plans use `price` directly
-    if (service.price) {
-      price = Number(service.price).toFixed(2);
-      currency = service.currency ? service.currency.toUpperCase() : "USD";
-    }
+      if (service.price) {
+        price = Number(service.price).toFixed(2);
+        currency = service.currency ? service.currency.toUpperCase() : "USD";
+      }
 
-    // Services have `default_price.unit_amount` structure
-    if (!price && service.default_price && service.default_price.unit_amount) {
-      price = (service.default_price.unit_amount / 100).toFixed(2);
-      currency = service.default_price.currency.toUpperCase();
-    }
+      if (!price && service.default_price && service.default_price.unit_amount) {
+        price = (service.default_price.unit_amount / 100).toFixed(2);
+        currency = service.default_price.currency.toUpperCase();
+      }
 
-    // ✅ Prevent Adding Items Without Price
-    if (!price || isNaN(price)) {
-      console.error("❌ Cannot add plan without a valid price!", service);
-      toast.error("This plan cannot be added because it has no price set.");
-      return prevCart;
-    }
+      if (!price || isNaN(price)) {
+        console.error("❌ Cannot add plan without a valid price!", service);
+        toast.error("This plan cannot be added because it has no price set.");
+        return prevCart;
+      }
 
-    // ✅ Create a Clean Object for the Cart
-    const newItem = {
-      id: service.id,
-      name: service.name,
-      description: service.description,
-      images: service.images || [],
-      price,
-      currency,
-    };
+      const newItem = {
+        id: service.id,
+        name: service.name,
+        description: service.description,
+        images: service.images || [],
+        price,
+        currency,
+      };
 
-    const updatedCart = [...prevCart, newItem];
-    localStorage.setItem("cartItems", JSON.stringify(updatedCart));
+      const updatedCart = [...prevCart, newItem];
 
-    toast.success(`${service.name} added to cart!`);
-    return updatedCart;
-  });
-};
-
-
-
-  // ✅ Function to remove item from cart
-  const removeFromCart = (serviceId) => {
-    setCart((prevCart) => prevCart.filter((item) => item.id !== serviceId));
-    localStorage.setItem(
-      "cartItems",
-      JSON.stringify(cart.filter((item) => item.id !== serviceId))
-    );
+      toast.success(`${service.name} added to cart!`);
+      return updatedCart;
+    });
   };
 
-  // ✅ Function to clear the cart (Optional)
+  // ✅ Remove Item from Cart
+  const removeFromCart = (serviceId) => {
+    setCart((prevCart) => {
+      const updatedCart = prevCart.filter((item) => item.id !== serviceId);
+      localStorage.setItem("cartItems", JSON.stringify(updatedCart)); // ✅ Update localStorage correctly
+      return updatedCart;
+    });
+    toast.success("Item removed from cart!");
+  };
+
+  // ✅ Clear Cart Function
   const clearCart = () => {
-    setCart([]);
-    localStorage.removeItem("cartItems"); // ✅ Remove cart from localStorage when cleared
+    console.log("🛒 Clearing Cart...");
+    setCart([]); // ✅ Reset State
+    localStorage.removeItem("cartItems"); // ✅ Remove from LocalStorage
+    window.dispatchEvent(new Event("storage")); // ✅ Sync across tabs
   };
 
   return (

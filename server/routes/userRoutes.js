@@ -1,13 +1,15 @@
 const express = require("express");
-const { updateUserProfile,updateUserPassword } = require("../controller/userController");
+const { updateUserProfile, updateUserPassword, getUserProfile } = require("../controller/userController");
 
 const router = express.Router();
 
-// ✅ Update User Profile Route
+// ✅ Fetch User Profile Route (Newly Added)
+router.get("/user/:userId", getUserProfile); 
+
+// ✅ Update User Profile
 router.put("/user/update/:userId", updateUserProfile);
-router.put("/user/update-password/:userId", updateUserPassword);
-router.put("/user/update-password/:userId", updateUserPassword);
 
-
+// ✅ Update Password
+router.put("/user/update-password/:userId", updateUserPassword);
 
 module.exports = router;

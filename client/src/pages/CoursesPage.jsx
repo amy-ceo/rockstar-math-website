@@ -8,6 +8,14 @@ import Image2 from '../assets/math-image2.jpg'
 import Image3 from '../assets/math-image3.jpg'
 import Image4 from '../assets/math-image4.jpg'
 import Image5 from '../assets/math-image5.jpg'
+import Image6 from '../assets/math-image6.jpg'
+import Image7 from '../assets/math-image7.jpg'
+import Image8 from '../assets/math-image8.jpg'
+import Image9 from '../assets/math-image9.jpg'
+
+
+
+
 
 // Lazy Load Components
 const WaitlistForm = lazy(() => import('../components/WaitlistForm'))
@@ -193,7 +201,7 @@ const CoursesPage = () => {
     {
       courseName: 'Rubik’s Cube Mastery',
       videoUrl: '/videos/video.mp4',
-      thumbnailUrl: Image2,
+      thumbnailUrl: Image6,
       ageGroup: 'Ages 10+',
       price: '$125',
       duration: '5 Days (45-60 min)',
@@ -202,7 +210,7 @@ const CoursesPage = () => {
     {
       courseName: 'Number Ninja (Ages 6-9)',
       videoUrl: '/videos/video.mp4',
-      thumbnailUrl: Image2,
+      thumbnailUrl: Image7,
       ageGroup: 'Ages 6-9',
       price: '$125',
       duration: '5 Days (45-60 min)',
@@ -212,7 +220,7 @@ const CoursesPage = () => {
     {
       courseName: 'Number Ninja (Ages 9-11)',
       videoUrl: '/videos/video.mp4',
-      thumbnailUrl: Image2,
+      thumbnailUrl: Image8,
       ageGroup: 'Ages 9-11',
       price: '$125',
       duration: '5 Days (45-60 min)',
@@ -222,7 +230,7 @@ const CoursesPage = () => {
       courseName: 'Private Tutoring (Spring Break)',
       ageGroup: 'Any Age',
       videoUrl: '/videos/video.mp4',
-      thumbnailUrl: Image2,
+      thumbnailUrl: Image9,
       price: '$225 (normally $275)',
       duration: '5 Days (30 min each)',
       description: 'Need to catch up on math over spring break? Book 5 sessions and save $50!',
@@ -303,7 +311,7 @@ const CoursesPage = () => {
         </div>
 
         {/* Hero Section */}
-        <div className="text-center max-w-4xl mx-auto mb-12">
+        <div className="text-center max-w-4xl mx-auto mb-12 mt-24">
           <h1 className="text-2xl font-extrabold text-deepBlue leading-tight">
             Enthusiastic & Action-Oriented
           </h1>
