@@ -493,7 +493,7 @@
 
     <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
       <h3 style="color: #007bff;">💡 Need Help?</h3>
-      <p>Our team is always here to assist you! If you have any questions, reach out to us at <b>support@rockstarmath.com</b>.</p>
+      <p>Our team is always here to assist you! If you have any questions, reach out to us at <b>rockstarmathtutoring@gmail.com</b>.</p>
     </div>
 
     <p style="text-align: center; font-size: 16px;">Let's make math learning fun and exciting! We can't wait to see you in class. 🚀</p>

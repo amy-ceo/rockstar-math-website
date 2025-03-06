@@ -311,43 +311,47 @@ exports.captureOrder = async (req, res) => {
     }
 
     let appliedCoupons = []
+
     user.cartItems.forEach((item) => {
-      let matchedCoupon = activeCoupons.find((coupon) => {
+      let matchedCoupons = activeCoupons.filter((coupon) => {
         if (item.name === 'Learn' && coupon.percent_off === 10) return true
-        if (item.name === 'Achieve' && coupon.percent_off === 30) return true
+        if (item.name === 'Achieve' && (coupon.percent_off === 30 || coupon.percent_off === 100))
+          return true
         if (item.name === 'Excel' && coupon.percent_off === 20) return true
         return false
       })
 
-      if (matchedCoupon && matchedCoupon.code) {
+      matchedCoupons.forEach((coupon) => {
         appliedCoupons.push({
-          code: matchedCoupon.code,
-          percent_off: matchedCoupon.percent_off,
-          expires: matchedCoupon.expires,
+          code: coupon.code,
+          percent_off: coupon.percent_off,
+          expires: coupon.expires,
         })
-      }
+      })
 
-      // ✅ **Add Achieve Free Session Coupon if Achieve Product is Purchased**
-      if (item.name === 'Achieve') {
+      // ✅ **Manually Add Achieve Free Session Coupon (if not already added)**
+      if (item.name === 'Achieve' && !appliedCoupons.some((c) => c.percent_off === 100)) {
         appliedCoupons.push({
-          code: 'fs4n9tti', // 🎟 Coupon Code from Image
+          code: 'fs4n9tti', // 🎟 Free Session Coupon Code
           percent_off: 100,
-          expires: 'Jun 15', // Expiry Date from Image
+          expires: 'Jun 15', // Expiry Date
         })
       }
     })
 
     console.log('🎟 Final Applied Coupons:', appliedCoupons)
 
-    // ✅ Step 7: Save Coupons in User's Database (Only if Coupons Exist)
     if (appliedCoupons.length > 0) {
       appliedCoupons = appliedCoupons.filter((coupon) => coupon.code && coupon.code.trim() !== '')
+
       if (appliedCoupons.length > 0) {
-        console.log('💾 Saving Coupons to User Database:', appliedCoupons)
-        await Register.findByIdAndUpdate(user._id, {
-          $push: { coupons: { $each: appliedCoupons } },
-        })
-        console.log('✅ Coupons Saved Successfully!')
+        console.log('💾 Saving Multiple Coupons to User Database:', appliedCoupons)
+        await Register.findByIdAndUpdate(
+          user._id,
+          { $push: { coupons: { $each: appliedCoupons } } },
+          { new: true },
+        )
+        console.log('✅ Multiple Coupons Saved Successfully!')
       }
     }
 
@@ -612,13 +616,12 @@ function generateEmailHtml(user, zoomLinks, userCoupons, calendlyLinks) {
   }
 
   // ✅ Add Discount Coupons (if available)
+  // ✅ Add Discount Coupons (if available)
   if (userCoupons.length > 0) {
     detailsHtml += `<h3 style="color: #d9534f;">🎟 Your Exclusive Discount Coupons:</h3>`
     userCoupons.forEach((coupon) => {
       detailsHtml += `<p><b>Coupon Code:</b> ${coupon.code} - <b>${coupon.percent_off}% off</b> (Expires: ${coupon.expires})</p>`
     })
-  } else {
-    console.log('⚠️ No Coupons Available to Include in Email.')
   }
 
   // ✅ Add Calendly Proxy Links (if available)

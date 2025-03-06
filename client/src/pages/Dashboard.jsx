@@ -68,18 +68,12 @@ const Dashboard = () => {
   
         if (parsedUser && parsedUser._id) {
           setUser(parsedUser); // ✅ Set user in state before API calls
-        } else {
-          console.warn('⚠️ User ID missing in stored data. Redirecting to login...');
-          navigate('/login');
-        }
+        } 
       } catch (error) {
         console.error('❌ Error parsing user data from localStorage:', error);
         navigate('/login');
       }
-    } else {
-      console.warn('❌ No user found in localStorage. Redirecting to login...');
-      navigate('/login');
-    }
+    } 
   }, [navigate]);
   
   
