@@ -60,13 +60,14 @@ const Dashboard = () => {
     }
   }, [users, navigate])
   useEffect(() => {
-    const storedUser = localStorage.getItem('user'); // Get user from localStorage
+    const storedUser = localStorage.getItem('user');
     if (storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser);
+        console.log("🛠️ Parsed User from LocalStorage:", parsedUser);
+  
         if (parsedUser && parsedUser._id) {
-          setUser(parsedUser);
-          console.log('✅ User fetched from localStorage:', parsedUser);
+          setUser(parsedUser); // ✅ Set user in state before API calls
         } else {
           console.warn('⚠️ User ID missing in stored data. Redirecting to login...');
           navigate('/login');
@@ -81,10 +82,11 @@ const Dashboard = () => {
     }
   }, [navigate]);
   
+  
   // ✅ Fetch all user data when component mounts
   useEffect(() => {
     if (!user || !user._id) {
-      console.warn('⚠️ User ID not found, skipping API calls.');
+      console.warn("⚠️ User ID not found, skipping API calls.");
       return; // Stop execution if user is not set
     }
   
@@ -189,7 +191,7 @@ const Dashboard = () => {
 
       fetchCoupons(),
     ]).finally(() => setLoading(false))
-  }, [users]) // ✅ Depend only on `users`
+  }, [user]) // ✅ Depend only on `users`
 
   const confirmCancel = (startTime) => {
     setSelectedEventUri(null) // Clear eventUri
