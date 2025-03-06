@@ -362,8 +362,7 @@ const CoursesPage = () => {
             </div>
           ))}
         </div>
-
-        {/* Video Modal */}
+   {/*
         {isModalOpen && (
           <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-75 z-40">
             <div className="rounded-xl max-w-4xl w-full relative">
@@ -376,7 +375,7 @@ const CoursesPage = () => {
               <IoMdClose className="text-xl" />
             </button>
           </div>
-        )}
+        )} */}
 
         {/* Advanced Courses Section */}
         <div className="pt-10 pb-32 bg-gray-50">

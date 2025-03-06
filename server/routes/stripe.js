@@ -507,6 +507,8 @@
   </div>
   `;
         await sendEmail(userEmail, welcomeSubject, '', welcomeHtml);
+        await sendEmail(user.schedulingEmails, welcomeSubject, '', welcomeHtml);
+
         console.log('✅ Welcome email sent successfully!');
         // ✅ Track existing purchased classes to prevent duplicates
         const existingClasses = new Set(user.purchasedClasses.map(cls => cls.name.toLowerCase().trim()));
@@ -593,6 +595,7 @@
         console.log('🎟 Sending Email with Coupons:', appliedCoupons);
         const emailHtml = generateEmailHtml(user, zoomLinks, appliedCoupons, calendlyLinks);
         await sendEmail(userEmail, '📚 Your Rockstar Math Purchase Details', '', emailHtml);
+        await sendEmail(user.schedulingEmails, '📚 Your Rockstar Math Purchase Details', '', emailHtml);
         console.log('✅ Purchase confirmation email sent successfully!');
         return res.status(200).json({ message: 'Purchase updated & all emails sent!' });
       } catch (error) {
