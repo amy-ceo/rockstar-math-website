@@ -82,7 +82,7 @@ useEffect(() => {
     const fetchPurchasedClasses = async () => {
       try {
         const response = await fetch(
-          `https://backend-production-cbe2.up.railway.app/api/${users._id}/purchased-classes`,
+          `https://backend-production-cbe2.up.railway.app/api/${user._id}/purchased-classes`,
         )
         const data = await response.json()
         if (!response.ok) throw new Error(data.message || 'Failed to fetch purchased classes.')
@@ -96,7 +96,7 @@ useEffect(() => {
     const fetchCalendlyBookings = async () => {
       try {
         const response = await fetch(
-          `https://backend-production-cbe2.up.railway.app/api/webhook/${users._id}/calendly-bookings`,
+          `https://backend-production-cbe2.up.railway.app/api/webhook/${user._id}/calendly-bookings`,
         )
         const data = await response.json()
 
@@ -114,7 +114,7 @@ useEffect(() => {
     const fetchZoomBookings = async () => {
       try {
         const response = await fetch(
-          `https://backend-production-cbe2.up.railway.app/api/user/${users._id}/zoom-bookings`,
+          `https://backend-production-cbe2.up.railway.app/api/user/${user._id}/zoom-bookings`,
         )
         const data = await response.json()
 
@@ -131,7 +131,7 @@ useEffect(() => {
     const fetchCoupons = async () => {
       try {
         const response = await fetch(
-          `https://backend-production-cbe2.up.railway.app/api/user-coupons/${users._id}`,
+          `https://backend-production-cbe2.up.railway.app/api/user-coupons/${user._id}`,
         )
         const data = await response.json()
         if (!response.ok) throw new Error(data.message || 'No Coupons found.')
@@ -148,7 +148,7 @@ useEffect(() => {
         setLoading(true)
 
         const response = await fetch(
-          `https://backend-production-cbe2.up.railway.app/api/user/${users._id}/remaining-sessions`,
+          `https://backend-production-cbe2.up.railway.app/api/user/${user._id}/remaining-sessions`,
         )
         const data = await response.json()
         if (!response.ok) throw new Error(data.message || 'Failed to fetch remaining sessions.')
