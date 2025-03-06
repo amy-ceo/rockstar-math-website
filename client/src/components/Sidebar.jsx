@@ -75,7 +75,7 @@ const Sidebar = () => {
             <FaCalendarAlt className="text-xl" /> {!isMobile && isExpanded && "Schedule"}
           </Link>
         </li>
-        <li>
+        {/* <li>
           <Link
             to="/dashboard/archive"
             className={`flex items-center gap-3 px-4 py-2 text-lg rounded-lg hover:bg-blue-600 transition-all duration-300 
@@ -83,7 +83,7 @@ const Sidebar = () => {
           >
             <FaArchive  className="text-xl" /> {!isMobile && isExpanded && "Archive"}
           </Link>
-        </li>
+        </li> */}
         <li>
           <Link
             to="/dashboard/profile"
