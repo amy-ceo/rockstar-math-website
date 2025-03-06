@@ -53,12 +53,7 @@ const Dashboard = () => {
   // ❌ Courses that should NOT appear in "Remaining Sessions"
   const excludedPlans = ['Learn', 'Achieve', 'Excel']
 
-  // ✅ Redirect user if not logged in
-  useEffect(() => {
-    if (!users) {
-      navigate('/login')
-    }
-  }, [users, navigate])
+ 
   
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -72,7 +67,6 @@ const Dashboard = () => {
         } 
       } catch (error) {
         console.error('❌ Error parsing user data from localStorage:', error);
-        navigate('/login');
       }
     } 
   }, [navigate]);
