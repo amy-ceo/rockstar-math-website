@@ -266,7 +266,7 @@ const CoursesPage = () => {
           <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">
             Spring Break Courses
           </h2>
-          <div className="max-w-7xl mx-auto flex flex-col gap-16 ">
+          <div className="flex flex-col gap-16 px-5 xl:px-20 py-5">
             {springBreakCourses.map((course, index) => (
               <div
                 key={index}
