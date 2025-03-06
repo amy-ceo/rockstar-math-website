@@ -17,13 +17,14 @@ const Dashboard = () => {
   const [coupons, setCoupons] = useState([]) // ✅ State for Coupons
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [archivedClasses, setArchivedClasses] = useState([]); // ✅ New State for Archive
+  const [archivedClasses, setArchivedClasses] = useState([]) // ✅ New State for Archive
   const [showCancelPopup, setShowCancelPopup] = useState(false)
   const [selectedEventUri, setSelectedEventUri] = useState(null)
-  const [selectedStartTime, setSelectedStartTime] = useState(null);
+  const [selectedStartTime, setSelectedStartTime] = useState(null)
   const [showReschedulePopup, setShowReschedulePopup] = useState(false)
   const [selectedRescheduleEvent, setSelectedRescheduleEvent] = useState(null)
   const [newDateTime, setNewDateTime] = useState(null)
+  const [zoomBookings, setZoomBookings] = useState([])
 
   // ✅ Allowed Time Slots (3-6 PM, 7-8 PM, 8-9 PM with breaks)
   const allowedTimes = [
@@ -42,13 +43,14 @@ const Dashboard = () => {
     new Date().setHours(20, 0, 0, 0), // 8:00 PM
     new Date().setHours(20, 30, 0, 0), // 8:00 PM
 
-
     // Break from 8:00 PM - 9:00 PM ❌ (No slots here)
 
     new Date().setHours(21, 0, 0, 0), // 9:00 PM
   ]
 
   console.log(allowedTimes)
+  // ❌ Courses that should NOT appear in "Remaining Sessions"
+  const excludedPlans = ['Learn', 'Achieve', 'Excel']
 
   // ✅ Redirect user if not logged in
   useEffect(() => {
@@ -99,6 +101,28 @@ const Dashboard = () => {
       }
     }
 
+    const fetchZoomBookings = async () => {
+      try {
+        const response = await fetch(
+          `https://backend-production-cbe2.up.railway.app/api/user/${users._id}/zoom-bookings`,
+        )
+        const data = await response.json()
+
+        if (!response.ok) throw new Error(data.message || 'Failed to fetch Zoom bookings.')
+
+        setZoomBookings(data.zoomBookings || [])
+      } catch (error) {
+        console.error('❌ Error fetching Zoom sessions:', error)
+        setZoomBookings([])
+      }
+    }
+
+    useEffect(() => {
+      if (users?._id) {
+        fetchZoomBookings()
+      }
+    }, [users])
+
     // Fetch Coupons
     const fetchCoupons = async () => {
       try {
@@ -117,15 +141,25 @@ const Dashboard = () => {
     // ✅ Fetch Remaining Sessions
     const fetchRemainingSessions = async () => {
       try {
+        setLoading(true)
+
         const response = await fetch(
           `https://backend-production-cbe2.up.railway.app/api/user/${users._id}/remaining-sessions`,
         )
         const data = await response.json()
         if (!response.ok) throw new Error(data.message || 'Failed to fetch remaining sessions.')
-        setRemainingSessions(data.remainingSessions || [])
+
+        // ✅ Filter out only the excluded plans
+        const filteredSessions = (data.remainingSessions || []).filter(
+          (session) => !excludedPlans.includes(session.name),
+        )
+
+        setRemainingSessions(filteredSessions)
       } catch (error) {
         console.error('❌ Error fetching remaining sessions:', error)
         setRemainingSessions([])
+      } finally {
+        setLoading(false)
       }
     }
 
@@ -139,124 +173,126 @@ const Dashboard = () => {
   }, [users]) // ✅ Depend only on `users`
 
   const confirmCancel = (startTime) => {
-    setSelectedEventUri(null); // Clear eventUri
-    setSelectedStartTime(startTime); // Set selected startTime
-    setShowCancelPopup(true);
-  };
-  
+    setSelectedEventUri(null) // Clear eventUri
+    setSelectedStartTime(startTime) // Set selected startTime
+    setShowCancelPopup(true)
+  }
+
   const cancelBooking = async () => {
     if (!selectedStartTime || isNaN(new Date(selectedStartTime).getTime())) {
-      toast.error("Invalid session start time!");
-      console.error("❌ Invalid startTime:", selectedStartTime);
-      return;
+      toast.error('Invalid session start time!')
+      console.error('❌ Invalid startTime:', selectedStartTime)
+      return
     }
-  
+
     try {
-      console.log("📡 Sending cancel request to API...", {
+      console.log('📡 Sending cancel request to API...', {
         userId: users._id,
         startTime: new Date(selectedStartTime).toISOString(),
-      });
-  
+      })
+
       const response = await fetch(
-        "https://backend-production-cbe2.up.railway.app/api/cancel-booking",
+        'https://backend-production-cbe2.up.railway.app/api/cancel-booking',
         {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             userId: users._id,
             startTime: new Date(selectedStartTime).toISOString(),
           }),
-        }
-      );
-  
-      console.log("📥 API Response Status:", response.status);
-      const data = await response.json();
-      console.log("📥 API Response Data:", data);
-  
+        },
+      )
+
+      console.log('📥 API Response Status:', response.status)
+      const data = await response.json()
+      console.log('📥 API Response Data:', data)
+
       if (!response.ok) {
-        throw new Error(data.message || "Failed to cancel session.");
+        throw new Error(data.message || 'Failed to cancel session.')
       }
-  
-      toast.success("Session Canceled & Moved to Archive! ✅");
-  
+
+      toast.success('Session Canceled & Moved to Archive! ✅')
+
       // ✅ Remove canceled session from active bookings
       setCalendlyBookings((prev) =>
-        prev.filter((b) => new Date(b.startTime).toISOString() !== new Date(selectedStartTime).toISOString())
-      );
-  
-      setShowCancelPopup(false);
-      setSelectedStartTime(null);
+        prev.filter(
+          (b) => new Date(b.startTime).toISOString() !== new Date(selectedStartTime).toISOString(),
+        ),
+      )
+
+      setShowCancelPopup(false)
+      setSelectedStartTime(null)
     } catch (error) {
-      console.error("❌ Error canceling session:", error.message);
-      toast.error("Failed to cancel session. Try again.");
+      console.error('❌ Error canceling session:', error.message)
+      toast.error('Failed to cancel session. Try again.')
     }
-  };
-  
+  }
+
   const handleReschedule = async () => {
     if (!selectedRescheduleEvent || !newDateTime) {
-      console.warn("❌ No event or new date selected!");
-      return;
+      console.warn('❌ No event or new date selected!')
+      return
     }
-  
+
     try {
-      console.log("📤 Sending request to reschedule:", {
+      console.log('📤 Sending request to reschedule:', {
         userId: users._id,
         eventUri: selectedRescheduleEvent,
         newDateTime,
-      });
-  
+      })
+
       const response = await fetch(
-        "https://backend-production-cbe2.up.railway.app/api/reschedule-booking",
+        'https://backend-production-cbe2.up.railway.app/api/reschedule-booking',
         {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             userId: users._id,
             eventUri: selectedRescheduleEvent,
             newDateTime,
           }),
-        }
-      );
-  
-      const data = await response.json();
-      console.log("📥 API Response:", data);
-  
+        },
+      )
+
+      const data = await response.json()
+      console.log('📥 API Response:', data)
+
       if (!response.ok) {
-        throw new Error(data.message || "Rescheduling failed.");
+        throw new Error(data.message || 'Rescheduling failed.')
       }
-  
-      alert("Session Rescheduled Successfully ✅");
-  
+
+      alert('Session Rescheduled Successfully ✅')
+
       // ✅ Update UI
       setCalendlyBookings((prev) =>
         prev.map((booking) =>
           booking.calendlyEventUri === selectedRescheduleEvent
             ? { ...booking, startTime: newDateTime, rescheduled: true }
-            : booking
-        )
-      );
-  
+            : booking,
+        ),
+      )
+
       // ✅ Close popup
-      setShowReschedulePopup(false);
-      setSelectedRescheduleEvent(null);
-      setNewDateTime(null);
+      setShowReschedulePopup(false)
+      setSelectedRescheduleEvent(null)
+      setNewDateTime(null)
     } catch (error) {
-      console.error("❌ Error rescheduling session:", error);
+      console.error('❌ Error rescheduling session:', error)
     }
-  };
-  
+  }
+
   const openReschedulePopup = (eventUri) => {
-    setSelectedRescheduleEvent(eventUri);
-    setShowReschedulePopup(true);
-  };
+    setSelectedRescheduleEvent(eventUri)
+    setShowReschedulePopup(true)
+  }
 
   if (loading) return <p>Loading dashboard...</p>
   if (error) return <p className="text-red-600">{error}</p>
 
   return (
     <div className="flex min-h-auto">
-            <Toaster position="top-right" />
-      
+      <Toaster position="top-right" />
+
       <div className="flex-grow bg-gray-100">
         <AnimatedSection direction="right">
           {/* ✅ Display Purchased Classes */}
@@ -349,8 +385,8 @@ const Dashboard = () => {
                       )}
                     </div> */}
 
-                     {/* ✅ Display Admin Notes Below View on Calendly */}
-                     {booking.note && (
+                    {/* ✅ Display Admin Notes Below View on Calendly */}
+                    {booking.note && (
                       <div className="mt-3 p-3 border border-gray-300 rounded bg-gray-100">
                         <h5 className="text-gray-800 font-bold">📌 Admin Note:</h5>
                         <p className="text-gray-700">{booking.note}</p>
@@ -382,8 +418,46 @@ const Dashboard = () => {
               </div>
             </section>
           )}
+          {zoomBookings.length > 0 && (
+            <section className="mt-6 p-6 bg-white shadow-lg rounded-lg">
+              <h3 className="text-2xl font-bold mb-4 text-gray-800">
+                🎥 Your Registered Zoom Sessions
+              </h3>
 
-          {/* ✅ Show Remaining Sessions */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                {zoomBookings.map((session, index) => (
+                  <div
+                    key={index}
+                    className="p-5 bg-white rounded-xl shadow-lg border border-gray-200"
+                  >
+                    {/* Event Name */}
+                    <h4 className="text-xl font-semibold text-blue-700 mb-2">
+                      {session.eventName}
+                    </h4>
+
+                    {/* Start Time */}
+                    <p className="text-gray-600">
+                      <strong>📅 Start Time:</strong> {new Date(session.startTime).toLocaleString()}
+                    </p>
+
+                    {/* View Link */}
+                    <div className="mt-3">
+                      <a
+                        href={session.zoomMeetingLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 font-medium hover:underline"
+                      >
+                        🔗 Join Zoom Session
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* ✅ Show Remaining Sessions - Hide "Learn", but display other sessions */}
           {remainingSessions.length > 0 && (
             <section className="mt-6 p-4 bg-white shadow-md rounded-lg">
               <h3 className="text-lg font-bold mb-2">🕒 Your Remaining Sessions</h3>
@@ -420,8 +494,8 @@ const Dashboard = () => {
               dateFormat="MMMM d, yyyy h:mm aa"
               className="border p-2 mt-2"
               filterDate={(date) => {
-                const day = date.getDay();
-                return day >= 0 && day <= 4; // ✅ Allow only Sunday (0) to Thursday (4)
+                const day = date.getDay()
+                return day >= 0 && day <= 4 // ✅ Allow only Sunday (0) to Thursday (4)
               }}
               minDate={new Date()} // ✅ Prevent past dates from being selected
               disabledKeyboardNavigation // ✅ Prevent user from manually typing invalid dates

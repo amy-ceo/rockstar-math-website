@@ -35,6 +35,20 @@ note: { type: String, default: "" }, // ✅ New Field for Notes
   updatedAt: { type: Date, required: false }, // ✅ When Last Updated
 })
 
+const zoomSessionSchema = new mongoose.Schema({
+  eventName: { type: String, required: true }, // ✅ Event Name
+  zoomMeetingLink: { type: String, required: true }, // ✅ Unique Zoom Meeting Link
+  startTime: { type: Date, required: true }, // ✅ Event Start Time
+  endTime: { type: Date, required: false }, // ✅ Optional: End Time
+  timezone: { type: String, required: false }, // ✅ Timezone (if available)
+  status: {
+    type: String,
+    enum: ['Booked', 'Completed', 'Cancelled'],
+    default: 'Booked',
+  },
+  createdAt: { type: Date, default: Date.now }, // ✅ When Booking Was Stored
+});
+
 // ✅ Coupon Schema Inside Register Model
 const couponSchema = new mongoose.Schema({
   code: { type: String, required: true, unique: true, sparse: true }, // ✅ Fix added

@@ -245,3 +245,66 @@ exports.getCalendlyBookings = async (req, res) => {
     res.status(500).json({ message: 'Server error' })
   }
 }
+
+
+exports.zoomWebhook = async (req, res) => {
+  try {
+    console.log("📢 Zoom Webhook Triggered:", JSON.stringify(req.body, null, 2));
+
+    const { event, payload } = req.body;
+    
+    if (!payload || !payload.object) {
+      console.error("❌ Invalid Zoom Payload");
+      return res.status(400).json({ error: "Invalid Zoom Webhook Data" });
+    }
+
+    const { topic, start_time, registrant } = payload.object;
+    const email = registrant?.email;
+
+    if (!email) {
+      console.error("❌ Missing registrant email");
+      return res.status(400).json({ error: "Missing registrant email" });
+    }
+
+    const user = await Register.findOne({ billingEmail: email });
+
+    if (!user) {
+      console.error("❌ No user found with email:", email);
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    console.log("✅ User Found:", user.username);
+
+    const newZoomSession = {
+      eventName: topic || "Zoom Session",
+      startTime: new Date(start_time),
+      status: "Registered",
+      createdAt: new Date(),
+    };
+
+    user.zoomSessions.push(newZoomSession);
+    await user.save();
+
+    console.log("✅ Zoom Session Stored Successfully");
+    res.status(200).json({ message: "Zoom session stored", session: newZoomSession });
+  } catch (error) {
+    console.error("❌ Error Handling Zoom Webhook:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+exports.getZoomBookings = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await Register.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.status(200).json({ zoomSessions: user.zoomSessions || [] });
+  } catch (error) {
+    console.error("❌ Error fetching Zoom sessions:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
