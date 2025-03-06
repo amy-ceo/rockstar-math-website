@@ -15,7 +15,7 @@ exports.calendlyWebhook = async (req, res) => {
       const payload = req.body.payload;
 
       // ✅ Extract Invitee & Event Details
-      const inviteeEmail = payload?.email || '❌ Missing';
+      const inviteeEmail = payload?.invitee?.email || '❌ Missing';
       const eventName = payload?.name || payload?.event?.name || '❌ Missing';
       const eventUri = payload?.event?.location?.join_url || payload?.event?.uri || '❌ Missing';
 
