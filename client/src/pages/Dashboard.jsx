@@ -19,6 +19,7 @@ const Dashboard = () => {
   const [error, setError] = useState('')
   const [archivedClasses, setArchivedClasses] = useState([]) // ✅ New State for Archive
   const [showCancelPopup, setShowCancelPopup] = useState(false)
+  const [user, setUser] = useState(null) // ✅ Fix: Store user locally
   const [selectedEventUri, setSelectedEventUri] = useState(null)
   const [selectedStartTime, setSelectedStartTime] = useState(null)
   const [showReschedulePopup, setShowReschedulePopup] = useState(false)
@@ -58,21 +59,20 @@ const Dashboard = () => {
       navigate('/login')
     }
   }, [users, navigate])
-
-  // ✅ Fetch User from LocalStorage on component mount
-  useEffect(() => {
-    const storedUser = localStorage.getItem('user') // Retrieve user from localStorage
-    if (storedUser) {
-      setUsers(JSON.parse(storedUser)) // Parse and set user state
-      console.log('✅ User fetched from localStorage:', JSON.parse(storedUser))
-    } else {
-      console.warn('❌ No user found in localStorage, redirecting to login...')
-      navigate('/login') // Redirect if no user is found
-    }
-  }, [navigate])
+// ✅ Fetch User from LocalStorage on component mount
+useEffect(() => {
+  const storedUser = localStorage.getItem('user') // Retrieve user from localStorage
+  if (storedUser) {
+    setUser(JSON.parse(storedUser)) // ✅ Corrected: Use setUser, not setUsers
+    console.log('✅ User fetched from localStorage:', JSON.parse(storedUser))
+  } else {
+    console.warn('❌ No user found in localStorage, redirecting to login...')
+    navigate('/login') // Redirect if no user is found
+  }
+}, [navigate])
   // ✅ Fetch all user data when component mounts
   useEffect(() => {
-    if (!users?._id) {
+    if (!user?._id) {
       console.warn('⚠️ User ID not found, skipping API calls.')
       return
     }
