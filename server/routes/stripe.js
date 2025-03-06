@@ -498,13 +498,6 @@
 
     <p style="text-align: center; font-size: 16px;">Let's make math learning fun and exciting! We can't wait to see you in class. 🚀</p>
 
-    <div style="text-align: center; margin-top: 20px;">
-      <a href="https://calendly.com/rockstarmathtutoring" target="_blank"
-        style="display:inline-block; padding:12px 24px; background-color:#007bff; color:#fff; text-decoration:none; border-radius:6px; font-weight:bold; font-size:16px;">
-        📅 Schedule Your First Session
-      </a>
-    </div>
-
     <p style="text-align: center; font-size: 14px; color: #555; margin-top: 20px;">
       Best regards,<br>
       <b>Amy Gemme</b><br>
