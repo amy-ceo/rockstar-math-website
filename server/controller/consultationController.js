@@ -20,7 +20,7 @@ exports.requestConsultation = async (req, res) => {
     await newConsultation.save()
 
     // ✅ Define Admin Email & Subject
-    const adminEmail = 'bhussnain966@gmail.com'
+    const adminEmail = 'rockstarmathtutoring@gmail.com'
     const subject = '📢 New Free Consultation Request'
 
     // ✅ Fully Inline CSS for Email Clients

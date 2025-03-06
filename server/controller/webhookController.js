@@ -3,74 +3,74 @@ const sendEmail = require('../utils/emailSender')
 const axios = require("axios");
 const qs = require("qs");
 
-const ZOOM_CLIENT_ID = "y6RMHYpT8Cka7gpE9FViQ";
-const ZOOM_CLIENT_SECRET = "fns0cQF0t3Y3ngjGnjq4rQtkjOFUlkvu";
+// const ZOOM_CLIENT_ID = "y6RMHYpT8Cka7gpE9FViQ";
+// const ZOOM_CLIENT_SECRET = "fns0cQF0t3Y3ngjGnjq4rQtkjOFUlkvu";
 
-async function getZoomAccessToken() {
-    try {
-        const response = await axios.post(
-            "https://zoom.us/oauth/token",
-            qs.stringify({
-                grant_type: "client_credentials",
-            }),
-            {
-                headers: {
-                    Authorization: `Basic ${Buffer.from(
-                        `${ZOOM_CLIENT_ID}:${ZOOM_CLIENT_SECRET}`
-                    ).toString("base64")}`,
-                    "Content-Type": "application/x-www-form-urlencoded",
-                },
-            }
-        );
+// async function getZoomAccessToken() {
+//     try {
+//         const response = await axios.post(
+//             "https://zoom.us/oauth/token",
+//             qs.stringify({
+//                 grant_type: "client_credentials",
+//             }),
+//             {
+//                 headers: {
+//                     Authorization: `Basic ${Buffer.from(
+//                         `${ZOOM_CLIENT_ID}:${ZOOM_CLIENT_SECRET}`
+//                     ).toString("base64")}`,
+//                     "Content-Type": "application/x-www-form-urlencoded",
+//                 },
+//             }
+//         );
 
-        console.log("✅ Zoom Access Token:", response.data.access_token);
-        return response.data.access_token;
-    } catch (error) {
-        console.error("❌ Error Getting Zoom Access Token:", error.response?.data || error.message);
-        return null;
-    }
-}
+//         console.log("✅ Zoom Access Token:", response.data.access_token);
+//         return response.data.access_token;
+//     } catch (error) {
+//         console.error("❌ Error Getting Zoom Access Token:", error.response?.data || error.message);
+//         return null;
+//     }
+// }
 
-async function createZoomMeeting(topic, startTime) {
-    try {
-        const accessToken = await getZoomAccessToken();
-        if (!accessToken) {
-            throw new Error("Failed to get Zoom access token.");
-        }
+// async function createZoomMeeting(topic, startTime) {
+//     try {
+//         const accessToken = await getZoomAccessToken();
+//         if (!accessToken) {
+//             throw new Error("Failed to get Zoom access token.");
+//         }
 
-        const response = await axios.post(
-            "https://api.zoom.us/v2/users/me/meetings",
-            {
-                topic: topic,
-                type: 2, // Scheduled Meeting
-                start_time: new Date(startTime).toISOString(), // Convert to UTC format
-                duration: 30, // Default to 30 minutes
-                timezone: "UTC",
-                agenda: `Meeting for ${topic}`,
-                settings: {
-                    host_video: true,
-                    participant_video: true,
-                    join_before_host: false,
-                    mute_upon_entry: true,
-                    approval_type: 0, // Auto-approve
-                    registration_type: 2,
-                },
-            },
-            {
-                headers: {
-                    Authorization: `Bearer ${accessToken}`,
-                    "Content-Type": "application/json",
-                },
-            }
-        );
+//         const response = await axios.post(
+//             "https://api.zoom.us/v2/users/me/meetings",
+//             {
+//                 topic: topic,
+//                 type: 2, // Scheduled Meeting
+//                 start_time: new Date(startTime).toISOString(), // Convert to UTC format
+//                 duration: 30, // Default to 30 minutes
+//                 timezone: "UTC",
+//                 agenda: `Meeting for ${topic}`,
+//                 settings: {
+//                     host_video: true,
+//                     participant_video: true,
+//                     join_before_host: false,
+//                     mute_upon_entry: true,
+//                     approval_type: 0, // Auto-approve
+//                     registration_type: 2,
+//                 },
+//             },
+//             {
+//                 headers: {
+//                     Authorization: `Bearer ${accessToken}`,
+//                     "Content-Type": "application/json",
+//                 },
+//             }
+//         );
 
-        console.log("✅ Zoom Meeting Created:", response.data);
-        return response.data.join_url; // Return the Zoom meeting join link
-    } catch (error) {
-        console.error("❌ Error Creating Zoom Meeting:", error.response?.data || error.message);
-        return null;
-    }
-}
+//         console.log("✅ Zoom Meeting Created:", response.data);
+//         return response.data.join_url; // Return the Zoom meeting join link
+//     } catch (error) {
+//         console.error("❌ Error Creating Zoom Meeting:", error.response?.data || error.message);
+//         return null;
+//     }
+// }
 
 
 
@@ -88,8 +88,9 @@ exports.calendlyWebhook = async (req, res) => {
       // ✅ Extract Invitee & Event Details
       const inviteeEmail = payload?.email || '❌ Missing';
       const eventName = payload?.name || payload?.event?.name || '❌ Missing';
-      const eventUri = payload?.event?.location?.join_url || payload?.event?.uri || '❌ Missing';
-
+      const eventUri = payload?.event?.uri || payload?.event?.invitee?.uri || payload?.scheduled_event?.uri || '❌ Missing';
+      const normalizedEventUri = eventUri !== '❌ Missing' ? normalizeUrl(eventUri) : null;
+      
   
       // ✅ Extract `startTime` and `endTime`
       const startTime =
@@ -128,18 +129,18 @@ exports.calendlyWebhook = async (req, res) => {
   
       console.log('👤 User Found:', user);
 
-      // ✅ Generate Zoom Link for Session
-      const zoomMeetingLink = await createZoomMeeting(eventName, startTime);
-      if (!zoomMeetingLink) {
-          console.warn("⚠️ Failed to generate Zoom meeting. Proceeding without it.");
-      }
+      // // ✅ Generate Zoom Link for Session
+      // const zoomMeetingLink = await createZoomMeeting(eventName, startTime);
+      // if (!zoomMeetingLink) {
+      //     console.warn("⚠️ Failed to generate Zoom meeting. Proceeding without it.");
+      // }
 
-  
+      if (!normalizedEventUri) {
+        console.error('❌ Missing valid Calendly Event URI');
+        return res.status(400).json({ error: 'Invalid or missing Calendly Event URL' });
+      }
       // ✅ Normalize URLs for comparison
       const normalizeUrl = (url) => url?.split('?')[0].trim().toLowerCase();
-  
-      const normalizedEventUri = normalizeUrl(eventUri);
-      console.log("🔍 Normalized Event URI:", normalizedEventUri);
   
       // ✅ Find Matching Purchased Class
       let purchasedClass = user.purchasedClasses.find((cls) => {
@@ -193,7 +194,7 @@ exports.calendlyWebhook = async (req, res) => {
       const newBooking = {
         eventName,
         calendlyEventUri: eventUri,
-        zoomMeetingLink: zoomMeetingLink || null, // Save Zoom Link
+        // zoomMeetingLink: zoomMeetingLink || null, // Save Zoom Link
         startTime,
         endTime,
         timezone,

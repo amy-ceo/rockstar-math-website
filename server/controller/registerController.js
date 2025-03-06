@@ -33,7 +33,6 @@ const stripe = require('stripe')(
 
 // ✅ Define Service Packages and Their Booking Limits
 
-
 // ✅ Map Each Zoom Link to a Custom Course Name
 // const zoomCourseMapping = [
 //   {
@@ -69,13 +68,13 @@ const sessionMapping = {
   '3 x 30': 3,
   '5 - 30': 5,
   '8 x 30 minutes': 8,
-};
+}
 
 const calendlyMapping = {
   '3 x 30': 'https://calendly.com/rockstarmathtutoring/30-minute-session',
   '5 - 30': 'https://calendly.com/rockstarmathtutoring/30-minute-session',
   '8 x 30 minutes': 'https://calendly.com/rockstarmathtutoring/30-minute-session',
-};
+}
 
 // ✅ Function to Generate Calendly Link with Booking Limits
 // const generateCalendlyLink = async (userId, sessionType) => {
@@ -221,56 +220,56 @@ exports.registerUser = async (req, res) => {
 
     console.log('✅ Registration Successful:', newUser)
 
-//     // ✅ Send Welcome Email
-//     try {
-//       const subject = `🎉 Welcome to Rockstar Math, ${newUser.username}!`
-//       const htmlContent = `
-//   <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
-    
-//     <div style="text-align: center; padding-bottom: 20px;">
-//       <img src="https://your-logo-url.com/logo.png" alt="Rockstar Math" style="width: 150px; margin-bottom: 10px;">
-//       <h2 style="color: #2C3E50;">🎉 Welcome, ${newUser.username}!</h2>
-//       <p style="font-size: 16px;">We're thrilled to have you join <b>Rockstar Math</b>! 🚀</p>
-//     </div>
+    //     // ✅ Send Welcome Email
+    //     try {
+    //       const subject = `🎉 Welcome to Rockstar Math, ${newUser.username}!`
+    //       const htmlContent = `
+    //   <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
 
-//     <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-//       <h3 style="color: #007bff;">📢 Your Account is Ready!</h3>
-//       <p>Congratulations! Your account has been successfully created. You now have access to personalized math tutoring, expert guidance, and interactive learning resources.</p>
-//       <p><b>Username:</b> ${newUser.username}</p>
-//       <p><b>Email:</b> ${newUser.email}</p>
-//     </div>
+    //     <div style="text-align: center; padding-bottom: 20px;">
+    //       <img src="https://your-logo-url.com/logo.png" alt="Rockstar Math" style="width: 150px; margin-bottom: 10px;">
+    //       <h2 style="color: #2C3E50;">🎉 Welcome, ${newUser.username}!</h2>
+    //       <p style="font-size: 16px;">We're thrilled to have you join <b>Rockstar Math</b>! 🚀</p>
+    //     </div>
 
-//     <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-//       <h3 style="color: #007bff;">📌 What's Next?</h3>
-//       <p>Start your learning journey today by logging into your dashboard, exploring available sessions, and scheduling your first class!</p>
-//       <p><b>Access your dashboard here:</b> <a href="https://your-website.com/login" target="_blank" style="color: #007bff;">Go to Dashboard</a></p>
-//     </div>
+    //     <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+    //       <h3 style="color: #007bff;">📢 Your Account is Ready!</h3>
+    //       <p>Congratulations! Your account has been successfully created. You now have access to personalized math tutoring, expert guidance, and interactive learning resources.</p>
+    //       <p><b>Username:</b> ${newUser.username}</p>
+    //       <p><b>Email:</b> ${newUser.email}</p>
+    //     </div>
 
-//     <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-//       <h3 style="color: #007bff;">💡 Need Help?</h3>
-//       <p>Our team is always here to assist you! If you have any questions, reach out to us at <b>support@rockstarmath.com</b>.</p>
-//     </div>
+    //     <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+    //       <h3 style="color: #007bff;">📌 What's Next?</h3>
+    //       <p>Start your learning journey today by logging into your dashboard, exploring available sessions, and scheduling your first class!</p>
+    //       <p><b>Access your dashboard here:</b> <a href="https://your-website.com/login" target="_blank" style="color: #007bff;">Go to Dashboard</a></p>
+    //     </div>
 
-//     <p style="text-align: center; font-size: 16px;">Let's make math learning fun and exciting! We can't wait to see you in class. 🚀</p>
+    //     <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+    //       <h3 style="color: #007bff;">💡 Need Help?</h3>
+    //       <p>Our team is always here to assist you! If you have any questions, reach out to us at <b>support@rockstarmath.com</b>.</p>
+    //     </div>
 
-//     <div style="text-align: center; margin-top: 20px;">
-//       <a href="https://calendly.com/rockstarmathtutoring" target="_blank"
-//         style="display:inline-block; padding:12px 24px; background-color:#007bff; color:#fff; text-decoration:none; border-radius:6px; font-weight:bold; font-size:16px;">
-//         📅 Schedule Your First Session
-//       </a>
-//     </div>
+    //     <p style="text-align: center; font-size: 16px;">Let's make math learning fun and exciting! We can't wait to see you in class. 🚀</p>
 
-//     <p style="text-align: center; font-size: 14px; color: #555; margin-top: 20px;">
-//       Best regards,<br>
-//       <b>Amy Gemme</b><br>
-//       Rockstar Math Tutoring<br>
-//       📞 510-410-4963
-//     </p>
-//   </div>
-// `
+    //     <div style="text-align: center; margin-top: 20px;">
+    //       <a href="https://calendly.com/rockstarmathtutoring" target="_blank"
+    //         style="display:inline-block; padding:12px 24px; background-color:#007bff; color:#fff; text-decoration:none; border-radius:6px; font-weight:bold; font-size:16px;">
+    //         📅 Schedule Your First Session
+    //       </a>
+    //     </div>
 
-//       await sendEmail(newUser.billingEmail, subject, '', htmlContent)
-//       console.log('✅ Welcome email sent successfully!')
+    //     <p style="text-align: center; font-size: 14px; color: #555; margin-top: 20px;">
+    //       Best regards,<br>
+    //       <b>Amy Gemme</b><br>
+    //       Rockstar Math Tutoring<br>
+    //       📞 510-410-4963
+    //     </p>
+    //   </div>
+    // `
+
+    //       await sendEmail(newUser.billingEmail, subject, '', htmlContent)
+    //       console.log('✅ Welcome email sent successfully!')
     // } catch (emailError) {
     //   console.error('❌ Error sending welcome email:', emailError)
     // }
@@ -341,12 +340,11 @@ exports.addPurchasedClass = async (req, res) => {
         description: item.description || 'No description available',
         purchaseDate: new Date(),
       }
-    user.purchasedClasses.push(...newPurchases)
-    await user.save()
-
-}
-// ✅ Finally, send API response
-return res.status(200).json({ message: 'Purchase updated & all emails sent!' })
+      user.purchasedClasses.push(...newPurchases)
+      await user.save()
+    }
+    // ✅ Finally, send API response
+    return res.status(200).json({ message: 'Purchase updated & all emails sent!' })
   } catch (error) {
     console.error('❌ Error processing purchase:', error)
     res.status(500).json({ message: 'Server error' })
@@ -427,18 +425,18 @@ exports.archiveClass = async (req, res) => {
 
 exports.getArchivedClasses = async (req, res) => {
   try {
-    const { userId } = req.params;
-    console.log("📂 Fetching Archived Classes for User ID:", userId);
+    const { userId } = req.params
+    console.log('📂 Fetching Archived Classes for User ID:', userId)
 
-    const user = await Register.findById(userId);
-    if (!user) return res.status(404).json({ message: "User not found" });
+    const user = await Register.findById(userId)
+    if (!user) return res.status(404).json({ message: 'User not found' })
 
-    res.status(200).json({ archivedClasses: user.archivedClasses || [] });
+    res.status(200).json({ archivedClasses: user.archivedClasses || [] })
   } catch (error) {
-    console.error("❌ Error fetching archived classes:", error);
-    res.status(500).json({ message: "Server error" });
+    console.error('❌ Error fetching archived classes:', error)
+    res.status(500).json({ message: 'Server error' })
   }
-};
+}
 // ✅ Restore a Class
 exports.restoreClass = async (req, res) => {
   try {
@@ -477,204 +475,219 @@ exports.restoreClass = async (req, res) => {
   }
 }
 
-
 exports.getRemainingSession = async (req, res) => {
   try {
-    const user = await Register.findById(req.params.userId);
-    if (!user) return res.status(404).json({ message: "User not found" });
+    const user = await Register.findById(req.params.userId)
+    if (!user) return res.status(404).json({ message: 'User not found' })
 
     // ✅ Send only relevant session data
     const sessionData = user.purchasedClasses.map((item) => ({
       name: item.name,
       remainingSessions: item.remainingSessions,
-    }));
+    }))
 
-    res.json({ remainingSessions: sessionData });
+    res.json({ remainingSessions: sessionData })
   } catch (error) {
-    console.error("❌ Error fetching remaining sessions:", error);
-    res.status(500).json({ message: "Server error" });
+    console.error('❌ Error fetching remaining sessions:', error)
+    res.status(500).json({ message: 'Server error' })
   }
-};
-
+}
 
 exports.checkBookingLimit = async (req, res) => {
   try {
-    const { userId, calendlyEventUri } = req.body;
+    const { userId, calendlyEventUri } = req.body
 
-    const user = await Register.findById(userId);
+    const user = await Register.findById(userId)
     if (!user) {
-      return res.status(404).json({ error: "User not found" });
+      return res.status(404).json({ error: 'User not found' })
     }
 
     // ✅ Find Purchased Plan
-    const purchasedPlan = user.purchasedClasses.find((item) => item.bookingLink === calendlyEventUri);
+    const purchasedPlan = user.purchasedClasses.find(
+      (item) => item.bookingLink === calendlyEventUri,
+    )
 
     if (!purchasedPlan || purchasedPlan.remainingSessions <= 0) {
-      return res.status(400).json({ error: "No remaining sessions available. Upgrade your plan." });
+      return res.status(400).json({ error: 'No remaining sessions available. Upgrade your plan.' })
     }
 
-    res.status(200).json({ message: "Booking Allowed", remainingSessions: purchasedPlan.remainingSessions });
+    res
+      .status(200)
+      .json({ message: 'Booking Allowed', remainingSessions: purchasedPlan.remainingSessions })
   } catch (error) {
-    console.error("❌ Error checking booking limit:", error);
-    res.status(500).json({ error: "Server Error" });
+    console.error('❌ Error checking booking limit:', error)
+    res.status(500).json({ error: 'Server Error' })
   }
-};
+}
 
 exports.cancelSession = async (req, res) => {
   try {
-    const { userId, startTime } = req.body;
+    const { userId, startTime } = req.body
 
     if (!startTime) {
-      return res.status(400).json({ message: "Start time is required to find the session." });
+      return res.status(400).json({ message: 'Start time is required to find the session.' })
     }
 
-    console.log(`🔍 Searching for session with startTime: ${startTime}`);
+    console.log(`🔍 Searching for session with startTime: ${startTime}`)
 
     // ✅ Find user
-    const user = await Register.findById(userId);
+    const user = await Register.findById(userId)
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ message: 'User not found' })
     }
 
-    // ✅ Find the session to cancel using startTime
-    const sessionIndex = user.bookedSessions.findIndex(
-      (session) => new Date(session.startTime).toISOString() === new Date(startTime).toISOString()
-    );
+    // Validate startTime before processing
+    if (!startTime || isNaN(new Date(startTime).getTime())) {
+      console.error('❌ Invalid startTime received:', startTime)
+      return res.status(400).json({ message: 'Invalid start time format' })
+    }
 
+    const sessionIndex = user.bookedSessions.findIndex((session) => {
+      const sessionStartTime = new Date(session.startTime)
+      return (
+        !isNaN(sessionStartTime.getTime()) &&
+        sessionStartTime.toISOString() === new Date(startTime).toISOString()
+      )
+    })
     if (sessionIndex === -1) {
-      return res.status(404).json({ message: "Session not found" });
+      return res.status(404).json({ message: 'Session not found' })
     }
 
-    const canceledSession = user.bookedSessions[sessionIndex];
+    const canceledSession = user.bookedSessions[sessionIndex]
 
-    console.log(`✅ Found session: ${canceledSession.eventName} at ${canceledSession.startTime}`);
+    console.log(`✅ Found session: ${canceledSession.eventName} at ${canceledSession.startTime}`)
 
     // ✅ Find the purchased plan linked to this session
     let purchasedPlan = user.purchasedClasses.find(
-      (item) => item.name === canceledSession.eventName
-    );
+      (item) => item.name === canceledSession.eventName,
+    )
 
     if (!purchasedPlan) {
-      return res.status(400).json({ message: "Purchased plan not found for this session" });
+      return res.status(400).json({ message: 'Purchased plan not found for this session' })
     }
 
-    console.log(`📌 Purchased plan found: ${purchasedPlan.name}`);
+    console.log(`📌 Purchased plan found: ${purchasedPlan.name}`)
 
     // ✅ Restore Session Count
-    purchasedPlan.remainingSessions += 1;
+    purchasedPlan.remainingSessions += 1
 
     // ✅ Move Session to Archived Classes
     user.archivedClasses.push({
       name: canceledSession.eventName,
-      description: "Session was canceled by the user",
+      description: 'Session was canceled by the user',
       archivedAt: new Date(),
       sessionCount: purchasedPlan.sessionCount,
       remainingSessions: purchasedPlan.remainingSessions,
-    });
+    })
 
     // ✅ Remove session from bookedSessions
-    user.bookedSessions.splice(sessionIndex, 1);
-    await user.save();
+    user.bookedSessions.splice(sessionIndex, 1)
+    await user.save()
 
-    console.log(`✅ Session canceled and archived successfully!`);
+    console.log(`✅ Session canceled and archived successfully!`)
 
     res.status(200).json({
-      message: "Session canceled and archived successfully",
+      message: 'Session canceled and archived successfully',
       archivedClasses: user.archivedClasses,
-    });
+    })
   } catch (error) {
-    console.error("❌ Error canceling session:", error);
-    res.status(500).json({ message: "Server error" });
+    console.error('❌ Error canceling session:', error)
+    res.status(500).json({ message: 'Server error' })
   }
-};
+}
 
 exports.rescheduleBooking = async (req, res) => {
   try {
-      const { userId, eventUri, newDateTime } = req.body;
+    const { userId, eventUri, newDateTime } = req.body
 
-      // ✅ Validate Inputs
-      if (!userId || !eventUri || !newDateTime) {
-          return res.status(400).json({ error: "Missing required fields" });
-      }
+    // ✅ Validate Inputs
+    if (!userId || !eventUri || !newDateTime) {
+      return res.status(400).json({ error: 'Missing required fields' })
+    }
 
-      // ✅ Find User & Booking
-      const user = await Register.findOne({ _id: userId, "bookedSessions.calendlyEventUri": eventUri });
+    // ✅ Find User & Booking
+    const user = await Register.findOne({
+      _id: userId,
+      'bookedSessions.calendlyEventUri': eventUri,
+    })
 
-      if (!user) {
-          return res.status(404).json({ error: "User or booking not found" });
-      }
+    if (!user) {
+      return res.status(404).json({ error: 'User or booking not found' })
+    }
 
-      // ✅ Find the session index
-      const sessionIndex = user.bookedSessions.findIndex(session => session.calendlyEventUri === eventUri);
-      if (sessionIndex === -1) return res.status(404).json({ error: "Session not found" });
+    // ✅ Find the session index
+    const sessionIndex = user.bookedSessions.findIndex(
+      (session) => session.calendlyEventUri === eventUri,
+    )
+    if (sessionIndex === -1) return res.status(404).json({ error: 'Session not found' })
 
-      // ✅ Update Booking Time & Status
-      user.bookedSessions[sessionIndex].startTime = new Date(newDateTime);
-      user.bookedSessions[sessionIndex].status = "Rescheduled"; // ✅ Updating Status
-      user.bookedSessions[sessionIndex].rescheduled = true;
-      user.bookedSessions[sessionIndex].updatedAt = new Date(); // ✅ Update last modified time
+    // ✅ Update Booking Time & Status
+    user.bookedSessions[sessionIndex].startTime = new Date(newDateTime)
+    user.bookedSessions[sessionIndex].status = 'Rescheduled' // ✅ Updating Status
+    user.bookedSessions[sessionIndex].rescheduled = true
+    user.bookedSessions[sessionIndex].updatedAt = new Date() // ✅ Update last modified time
 
-      await user.save();
+    await user.save()
 
-      // ✅ Send Email Notification to Admin
-      const subject = "📢 Session Rescheduled Notification";
-      const htmlContent = `
+    // ✅ Send Email Notification to Admin
+    const subject = '📢 Session Rescheduled Notification'
+    const htmlContent = `
           <h3>🔄 Session Rescheduled</h3>
           <p><strong>User:</strong> ${user.billingEmail}</p>
           <p><strong>New Date/Time:</strong> ${new Date(newDateTime).toLocaleString()}</p>
           <p><strong>Event URI:</strong> ${eventUri}</p>
           <p><strong>Status:</strong> Rescheduled ✅</p>
-      `;
+      `
 
-      await sendEmail("anchorwebdesigner@gmail.com", subject, '', htmlContent);
+    await sendEmail('anchorwebdesigner@gmail.com', subject, '', htmlContent)
 
-      res.status(200).json({ message: "Session rescheduled successfully", updatedUser: user });
-
+    res.status(200).json({ message: 'Session rescheduled successfully', updatedUser: user })
   } catch (error) {
-      console.error("❌ Error rescheduling session:", error);
-      res.status(500).json({ error: "Internal Server Error" });
+    console.error('❌ Error rescheduling session:', error)
+    res.status(500).json({ error: 'Internal Server Error' })
   }
-};
-
+}
 
 exports.proxyCalendly = async (req, res) => {
   try {
-    const { userId, session } = req.query;
+    const { userId, session } = req.query
 
     if (!userId || !session) {
-      return res.status(400).send("Missing user ID or session.");
+      return res.status(400).send('Missing user ID or session.')
     }
 
-    const user = await Register.findById(userId);
-    if (!user) return res.status(404).send("User not found.");
+    const user = await Register.findById(userId)
+    if (!user) return res.status(404).send('User not found.')
 
     // ✅ Check if the user has purchased the specified session
-    const purchasedClass = user.purchasedClasses.find((cls) => cls.name === session);
+    const purchasedClass = user.purchasedClasses.find((cls) => cls.name === session)
 
     if (!purchasedClass) {
-      return res.status(403).send("You have not purchased this session.");
+      return res.status(403).send('You have not purchased this session.')
     }
 
     // ✅ Check if user has remaining sessions (prevent access if sessions are exhausted)
     if (purchasedClass.remainingSessions <= 0) {
-      return res.status(403).send("Your Session Booking Limit has been reached. Please return back to www.Rockstarmath.com and log into your dashboard to view and see your scheduled sessions.");
+      return res
+        .status(403)
+        .send(
+          'Your Session Booking Limit has been reached. Please return back to www.Rockstarmath.com and log into your dashboard to view and see your scheduled sessions.',
+        )
     }
 
     // ✅ Fetch the correct Calendly link from the static mapping
-    const calendlyLink = calendlyMapping[session];
+    const calendlyLink = calendlyMapping[session]
 
     if (!calendlyLink) {
-      return res.status(400).send("Calendly link not available.");
+      return res.status(400).send('Calendly link not available.')
     }
 
-    console.log(`✅ User ${userId} is being redirected to Calendly for session: ${session}`);
+    console.log(`✅ User ${userId} is being redirected to Calendly for session: ${session}`)
 
     // ✅ Redirect the user to the Calendly link
-    res.redirect(calendlyLink);
-
+    res.redirect(calendlyLink)
   } catch (error) {
-    console.error("❌ Error in proxyCalendly:", error);
-    res.status(500).send("Internal Server Error.");
+    console.error('❌ Error in proxyCalendly:', error)
+    res.status(500).send('Internal Server Error.')
   }
-};
-
+}

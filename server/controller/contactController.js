@@ -24,7 +24,7 @@ exports.submitForm = async (req, res) => {
         });
 
         const mailOptions = {
-            from: '"Rockstar Math Team" bhussnain966@gmail.com', // Sender's email and name
+            from: '"Rockstar Math Team" rockstarmathtutoring@gmail.com', // Sender's email and name
             to: email, // Recipient's email
             subject: 'Thank You for Contacting Rockstar Math!',
             text: `Dear ${fullName},

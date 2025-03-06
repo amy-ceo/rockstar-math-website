@@ -1,29 +1,43 @@
-const sendEmail = require('../utils/emailSender')
-const Waitlist = require('../models/Waitlist') // Import the model
+const sendEmail = require("../utils/emailSender");
+const Waitlist = require("../models/Waitlist");
 
 exports.requestWaitlist = async (req, res) => {
-  const { email, firstname, lastname, phonenumber, currentgrade } = req.body
+  const { email, firstname, lastname, phonenumber, currentgrade, selectedCourse } = req.body;
 
-  if (!email || !firstname || !lastname || !phonenumber || !currentgrade) {
-    return res.status(400).json({ error: 'All required fields must be filled!' })
+  console.log("🟡 Received Waitlist Data:", req.body); // Log received data
+
+  if (!email || !firstname || !lastname || !phonenumber || !currentgrade || !selectedCourse) {
+    console.error("❌ Missing Fields in Request");
+    return res.status(400).json({ error: "All required fields must be filled!" });
   }
 
   try {
-    // ✅ Save Email to Database
-    const newConsultation = new Waitlist({
+    // ✅ Save to Database with Debugging
+    console.log("📌 Attempting to save data to MongoDB...");
+
+    const newWaitlistEntry = new Waitlist({
       firstname,
       lastname,
       email,
       phonenumber,
       currentgrade,
-    })
-    await newConsultation.save()
+      selectedCourse,
+    });
 
-    // ✅ Define Admin Email & Subject
-    const adminEmail = 'bhussnain966@gmail.com'
-    const subject = '📢 New Waitlist Request'
+    const savedEntry = await newWaitlistEntry.save();
+    console.log("✅ Successfully Saved to Database:", savedEntry); // Debugging log
 
-    // ✅ Fully Inline CSS for Email Clients
+    // ✅ Check if the data actually saved
+    const checkEntry = await Waitlist.findOne({ email });
+    if (!checkEntry) {
+      console.error("❌ Data not found after save operation!");
+      return res.status(500).json({ success: false, message: "Data save failed in MongoDB" });
+    }
+
+    // ✅ Send Email
+    const adminEmail = "rockstarmathtutoring@gmail.com";
+    const subject = "📢 New Waitlist Request";
+
     const message = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px; background-color: #f9fafb;">
         <h2 style="text-align: center; color: #1e293b; font-size: 22px; font-weight: bold; margin-bottom: 20px;">
@@ -34,36 +48,12 @@ exports.requestWaitlist = async (req, res) => {
           You have received a new Waitlist request. Below are the details:
         </p>
         <div style="background-color: #f3f4f6; padding: 15px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #d1d5db;">
-          <p style="font-size: 16px; color: #111827; margin: 0;">
-            <strong>📧 User First Name:</strong> 
-            <a href="mailto:${firstname}" style="color: #2563eb; font-weight: bold; text-decoration: none;">
-              ${firstname}
-            </a>
-          </p>
-           <p style="font-size: 16px; color: #111827; margin: 0;">
-            <strong>📧 User Last Name:</strong> 
-            <a href="mailto:${lastname}" style="color: #2563eb; font-weight: bold; text-decoration: none;">
-              ${lastname}
-            </a>
-          </p>
-            <p style="font-size: 16px; color: #111827; margin: 0;">
-            <strong>📧 User Email:</strong> 
-            <a href="mailto:${email}" style="color: #2563eb; font-weight: bold; text-decoration: none;">
-              ${email}
-            </a>
-          </p>
-            <p style="font-size: 16px; color: #111827; margin: 0;">
-            <strong>📧 User Phone Number:</strong> 
-            <a href="mailto:${phonenumber}" style="color: #2563eb; font-weight: bold; text-decoration: none;">
-              ${phonenumber}
-            </a>
-          </p>
-              <p style="font-size: 16px; color: #111827; margin: 0;">
-            <strong>📧 User Current Grade:</strong> 
-            <a href="mailto:${currentgrade}" style="color: #2563eb; font-weight: bold; text-decoration: none;">
-              ${currentgrade}
-            </a>
-          </p>
+          <p><strong>📧 First Name:</strong> ${firstname}</p>
+          <p><strong>📧 Last Name:</strong> ${lastname}</p>
+          <p><strong>📧 Email:</strong> ${email}</p>
+          <p><strong>📧 Phone Number:</strong> ${phonenumber}</p>
+          <p><strong>📧 Current Grade:</strong> ${currentgrade}</p>
+          <p><strong>📚 Selected Course:</strong> ${selectedCourse}</p> <!-- ✅ Ensure it's displayed in the email -->
         </div>
         <p style="font-size: 16px; color: #4b5563; margin-bottom: 10px;">
           Please reach out to the user at your earliest convenience.
@@ -73,17 +63,18 @@ exports.requestWaitlist = async (req, res) => {
           Rockstar Math Team
         </p>
       </div>
-    `
+    `;
 
-    // ✅ Send Email
-    await sendEmail(adminEmail, subject, '', message)
+    await sendEmail(adminEmail, subject, "", message);
+    console.log("✅ Email Sent Successfully");
 
     res.status(200).json({
       success: true,
-      message: 'Consultation request sent successfully & saved to database!',
-    })
+      message: "Waitlist request saved successfully!",
+      savedEntry, // ✅ Return saved entry
+    });
   } catch (error) {
-    console.error('Error processing consultation request:', error)
-    res.status(500).json({ success: false, message: 'Error processing request' })
+    console.error("❌ Error Processing Request:", error);
+    res.status(500).json({ success: false, message: "Database save failed" });
   }
-}
+};

@@ -145,15 +145,16 @@ const Dashboard = () => {
   };
   
   const cancelBooking = async () => {
-    if (!selectedStartTime) {
-      toast.error("No session selected to cancel!");
+    if (!selectedStartTime || isNaN(new Date(selectedStartTime).getTime())) {
+      toast.error("Invalid session start time!");
+      console.error("❌ Invalid startTime:", selectedStartTime);
       return;
     }
   
     try {
       console.log("📡 Sending cancel request to API...", {
         userId: users._id,
-        startTime: selectedStartTime,
+        startTime: new Date(selectedStartTime).toISOString(),
       });
   
       const response = await fetch(
@@ -161,12 +162,14 @@ const Dashboard = () => {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: users._id, startTime: selectedStartTime }),
+          body: JSON.stringify({
+            userId: users._id,
+            startTime: new Date(selectedStartTime).toISOString(),
+          }),
         }
       );
   
       console.log("📥 API Response Status:", response.status);
-  
       const data = await response.json();
       console.log("📥 API Response Data:", data);
   
@@ -321,8 +324,7 @@ const Dashboard = () => {
                     </p>
 
                     {/* View Links (Calendly & Zoom) */}
-                    <div className="flex items-center mt-3 space-x-4">
-                      {/* View on Calendly */}
+                    {/* <div className="flex items-center mt-3 space-x-4">
                       <a
                         href={booking.calendlyEventUri.replace(
                           'api.calendly.com/scheduled_events',
@@ -335,7 +337,6 @@ const Dashboard = () => {
                         🌐 View on Calendly
                       </a>
 
-                      {/* View on Zoom (Only if Zoom Link Exists) */}
                       {booking.zoomMeetingLink && (
                         <a
                           href={booking.zoomMeetingLink}
@@ -346,7 +347,7 @@ const Dashboard = () => {
                           🎥 View on Zoom
                         </a>
                       )}
-                    </div>
+                    </div> */}
 
                      {/* ✅ Display Admin Notes Below View on Calendly */}
                      {booking.note && (

@@ -21,10 +21,15 @@ const waitlistSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  selectedCourse: { // ✅ Ensure this field exists
+    type: String,
+    required: true,
+  },
   createdAt: {
     type: Date,
     default: Date.now,
   },
 });
 
-module.exports = mongoose.model("Waitlist", waitlistSchema);
+module.exports = mongoose.model("Waitlists", waitlistSchema);
+

@@ -31,7 +31,7 @@ exports.subscribe = async (req, res) => {
         });
 
         const mailOptions = {
-            from: "bhussnain966@gmail.com",
+            from: "rockstarmathtutoring@gmail.com",
             to: email,
             subject: "Welcome to Our Learning Community!",
             html: `

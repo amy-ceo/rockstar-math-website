@@ -192,6 +192,8 @@ const CoursesPage = () => {
   const springBreakCourses = [
     {
       courseName: 'Rubik’s Cube Mastery',
+      videoUrl: '/videos/video.mp4',
+      thumbnailUrl: Image2,
       ageGroup: 'Ages 10+',
       price: '$125',
       duration: '5 Days (45-60 min)',
@@ -199,6 +201,8 @@ const CoursesPage = () => {
     },
     {
       courseName: 'Number Ninja (Ages 6-9)',
+      videoUrl: '/videos/video.mp4',
+      thumbnailUrl: Image2,
       ageGroup: 'Ages 6-9',
       price: '$125',
       duration: '5 Days (45-60 min)',
@@ -207,6 +211,8 @@ const CoursesPage = () => {
     },
     {
       courseName: 'Number Ninja (Ages 9-11)',
+      videoUrl: '/videos/video.mp4',
+      thumbnailUrl: Image2,
       ageGroup: 'Ages 9-11',
       price: '$125',
       duration: '5 Days (45-60 min)',
@@ -215,6 +221,8 @@ const CoursesPage = () => {
     {
       courseName: 'Private Tutoring (Spring Break)',
       ageGroup: 'Any Age',
+      videoUrl: '/videos/video.mp4',
+      thumbnailUrl: Image2,
       price: '$225 (normally $275)',
       duration: '5 Days (30 min each)',
       description: 'Need to catch up on math over spring break? Book 5 sessions and save $50!',
@@ -237,6 +245,63 @@ const CoursesPage = () => {
       <Toaster position="top-right" />
 
       <div className="py-32 bg-gray-50">
+        {/* ✅ Spring Break Banner */}
+        <div className="bg-blue-600 text-white text-center py-6">
+          <h1 className="text-4xl font-bold">🌸 Spring Break 2025 🌸</h1>
+          <p className="text-lg mt-2">March 21 - April 4th | Oakland, CA</p>
+          <p className="mt-1">5-Day Courses (45-60 min per session) | Min 3 Students Required</p>
+        </div>
+
+        {/* ✅ Spring Break Courses Section */}
+        {/* ✅ Spring Break Courses Section (Updated Layout) */}
+        <div className="py-16 bg-gray-50">
+          <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">
+            Spring Break Courses
+          </h2>
+          <div className="max-w-6xl mx-auto flex flex-col gap-16 ">
+            {springBreakCourses.map((course, index) => (
+              <div
+                key={index}
+                className={`flex flex-col md:flex-row items-center gap-10 ${
+                  index % 2 !== 0 ? 'md:flex-row-reverse' : ''
+                }`}
+              >
+                {/* ✅ Image Section */}
+                <div className="flex-1 relative rounded-lg overflow-hidden h-[300px] md:h-[350px]">
+                  <img
+                    src={course.thumbnailUrl}
+                    alt={course.courseName}
+                    className="w-full h-full object-cover rounded-lg"
+                  />
+                  <div
+                    className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-deepBlue p-4 rounded-full cursor-pointer hover:scale-110 transition-transform"
+                    onClick={() => openModal(course.videoUrl)}
+                  >
+                    <IoMdPlay className="text-white text-md" />
+                  </div>
+                </div>
+
+                {/* ✅ Course Info Section */}
+                <div className="flex-1 p-6 rounded-lg flex flex-col justify-between h-full">
+                  <h3 className="text-3xl font-bold text-deepBlue mb-4">{course.courseName}</h3>
+                  <p className="text-gray-600">{course.ageGroup}</p>
+                  <p className="text-gray-500">{course.price}</p>
+                  <p className="text-gray-500">{course.duration}</p>
+                  <p className="mt-4 text-lg">{course.description}</p>
+
+                  {/* ✅ Join Waitlist Button */}
+                  <button
+                    onClick={() => setIsFormModalOpen(true)}
+                    className="max-w-48 mt-6 bg-deepBlue text-white px-6 py-3 rounded-lg shadow-md hover:bg-sky-600 transition duration-300"
+                  >
+                    Join Waitlist
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Hero Section */}
         <div className="text-center max-w-4xl mx-auto mb-12">
           <h1 className="text-2xl font-extrabold text-deepBlue leading-tight">
@@ -357,36 +422,6 @@ const CoursesPage = () => {
               </div>
             ))}
           </div>
-        </div>
-      </div>
-
-      {/* ✅ Spring Break Banner */}
-      <div className="bg-blue-600 text-white text-center py-6">
-        <h1 className="text-4xl font-bold">🌸 Spring Break 2025 🌸</h1>
-        <p className="text-lg mt-2">March 21 - April 4th | Oakland, CA</p>
-        <p className="mt-1">5-Day Courses (45-60 min per session) | Min 3 Students Required</p>
-      </div>
-
-      {/* ✅ Spring Break Courses Section */}
-      <div className="py-16 bg-gray-50">
-        <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">Spring Break Courses</h2>
-        <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-6 px-4">
-          {springBreakCourses.map((course, index) => (
-            <div key={index} className="p-6 bg-white shadow-md rounded-lg">
-              <h3 className="text-xl font-bold text-gray-800">{course.courseName}</h3>
-              <p className="text-gray-600 mt-1">{course.ageGroup}</p>
-              <p className="text-gray-500">{course.price}</p>
-              <p className="text-gray-500">{course.duration}</p>
-              <p className="mt-2">{course.description}</p>
-              {/* ✅ Waitlist Button */}
-              <button
-                onClick={() => setIsFormModalOpen(true)}
-                className="mt-4 bg-deepBlue text-white px-4 py-2 rounded-lg shadow-md hover:bg-sky-600 transition duration-300"
-              >
-                Join Waitlist
-              </button>
-            </div>
-          ))}
         </div>
       </div>
 
