@@ -7,7 +7,7 @@ import 'tailwindcss/tailwind.css' // Tailwind CSS
 import { AuthProvider } from './context/AuthContext'
 import { CartProvider } from './context/CartContext'
 import CourseDetail from './components/CourseDetail.jsx'
-// import Archive from './components/Archive.jsx'
+import Archive from './components/Archive.jsx'
 import AdminDashboardLayout from './admin/layout/AdminDashboardLayout.jsx'
 import AdminAuthProvider from './admin/context/AdminAuthContext.jsx'
 import AdminDashboard from './admin/pages/AdminDashboard.jsx'
@@ -190,11 +190,11 @@ root.render(
                       <Schedule />
                       <Footer />
                     </>} />
-                  {/* <Route path="archive" element={   <>
+                  <Route path="archive" element={   <>
                       <Navbar />
                       <Archive />
                       <Footer />
-                    </>} /> */}
+                    </>} />
                     <Route path="profile" element={   <>
                       <Navbar />
                       <Profile />
