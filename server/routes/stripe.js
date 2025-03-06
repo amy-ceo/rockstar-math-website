@@ -482,7 +482,7 @@
       <h3 style="color: #007bff;">📢 Your Account is Ready!</h3>
       <p>Congratulations! Your account has been successfully created. You now have access to personalized math tutoring, expert guidance, and interactive learning resources.</p>
       <p><b>Username:</b> ${user.username}</p>
-      <p><b>Email:</b> ${user.email}</p>
+      <p><b>Email:</b> ${user.billingEmail}</p>
     </div>
 
     <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
