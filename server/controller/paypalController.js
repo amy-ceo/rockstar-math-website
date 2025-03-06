@@ -62,8 +62,6 @@ const calendlyMapping = {
   '30 Minute Tutoring Session': 'https://calendly.com/rockstarmathtutoring/30-minute-session',
 }
 
-
-
 // ✅ Fetch Active Coupons from Stripe
 async function getActiveCoupons() {
   try {
@@ -312,7 +310,6 @@ exports.captureOrder = async (req, res) => {
       zoomLinks.push(COMMONCORE_ZOOM_LINK)
     }
 
-    // ✅ Step 5: Apply Discount Coupons Based on Course Name
     let appliedCoupons = []
     user.cartItems.forEach((item) => {
       let matchedCoupon = activeCoupons.find((coupon) => {
@@ -329,9 +326,17 @@ exports.captureOrder = async (req, res) => {
           expires: matchedCoupon.expires,
         })
       }
+
+      // ✅ **Add Achieve Free Session Coupon if Achieve Product is Purchased**
+      if (item.name === 'Achieve') {
+        appliedCoupons.push({
+          code: 'fs4n9tti', // 🎟 Coupon Code from Image
+          percent_off: 100,
+          expires: 'Jun 15', // Expiry Date from Image
+        })
+      }
     })
 
-    // ✅ Step 6: Log Applied Coupons Before Saving
     console.log('🎟 Final Applied Coupons:', appliedCoupons)
 
     // ✅ Step 7: Save Coupons in User's Database (Only if Coupons Exist)
@@ -555,61 +560,65 @@ exports.captureOrder = async (req, res) => {
   }
 }
 
-
 function generateEmailHtml(user, zoomLinks, userCoupons, calendlyLinks) {
   // ✅ Calendly Proxy URL
-  const proxyBaseUrl = 'https://backend-production-cbe2.up.railway.app/api/proxy-calendly';
+  const proxyBaseUrl = 'https://backend-production-cbe2.up.railway.app/api/proxy-calendly'
 
-  console.log('📧 Generating Email HTML for:', user.billingEmail);
-  console.log('🎟 Coupons Included in Email:', userCoupons);
+  console.log('📧 Generating Email HTML for:', user.billingEmail)
+  console.log('🎟 Coupons Included in Email:', userCoupons)
 
   let detailsHtml = `
         <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
             <h2 style="color: #2C3E50;">🎉 Hello, ${user.username}!</h2>
             <p>We're excited to have you on board! 🚀 Below are your registration details.</p>
             <h3 style="color: #007bff;">🔗 Available Courses & Registration Links:</h3>
-            <ul style="list-style-type: none; padding: 0;">`;
+            <ul style="list-style-type: none; padding: 0;">`
 
   // ✅ Add Zoom Links (if available)
   if (zoomLinks.length > 0) {
-    detailsHtml += `<h3>🔗 Your Course Zoom Links:</h3><ul>`;
+    detailsHtml += `<h3>🔗 Your Course Zoom Links:</h3><ul>`
     zoomLinks.forEach((course) => {
-      detailsHtml += `<li>📚 <b>${course.name}</b> – <a href="${course.link}" target="_blank">Register Here</a></li>`;
-    });
-    detailsHtml += `</ul>`;
+      detailsHtml += `<li>📚 <b>${course.name}</b> – <a href="${course.link}" target="_blank">Register Here</a></li>`
+    })
+    detailsHtml += `</ul>`
   }
 
   // ✅ Add Discount Coupons (if available)
   if (userCoupons.length > 0) {
-    detailsHtml += `<h3 style="color: #d9534f;">🎟 Your Exclusive Discount Coupons:</h3>`;
+    detailsHtml += `<h3 style="color: #d9534f;">🎟 Your Exclusive Discount Coupons:</h3>`
     userCoupons.forEach((coupon) => {
-      detailsHtml += `<p><b>Coupon Code:</b> ${coupon.code} - <b>${coupon.percent_off}% off</b> (Expires: ${coupon.expires})</p>`;
-    });
+      detailsHtml += `<p><b>Coupon Code:</b> ${coupon.code} - <b>${coupon.percent_off}% off</b> (Expires: ${coupon.expires})</p>`
+    })
   } else {
-    console.log('⚠️ No Coupons Available to Include in Email.');
+    console.log('⚠️ No Coupons Available to Include in Email.')
   }
 
   // ✅ Add Calendly Proxy Links (if available)
   if (calendlyLinks.length > 0) {
     detailsHtml += `<h3>📅 Your Scheduled Calendly Sessions:</h3>
       <p>Thank you for your purchase! Below is your registration link and important instructions on how to book your sessions</p>
-      <ul>`;
+      <ul>`
 
     calendlyLinks.forEach((session) => {
-      const proxyLink = `${proxyBaseUrl}?userId=${user._id}&session=${encodeURIComponent(session.name)}`;
+      const proxyLink = `${proxyBaseUrl}?userId=${user._id}&session=${encodeURIComponent(
+        session.name,
+      )}`
 
       // ✅ Get the session count from sessionMapping
-      const sessionCount = sessionMapping[session.name.trim()] ?? 1;
+      const sessionCount = sessionMapping[session.name.trim()] ?? 1
 
-      detailsHtml += `<li>📚 <b>${session.name}</b> – <a href="${proxyLink}" target="_blank"><b>Book Now</b></a> (${sessionCount} sessions)</li>`;
-    });
+      detailsHtml += `<li>📚 <b>${session.name}</b> – <a href="${proxyLink}" target="_blank"><b>Book Now</b></a> (${sessionCount} sessions)</li>`
+    })
 
     // ✅ Display dynamic session count in email
-    const totalSessions = calendlyLinks.reduce((sum, session) => sum + (sessionMapping[session.name.trim()] ?? 1), 0);
+    const totalSessions = calendlyLinks.reduce(
+      (sum, session) => sum + (sessionMapping[session.name.trim()] ?? 1),
+      0,
+    )
 
     detailsHtml += `</ul>
       <p>Please click the "BOOK NOW" link <b>${totalSessions}</b> times to book all of your sessions and get started.</p>
-      <ul>`;
+      <ul>`
 
     detailsHtml += `</ul>
       <p>📌Once you have booked all of your sessions, head over to your RockstarMath Dashboard where you can:</p>
@@ -618,22 +627,20 @@ function generateEmailHtml(user, zoomLinks, userCoupons, calendlyLinks) {
           <li>✏️ Reschedule sessions if needed</li>
           <li>❌ Cancel any session</li>
           <li>🛒 Purchase additional sessions</li>
-      </ul>`;
+      </ul>`
 
-      detailsHtml += `</ul>
+    detailsHtml += `</ul>
       <p>📌If you have any questions please feel free to contact us at: rockstartmathtutoring@gmail.com or (510) 410-4963</p>
-     `;
+     `
   }
 
-  detailsHtml += `</div>`;
+  detailsHtml += `</div>`
 
   // ✅ Log Final Email Content Before Sending
-  console.log('📧 Final Email Content:\n', detailsHtml);
+  console.log('📧 Final Email Content:\n', detailsHtml)
 
-  return detailsHtml;
+  return detailsHtml
 }
-
-
 
 // 🎯 PayPal Webhook for Order Capture
 exports.paypalWebhook = async (req, res) => {
