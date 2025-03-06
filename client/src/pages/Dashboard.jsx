@@ -117,11 +117,7 @@ const Dashboard = () => {
       }
     }
 
-    useEffect(() => {
-      if (users?._id) {
-        fetchZoomBookings()
-      }
-    }, [users])
+   
 
     // Fetch Coupons
     const fetchCoupons = async () => {
@@ -162,12 +158,15 @@ const Dashboard = () => {
         setLoading(false)
       }
     }
-
+    if (users?._id) {
+      fetchZoomBookings()
+    }
     // ✅ Run all API calls in parallel
     Promise.allSettled([
       fetchPurchasedClasses(),
       fetchCalendlyBookings(),
       fetchRemainingSessions(), // ✅ Fetch remaining sessions
+   
       fetchCoupons(),
     ]).finally(() => setLoading(false))
   }, [users]) // ✅ Depend only on `users`
