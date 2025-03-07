@@ -428,17 +428,14 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
 
     // ✅ Extract User & Cart Data
     const userId = paymentIntent.metadata?.userId
-    const cartSummary = paymentIntent.metadata?.cartSummary
-      ? paymentIntent.metadata.cartSummary.split(', ')
-      : []
+    const cartSummary = paymentIntent.metadata?.cartSummary ? paymentIntent.metadata.cartSummary.split(', ') : [];
     const userEmail = paymentIntent.metadata?.userEmail || 'No email provided'
-
-    console.log('🔹 User ID:', userId)
-    console.log('🛒 Purchased Items:', cartSummary)
+    console.log('🛒 Raw cartSummary from metadata:', paymentIntent.metadata?.cartSummary);
+    console.log('🛒 Processed cartSummary:', cartSummary);
 
     if (!userId || cartSummary.length === 0) {
-      console.warn('⚠️ Missing user ID or cart summary. Skipping update.')
-      return res.status(400).json({ error: 'Invalid payment data' })
+      console.warn('⚠️ Missing user ID or cart summary. Skipping update.');
+      return res.status(400).json({ error: 'Invalid payment data' });
     }
 
     await sendEmail(
@@ -521,13 +518,51 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
       `,
     )
 
+    // ✅ Fetch User
+    const user = await Register.findById(userId);
+    if (!user) {
+      console.error('❌ Error: User not found in database!');
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // ✅ Generate Purchased Classes
+    const purchasedItems = cartSummary.map((item) => ({
+      name: item,
+      sessionCount: sessionMapping[item] || 0,
+      remainingSessions: sessionMapping[item] || 0,
+      bookingLink: calendlyMapping[item] || null,
+      status: 'Active',
+      purchaseDate: new Date(),
+    }));
+
+    // ✅ Save Purchased Classes
+    if (purchasedItems.length > 0) {
+      console.log('✅ Storing purchased classes in DB...', purchasedItems);
+      await Register.findByIdAndUpdate(userId, { $push: { purchasedClasses: { $each: purchasedItems } } }, { new: true });
+      console.log('✅ Purchased classes saved successfully!');
+    } else {
+      console.log('⚠️ No new purchased classes to add.');
+    }
+
+    // ✅ Call `addPurchasedClass` API
     try {
-      // ✅ Fetch user first to check for existing purchases
-      const user = await Register.findById(userId)
-      if (!user) {
-        console.error('❌ Error: User not found in database!')
-        return res.status(404).json({ error: 'User not found' })
+      console.log('📡 Calling addPurchasedClass API...');
+      const purchaseResponse = await fetch('https://backend-production-cbe2.up.railway.app/api/add-purchased-class', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user._id, purchasedItems, userEmail: user.billingEmail }),
+      });
+
+      const purchaseResult = await purchaseResponse.json();
+      console.log('✅ Purchased Classes API Response:', purchaseResult);
+      if (!purchaseResponse.ok) {
+        console.warn('⚠️ Issue updating purchased classes:', purchaseResult.message);
       }
+    } catch (purchaseError) {
+      console.error('❌ Error calling addPurchasedClass API:', purchaseError);
+    }
+
+    try {
 
       // ✅ Step 1: Send **Welcome Email**
       console.log(`📧 Sending Welcome Email to: ${userEmail}`)
@@ -569,7 +604,7 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
       </p>
     </div>
     `
-      await sendEmail(userEmail, welcomeSubject, '', welcomeHtml)
+      await sendEmail(user.billingEmail, welcomeSubject, '', welcomeHtml)
       console.log('✅ Welcome email sent successfully!')
 
       // ✅ Check for existing purchased classes to prevent duplicates
@@ -667,7 +702,7 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
 
         const bookingEmailHtml = generateEmailHtml(user, zoomLinks, appliedCoupons, calendlyLinks)
 
-        await sendEmail(userEmail, '📚 Your Rockstar Math Booking Details', '', bookingEmailHtml)
+        await sendEmail(user.billingEmail, '📚 Your Rockstar Math Booking Details', '', bookingEmailHtml)
 
         console.log('✅ Booking email sent successfully!')
       } else {
