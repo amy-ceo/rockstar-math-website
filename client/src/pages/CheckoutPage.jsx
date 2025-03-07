@@ -324,13 +324,13 @@ const CheckoutPage = () => {
 
   const handlePaymentSuccess = async () => {
     try {
-      const user = JSON.parse(localStorage.getItem('user'));
+      const user = JSON.parse(localStorage.getItem('user'))
       if (!user || !user._id) {
-        toast.error('User authentication required!');
-        return;
+        toast.error('User authentication required!')
+        return
       }
-  
-      console.log('📡 Capturing Stripe Payment...');
+
+      console.log('📡 Capturing Stripe Payment...')
       const response = await fetch(
         'https://backend-production-cbe2.up.railway.app/api/stripe/capture-stripe-payment',
         {
@@ -353,25 +353,27 @@ const CheckoutPage = () => {
             },
           }),
         },
-      );
-  
-      const result = await response.json();
-      console.log('📡 Stripe Capture Response:', result); // ADD THIS LINE
-  
+      )
+
+      const result = await response.json()
+      console.log('📡 Stripe Capture Response:', result) // ADD THIS LINE
+
       if (result.clearCart) {
-        console.log("🛒 Clearing Cart after Successful Payment...");
-        clearCart(); // ✅ Use clearCart function
-        toast.success("🎉 Payment Successful! Redirecting...");
-        setTimeout(() => navigate("/dashboard"), 1000);
+        console.log('🛒 Clearing Cart after Successful Payment...')
+        clearCart() // ✅ Use clearCart function
+        toast.success('🎉 Payment Successful! Redirecting...')
+        // ✅ Fix: Ensure navigation is triggered after successful payment
+        setTimeout(() => {
+          navigate('/dashboard') // ✅ Redirect to dashboard
+        }, 1000)
       } else {
-        console.warn("⚠️ Backend did not send `{ clearCart: true }` - Skipping cart clear.");
+        console.warn('⚠️ Backend did not send `{ clearCart: true }` - Skipping cart clear.')
       }
     } catch (error) {
-      console.error('❌ Error in Payment Process:', error);
-      toast.error(error.message || 'Payment processing error.');
+      console.error('❌ Error in Payment Process:', error)
+      toast.error(error.message || 'Payment processing error.')
     }
-  };
-  
+  }
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-32">

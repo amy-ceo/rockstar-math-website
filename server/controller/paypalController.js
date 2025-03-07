@@ -584,7 +584,8 @@ exports.captureOrder = async (req, res) => {
     res.json({
       message: 'Payment captured & records updated successfully.',
       payment: captureResponse.result,
-    })
+      clearCart: true // ✅ Ensure frontend knows to clear the cart
+  });
   } catch (error) {
     console.error('❌ Error Capturing PayPal Payment:', error)
     res.status(500).json({ error: 'Internal Server Error', details: error.message || error })

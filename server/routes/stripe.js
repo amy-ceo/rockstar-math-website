@@ -578,53 +578,53 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
         })
       })
       // ✅ Apply Discount Coupons Based on Course Name (Ensure all relevant coupons are applied)
-         let appliedCoupons = []
-     
-         user.cartItems.forEach((item) => {
-           let matchedCoupons = activeCoupons.filter((coupon) => {
-             if (item.name === 'Learn' && coupon.percent_off === 10) return true
-             if (item.name === 'Achieve' && (coupon.percent_off === 30 || coupon.percent_off === 100))
-               return true
-             if (item.name === 'Excel' && coupon.percent_off === 20) return true
-             return false
-           })
-     
-           if (matchedCoupons.length > 0) {
-             matchedCoupons.forEach((coupon) => {
-               appliedCoupons.push({
-                 code: coupon.code,
-                 percent_off: coupon.percent_off,
-                 expires: coupon.expires,
-               })
-             })
-           }
-     
-           // ✅ **Ensure both 30% and 100% Achieve coupons are applied**
-           if (item.name === 'Achieve') {
-             appliedCoupons.push(
-               { code: 'fs4n9tti', percent_off: 100, }, // ✅ 100% Off Coupon
-               { code: 'qRBcEmgS', percent_off: 30,  }, // ✅ 30% Off Coupon
-             )
-           }
-         })
-     
-         // ✅ Ensure duplicates are removed (if any)
-         appliedCoupons = appliedCoupons.filter(
-           (coupon, index, self) => index === self.findIndex((c) => c.code === coupon.code),
-         )
-     
-         console.log('🎟 Final Applied Coupons:', appliedCoupons)
-         if (appliedCoupons.length > 0) {
-           appliedCoupons = appliedCoupons.filter((coupon) => coupon.code && coupon.code.trim() !== '')
-     
-           // ✅ Step 7: Save Coupons in User's Database
-           if (appliedCoupons.length > 0) {
-             await Register.findByIdAndUpdate(user._id, {
-               $push: { coupons: { $each: appliedCoupons } },
-             })
-           }
-         }
-     
+      let appliedCoupons = []
+
+      user.cartItems.forEach((item) => {
+        let matchedCoupons = activeCoupons.filter((coupon) => {
+          if (item.name === 'Learn' && coupon.percent_off === 10) return true
+          if (item.name === 'Achieve' && (coupon.percent_off === 30 || coupon.percent_off === 100))
+            return true
+          if (item.name === 'Excel' && coupon.percent_off === 20) return true
+          return false
+        })
+
+        if (matchedCoupons.length > 0) {
+          matchedCoupons.forEach((coupon) => {
+            appliedCoupons.push({
+              code: coupon.code,
+              percent_off: coupon.percent_off,
+              expires: coupon.expires,
+            })
+          })
+        }
+
+        // ✅ **Ensure both 30% and 100% Achieve coupons are applied**
+        if (item.name === 'Achieve') {
+          appliedCoupons.push(
+            { code: 'fs4n9tti', percent_off: 100 }, // ✅ 100% Off Coupon
+            { code: 'qRBcEmgS', percent_off: 30 }, // ✅ 30% Off Coupon
+          )
+        }
+      })
+
+      // ✅ Ensure duplicates are removed (if any)
+      appliedCoupons = appliedCoupons.filter(
+        (coupon, index, self) => index === self.findIndex((c) => c.code === coupon.code),
+      )
+
+      console.log('🎟 Final Applied Coupons:', appliedCoupons)
+      if (appliedCoupons.length > 0) {
+        appliedCoupons = appliedCoupons.filter((coupon) => coupon.code && coupon.code.trim() !== '')
+
+        // ✅ Step 7: Save Coupons in User's Database
+        if (appliedCoupons.length > 0) {
+          await Register.findByIdAndUpdate(user._id, {
+            $push: { coupons: { $each: appliedCoupons } },
+          })
+        }
+      }
+
       if (calendlyLinks.length > 0) {
         await Register.findByIdAndUpdate(userId, {
           $push: { calendlyBookings: { $each: calendlyLinks } },
@@ -636,13 +636,21 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
       console.log('🎟 Sending Email with Coupons:', appliedCoupons)
       const emailHtml = generateEmailHtml(user, zoomLinks, appliedCoupons, calendlyLinks)
       // ✅ Send confirmation email to both billingEmail and schedulingEmails
-      await sendEmail(
-        [user.billingEmail, ...user.schedulingEmails],
-        '📚 Your Rockstar Math Purchase Details',
-        '',
-        emailHtml,
-      )
+      try {
+        await sendEmail(
+          [user.billingEmail, ...user.schedulingEmails],
+          '📚 Your Rockstar Math Purchase Details',
+          '',
+          emailHtml,
+        )
+        console.log('✅ Purchase confirmation email sent successfully')
+      } catch (error) {
+        console.error('❌ Error sending purchase confirmation email:', error)
+      }
+
       console.log('✅ Confirmation email sent successfully to both billing and scheduling emails!')
+      console.log('📧 Sending Purchase Email to:', user.billingEmail, user.schedulingEmails)
+      console.log('📧 Email Content:', emailHtml)
 
       return res.status(200).json({ message: 'Purchase updated & all emails sent!' })
     } catch (error) {

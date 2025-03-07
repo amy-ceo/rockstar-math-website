@@ -1,0 +1,39 @@
+.ribbon {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 160px; /* ✅ Adjusted width for better alignment */
+    height: 160px; /* ✅ Increased height for better positioning */
+    overflow: hidden;
+    z-index: 10; /* ✅ Ensure it stays above other elements */
+}
+
+.ribbon span {
+    position: absolute;
+    display: block;
+    width: 230px; /* ✅ Increased width to prevent text overflow */
+    padding: 12px 0; /* ✅ Adjusted padding for better spacing */
+    background: #e60000; /* ✅ Default Red for Achieve */
+    color: white;
+    font-size: 10px; /* ✅ Increased font-size for readability */
+    font-weight: bold;
+    text-align: center;
+    transform: rotate(45deg);
+    transform-origin: top right;
+    top: 128px; /* ✅ Moved slightly lower for better visibility */
+    right: -28px; /* ✅ Shifted left to fit within the card */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    line-height: 1.2; /* ✅ Improved line spacing */
+    white-space: normal; /* ✅ Allow wrapping inside */
+}
+
+/* ✅ Ensure dynamic colors are applied */
+.bg-red-600 {
+    background-color: #e60000 !important; /* 🔥 Red Ribbon for Achieve */
+}
+
+.bg-blue-600 {
+    background-color: #007bff !important; /* 🔹 Blue Ribbon for others */
+}

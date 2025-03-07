@@ -1,8 +1,7 @@
 import React, { useEffect, useState, Suspense, lazy, useCallback } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
-import { toast, Toaster } from "react-hot-toast"; // ✅ FIXED IMPORT
-import { useNavigate } from "react-router-dom";
+import { toast, Toaster } from "react-hot-toast";
 import axios from "axios";
 
 // ✅ Lazy Load Components
@@ -10,19 +9,54 @@ const ServiceCard = lazy(() => import("../components/ServiceCard"));
 
 const Services = () => {
   const { users } = useAuth();
-  const navigate = useNavigate();
   const { addToCart } = useCart();
 
-  // ✅ State to store fetched services
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // ✅ Function to Assign Ribbon Text and Color
+  const getRibbonDetails = (serviceName) => {
+    const ribbonMapping = {
+      "8 x 60 minutes": { text: "🔥 Best Value", color: "bg-red-600" },
+      "5 x 60 minutes": { text: "⭐ Most Popular", color: "bg-blue-600" },
+      "3 x 60 minutes": { text: "💡 Great Choice", color: "bg-green-600" },
+      "AP Calc - 20 Hours": { text: "📚 AP Exam Prep", color: "bg-yellow-500" },
+      "Common Core-Parents": { text: "🎉 Parents' Choice", color: "bg-purple-600" },
+      "8 x 30 minutes": { text: "🔥 Best Value", color: "bg-red-600" },
+      "5 - 30 minutes": { text: "⭐ Most Popular", color: "bg-blue-600" },
+      "3 x 30 minutes": { text: "💡 Great Choice", color: "bg-green-600" },
+      "8 x 90 minutes": { text: "📚 AP Exam Prep", color: "bg-yellow-500" },
+      "5 x 90 minutes": { text: "🎉 Parents' Choice", color: "bg-purple-600" },
+      "3 x 90 minutes": { text: "🎉 Parents' Choice", color: "bg-purple-600" },
+      "90 Minute Tutoring Session": { text: "📚 AP Exam Prep", color: "bg-yellow-500" },
+      "60 minute Tutoring Session": { text: "🎉 Parents' Choice", color: "bg-purple-600" },
+      "30 Minute Tutoring Session": { text: "🎉 Parents' Choice", color: "bg-purple-600" },
+
+    };
+
+    return ribbonMapping[serviceName] || { text: "", color: "" };
+  };
 
   // ✅ Fetch products from the backend
   useEffect(() => {
     const fetchServices = async () => {
       try {
         const response = await axios.get("https://backend-production-cbe2.up.railway.app/api/stripe/get-products");
-        setServices(response.data);
+        const data = response.data;
+
+        console.log("✅ Fetched Services:", data);
+
+        // ✅ Apply Ribbon Labels Dynamically
+        const updatedServices = data.map((service) => {
+          const { text, color } = getRibbonDetails(service.name);
+          return {
+            ...service,
+            ribbonText: text,
+            ribbonColor: color,
+          };
+        });
+
+        setServices(updatedServices);
       } catch (error) {
         console.error("❌ Error fetching products:", error);
       } finally {
@@ -33,47 +67,46 @@ const Services = () => {
     fetchServices();
   }, []);
 
-  // ✅ Handle Add to Cart (Fixed Double Toast)
-  const handleAddToCart = useCallback((service) => {
-    console.log("🔹 handleAddToCart Clicked for Service:", service.name);
+  // ✅ Handle Add to Cart
+  const handleAddToCart = useCallback(
+    (service) => {
+      console.log("🔹 handleAddToCart Clicked for Service:", service.name);
 
-    let price = null;
-    let currency = "USD";
+      let price = null;
+      let currency = "USD";
 
-    // ✅ Extract Price from Service Object
-    if (service.price) {
-      price = Number(service.price).toFixed(2);
-      currency = service.currency ? service.currency.toUpperCase() : "USD";
-    }
+      if (service.price) {
+        price = Number(service.price).toFixed(2);
+        currency = service.currency ? service.currency.toUpperCase() : "USD";
+      }
 
-    if (!price && service.default_price && service.default_price.unit_amount) {
-      price = (service.default_price.unit_amount / 100).toFixed(2);
-      currency = service.default_price.currency.toUpperCase();
-    }
+      if (!price && service.default_price && service.default_price.unit_amount) {
+        price = (service.default_price.unit_amount / 100).toFixed(2);
+        currency = service.default_price.currency.toUpperCase();
+      }
 
-    // ❌ Prevent Adding if Price is Missing
-    if (!price || isNaN(price)) {
-      console.error("❌ Cannot add service to cart, missing price!", service);
+      if (!price || isNaN(price)) {
+        console.error("❌ Cannot add service to cart, missing price!", service);
+        toast.dismiss();
+        toast.error(`⚠️ Cannot add ${service.name} to cart, missing price!`);
+        return;
+      }
+
+      const newItem = {
+        id: service.id,
+        name: service.name,
+        description: service.description || "",
+        images: service.images || [],
+        price,
+        currency,
+      };
+
+      addToCart(newItem);
       toast.dismiss();
-      toast.error(`⚠️ Cannot add ${service.name} to cart, missing price!`);
-      return;
-    }
-
-    // ✅ Create a clean cart item
-    const newItem = {
-      id: service.id,
-      name: service.name,
-      description: service.description || "",
-      images: service.images || [],
-      price,
-      currency,
-    };
-
-    addToCart(newItem); // ✅ Add to Cart
-
-    toast.dismiss(); // ✅ Clear any previous toast
-    toast.success(`${service.name} added to cart!`, { id: "cart-toast" });
-  }, [addToCart]);
+      toast.success(`${service.name} added to cart!`, { id: "cart-toast" });
+    },
+    [addToCart]
+  );
 
   // ✅ Group Services into Categories
   const categorizedServices = {
@@ -109,9 +142,9 @@ const Services = () => {
 
       {/* ✅ Services List */}
       <div className="container mx-auto p-6 py-20">
-        <Toaster position="top-right" /> {/* ✅ Toast Notifications */}
+        <Toaster position="top-right" />
 
-        {/* ✅ Display Services by Category */}
+        {/* ✅ Display Services */}
         <Suspense fallback={<div className="text-center py-10 text-gray-500">Loading Services...</div>}>
           {loading ? (
             <p className="text-center py-10 text-gray-500">Fetching services...</p>
