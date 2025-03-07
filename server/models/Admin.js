@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
-const bcrypt = require("bcrypt");  // ✅ Changed from bcryptjs to bcrypt
+const bcrypt = require('bcryptjs')
+  // ✅ Changed from bcryptjs to bcrypt
 
 const AdminSchema = new mongoose.Schema({
   name: { type: String, required: true },
