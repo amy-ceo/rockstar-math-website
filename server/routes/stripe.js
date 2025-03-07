@@ -653,18 +653,17 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
       const emailHtml = generateEmailHtml(user, zoomLinks, appliedCoupons, calendlyLinks)
       // ✅ Send confirmation email to both billingEmail and schedulingEmails
      
-      await sendEmail(
-        [user.billingEmail, '📚 Your Rockstar Math Purchase Details', ...user.schedulingEmails],
-        welcomeSubject,
-        '',
-        emailHtml,
-      )
+    
 
-      console.log('📧 Sending Confirmation Email to:', emailRecipients)
       console.log('📧 Email Content:', emailHtml)
 
       try {
-        await sendEmail(emailRecipients, '📚 Your Rockstar Math Purchase Details', '', emailHtml)
+        await sendEmail(
+          [user.billingEmail, '📚 Your Rockstar Math Purchase Details', ...user.schedulingEmails],
+          welcomeSubject,
+          '',
+          emailHtml,
+        )
         console.log('✅ Purchase confirmation email sent successfully!')
       } catch (error) {
         console.error('❌ Error sending purchase confirmation email:', error.message || error)
