@@ -21,6 +21,14 @@ const ordersRoute = require("./routes/order.js"); // ✅ Import Orders Route
 const paypalRoutes = require("./routes/paypalRoutes.js")
 const adminRoutes = require("./routes/adminRoutes");
 const blogRoutes = require('./routes/blogRoutes');
+const bcrypt = require("bcryptjs");
+
+// ✅ Set Fallback for Missing Crypto Module
+if (!global.crypto) {
+  global.crypto = require("crypto");
+}
+bcrypt.setRandomFallback((len) => global.crypto.randomBytes(len)); // ✅ Fixes Error
+
 connectDB();
 const app = express();
 // ✅ JSON Middleware for Other Routes (Not Webhook)
