@@ -626,7 +626,6 @@ exports.rescheduleBooking = async (req, res) => {
           <h3>🔄 Session Rescheduled</h3>
           <p><strong>User:</strong> ${user.billingEmail}</p>
           <p><strong>New Date/Time:</strong> ${new Date(newDateTime).toLocaleString()}</p>
-          <p><strong>Event URI:</strong> ${eventUri}</p>
           <p><strong>Status:</strong> Rescheduled ✅</p>
       `
 

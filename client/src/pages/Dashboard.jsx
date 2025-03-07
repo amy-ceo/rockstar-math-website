@@ -55,41 +55,39 @@ const Dashboard = () => {
 
   // ✅ Load user from `localStorage`
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
+    const storedUser = localStorage.getItem('user')
 
     if (storedUser) {
       try {
-        const parsedUser = JSON.parse(storedUser);
-        
+        const parsedUser = JSON.parse(storedUser)
+
         if (parsedUser && parsedUser._id) {
-          console.log("✅ User ID found:", parsedUser._id);
-          setUser(parsedUser);
+          console.log('✅ User ID found:', parsedUser._id)
+          setUser(parsedUser)
         } else {
-          console.warn('⚠️ User ID missing in stored data. Redirecting to login...');
-          navigate('/login'); // Redirect only if user ID is missing
+          console.warn('⚠️ User ID missing in stored data. Redirecting to login...')
+          navigate('/login') // Redirect only if user ID is missing
         }
       } catch (error) {
-        console.error('❌ Error parsing user data from localStorage:', error);
-        navigate('/login');
+        console.error('❌ Error parsing user data from localStorage:', error)
+        navigate('/login')
       }
     } else {
-      console.warn('❌ No user found in localStorage. Redirecting to login...');
-      navigate('/login');
+      console.warn('❌ No user found in localStorage. Redirecting to login...')
+      navigate('/login')
     }
-  }, [navigate]);
+  }, [navigate])
 
-  
-  
   // ✅ Fetch all user data when component mounts
   useEffect(() => {
     if (!user || !user._id) {
-      console.warn("⚠️ User ID not found, skipping API calls.");
-      setLoading(false);
-      return;
+      console.warn('⚠️ User ID not found, skipping API calls.')
+      setLoading(false)
+      return
     }
 
-    console.log("📡 Fetching data for User ID:", user._id);
-  
+    console.log('📡 Fetching data for User ID:', user._id)
+
     setLoading(true)
 
     // Fetch Purchased Classes
@@ -193,26 +191,25 @@ const Dashboard = () => {
     ]).finally(() => setLoading(false))
   }, [user]) // ✅ Depend only on `users`
 
-  const confirmCancel = (startTime) => {
-    setSelectedEventUri(null) // Clear eventUri
-    setSelectedStartTime(startTime) // Set selected startTime
+  const confirmCancel = (eventUri) => {
+    setSelectedEventUri(eventUri)
     setShowCancelPopup(true)
   }
 
   const cancelBooking = async (eventUri) => {
     // ✅ Ensure eventUri is a valid string
     if (!eventUri || typeof eventUri !== 'string') {
-      toast.error('Invalid Calendly Event URI!');
-      console.error('❌ Invalid calendlyEventUri:', eventUri);
-      return;
+      toast.error('Invalid Calendly Event URI!')
+      console.error('❌ Invalid calendlyEventUri:', eventUri)
+      return
     }
-  
+
     try {
       console.log('📡 Sending cancel request to API...', {
         userId: users._id,
         calendlyEventUri: eventUri,
-      });
-  
+      })
+
       const response = await fetch(
         'https://backend-production-cbe2.up.railway.app/api/cancel-booking',
         {
@@ -222,36 +219,32 @@ const Dashboard = () => {
             userId: users._id,
             calendlyEventUri: eventUri, // ✅ Now correctly sending the URI
           }),
-        }
-      );
-  
-      console.log('📥 API Response Status:', response.status);
-      const data = await response.json();
-      console.log('📥 API Response Data:', data);
-  
+        },
+      )
+
+      console.log('📥 API Response Status:', response.status)
+      const data = await response.json()
+      console.log('📥 API Response Data:', data)
+
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to cancel session.');
+        throw new Error(data.message || 'Failed to cancel session.')
       }
-  
-      toast.success('Session Canceled & Moved to Archive! ✅');
-  
+
+      toast.success('Session Canceled & Moved to Archive! ✅')
+
       // ✅ Remove canceled session from active bookings
-      setCalendlyBookings((prev) =>
-        prev.filter((b) => b.calendlyEventUri !== eventUri)
-      );
-  
+      setCalendlyBookings((prev) => prev.filter((b) => b.calendlyEventUri !== eventUri))
+
       // ✅ Fetch updated archived classes
-      fetchArchivedClasses();
-  
-      setShowCancelPopup(false);
-      setSelectedEventUri(null);
+      fetchArchivedClasses()
+
+      setShowCancelPopup(false)
+      setSelectedEventUri(null)
     } catch (error) {
-      console.error('❌ Error canceling session:', error.message);
-      toast.error('Failed to cancel session. Try again.');
+      console.error('❌ Error canceling session:', error.message)
+      toast.error('Failed to cancel session. Try again.')
     }
-  };
-  
-  
+  }
 
   const handleReschedule = async () => {
     if (!selectedRescheduleEvent || !newDateTime) {
@@ -423,7 +416,7 @@ const Dashboard = () => {
                       {/* Cancel Button */}
                       <button
                         className="flex-1 bg-red-500 text-white font-medium px-4 py-2 rounded-lg transition hover:bg-red-600"
-                        onClick={() => confirmCancel(booking.calendlyEventUri)}
+                        onClick={() => confirmCancel(booking.calendlyEventUri)} // ✅ Correctly passing event URI
                       >
                         ❌ Cancel
                       </button>
@@ -549,7 +542,10 @@ const Dashboard = () => {
           <div className="bg-white p-6 rounded shadow-lg text-center">
             <h3 className="text-lg font-bold">Are you sure you want to cancel this session?</h3>
             <div className="mt-4 flex justify-center space-x-4">
-              <button className="bg-red-500 text-white px-4 py-2 rounded" onClick={() => cancelBooking(calendlyEventUri)}>
+              <button
+                className="bg-red-500 text-white px-4 py-2 rounded"
+                onClick={() => cancelBooking(selectedEventUri)} // ✅ Use selectedEventUri here
+              >
                 Yes, Cancel
               </button>
               <button
