@@ -1,16 +1,16 @@
-const express = require('express')
-const router = express.Router()
-const sendEmail = require('../utils/emailSender')
-const Payment = require('../models/Payment')
-require('dotenv').config() // Ensure environment variables are loaded
-const bodyParser = require('body-parser') // Ensure body-parser is imported
-const Register = require('../models/registerModel') // ✅ Using Register Model
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
+const express = require('express');
+const router = express.Router();
+const sendEmail = require('../utils/emailSender');
+const Payment = require('../models/Payment');
+require('dotenv').config(); // Ensure environment variables are loaded
+const bodyParser = require('body-parser'); // Ensure body-parser is imported
+const Register = require('../models/registerModel'); // ✅ Using Register Model
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 // ✅ Fetch Active Coupons from Stripe
 async function getActiveCoupons() {
   try {
-    const coupons = await stripe.coupons.list({ limit: 100 })
+    const coupons = await stripe.coupons.list({ limit: 100 });
     return coupons.data
       .filter((coupon) => coupon.percent_off) // ✅ Only coupons with discounts
       .map((coupon) => ({
@@ -18,10 +18,10 @@ async function getActiveCoupons() {
         code: coupon.id,
         percent_off: coupon.percent_off,
         expires: coupon.redeem_by ? new Date(coupon.redeem_by * 1000) : 'Forever',
-      }))
+      }));
   } catch (error) {
-    console.error('❌ Error Fetching Coupons:', error.message)
-    return []
+    console.error('❌ Error Fetching Coupons:', error.message);
+    return [];
   }
 }
 
@@ -83,59 +83,61 @@ const calendlyMapping = {
   '30 Minute Tutoring Session': 'https://calendly.com/rockstarmathtutoring/30-minute-session',
 }
 
+
+
 // ✅ Test routes for products/prices (unchanged)
 router.get('/test-products', async (req, res) => {
   try {
-    const products = await stripe.products.list({ limit: 100 })
-    res.json(products.data)
+    const products = await stripe.products.list({ limit: 100 });
+    res.json(products.data);
   } catch (error) {
-    console.error('❌ Error fetching products:', error)
-    res.status(500).json({ error: error.message })
+    console.error('❌ Error fetching products:', error);
+    res.status(500).json({ error: error.message });
   }
-})
+});
 
 router.get('/test-prices', async (req, res) => {
   try {
-    const prices = await stripe.prices.list({ limit: 100 })
-    res.json(prices.data)
+    const prices = await stripe.prices.list({ limit: 100 });
+    res.json(prices.data);
   } catch (error) {
-    console.error('❌ Error fetching prices:', error)
-    res.status(500).json({ error: error.message })
+    console.error('❌ Error fetching prices:', error);
+    res.status(500).json({ error: error.message });
   }
-})
+});
 
 router.get('/get-plans', async (req, res) => {
   try {
-    let allProducts = []
-    let hasMore = true
-    let lastProductId = null
+    let allProducts = [];
+    let hasMore = true;
+    let lastProductId = null;
     while (hasMore) {
       const params = {
         active: true,
         limit: 10,
         expand: ['data.default_price'],
-      }
-      if (lastProductId) params.starting_after = lastProductId
-      const products = await stripe.products.list(params)
-      allProducts = [...allProducts, ...products.data]
-      hasMore = products.has_more
+      };
+      if (lastProductId) params.starting_after = lastProductId;
+      const products = await stripe.products.list(params);
+      allProducts = [...allProducts, ...products.data];
+      hasMore = products.has_more;
       if (products.data.length > 0) {
-        lastProductId = products.data[products.data.length - 1].id
+        lastProductId = products.data[products.data.length - 1].id;
       }
     }
-    const allowedNames = ['learn', 'achieve', 'excel', 'common core- parents']
+    const allowedNames = ['learn', 'achieve', 'excel', 'common core- parents'];
     const filteredProducts = allProducts.filter((product) =>
-      allowedNames.includes(product.name.trim().toLowerCase()),
-    )
+      allowedNames.includes(product.name.trim().toLowerCase())
+    );
     if (filteredProducts.length === 0) {
-      return res.status(404).json({ message: 'No matching subscription plans found' })
+      return res.status(404).json({ message: 'No matching subscription plans found' });
     }
     const formattedProducts = filteredProducts.map((product) => {
-      let priceAmount = 'N/A'
-      let currency = 'USD'
+      let priceAmount = 'N/A';
+      let currency = 'USD';
       if (product.default_price && product.default_price.unit_amount) {
-        priceAmount = (product.default_price.unit_amount / 100).toFixed(2)
-        currency = product.default_price.currency.toUpperCase()
+        priceAmount = (product.default_price.unit_amount / 100).toFixed(2);
+        currency = product.default_price.currency.toUpperCase();
       }
       return {
         id: product.id,
@@ -144,47 +146,47 @@ router.get('/get-plans', async (req, res) => {
         images: product.images.length > 0 ? product.images[0] : '/default-image.png',
         price: priceAmount,
         currency: currency,
-      }
-    })
-    res.json(formattedProducts)
+      };
+    });
+    res.json(formattedProducts);
   } catch (error) {
-    console.error('Error fetching plans:', error)
-    res.status(500).json({ message: 'Internal Server Error' })
+    console.error('Error fetching plans:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
   }
-})
+});
 
 router.get('/get-products', async (req, res) => {
   try {
-    let allProducts = []
-    let hasMore = true
-    let lastProductId = null
-    const excludedProducts = ['Learn', 'Achieve', 'Excel']
+    let allProducts = [];
+    let hasMore = true;
+    let lastProductId = null;
+    const excludedProducts = ['Learn', 'Achieve', 'Excel'];
     while (hasMore) {
       const params = {
         active: true,
         limit: 100,
         expand: ['data.default_price'],
-      }
-      if (lastProductId) params.starting_after = lastProductId
-      const response = await stripe.products.list(params)
+      };
+      if (lastProductId) params.starting_after = lastProductId;
+      const response = await stripe.products.list(params);
       const filteredProducts = response.data.filter(
-        (product) => !excludedProducts.includes(product.name),
-      )
-      allProducts = [...allProducts, ...filteredProducts]
-      hasMore = response.has_more
+        (product) => !excludedProducts.includes(product.name)
+      );
+      allProducts = [...allProducts, ...filteredProducts];
+      hasMore = response.has_more;
       if (response.data.length > 0) {
-        lastProductId = response.data[response.data.length - 1].id
+        lastProductId = response.data[response.data.length - 1].id;
       }
     }
     if (allProducts.length === 0) {
-      return res.status(404).json({ message: 'No products found in Stripe.' })
+      return res.status(404).json({ message: 'No products found in Stripe.' });
     }
     const formattedProducts = allProducts.map((product) => {
-      let priceAmount = 'Price Not Available'
-      let currency = 'USD'
+      let priceAmount = 'Price Not Available';
+      let currency = 'USD';
       if (product.default_price && product.default_price.unit_amount) {
-        priceAmount = (product.default_price.unit_amount / 100).toFixed(2)
-        currency = product.default_price.currency.toUpperCase()
+        priceAmount = (product.default_price.unit_amount / 100).toFixed(2);
+        currency = product.default_price.currency.toUpperCase();
       }
       return {
         id: product.id,
@@ -193,40 +195,33 @@ router.get('/get-products', async (req, res) => {
         images: product.images.length > 0 ? product.images[0] : '/default-placeholder.png',
         price: priceAmount,
         currency: currency,
-      }
-    })
-    console.log('✅ Products with Prices:', formattedProducts)
-    res.json(formattedProducts)
+      };
+    });
+    console.log('✅ Products with Prices:', formattedProducts);
+    res.json(formattedProducts);
   } catch (error) {
-    console.error('❌ Stripe API Error:', error)
-    res.status(500).json({ error: 'Failed to fetch products. Please try again later.' })
+    console.error('❌ Stripe API Error:', error);
+    res.status(500).json({ error: 'Failed to fetch products. Please try again later.' });
   }
-})
+});
 
 router.post('/create-payment-intent', async (req, res) => {
   try {
-    let { amount, currency, userId, orderId, cartItems, userEmail } = req.body
-    console.log('🔹 Received Payment Request:', {
-      amount,
-      currency,
-      userId,
-      orderId,
-      cartItems,
-      userEmail,
-    })
+    let { amount, currency, userId, orderId, cartItems, userEmail } = req.body;
+    console.log('🔹 Received Payment Request:', { amount, currency, userId, orderId, cartItems, userEmail });
     if (!userId || !orderId || !cartItems || cartItems.length === 0) {
-      console.error('❌ Missing required fields:', { userId, orderId, cartItems })
-      return res.status(400).json({ error: 'Missing required fields: userId, orderId, cartItems.' })
+      console.error('❌ Missing required fields:', { userId, orderId, cartItems });
+      return res.status(400).json({ error: 'Missing required fields: userId, orderId, cartItems.' });
     }
     if (!amount || isNaN(amount) || amount <= 0) {
-      console.error('❌ Invalid amount received:', amount)
-      return res.status(400).json({ error: 'Invalid amount. Must be greater than 0.' })
+      console.error('❌ Invalid amount received:', amount);
+      return res.status(400).json({ error: 'Invalid amount. Must be greater than 0.' });
     }
-    amount = Math.round(amount * 100) // Convert to cents
-    const supportedCurrencies = ['usd', 'eur', 'gbp', 'cad', 'aud']
+    amount = Math.round(amount * 100); // Convert to cents
+    const supportedCurrencies = ['usd', 'eur', 'gbp', 'cad', 'aud'];
     if (!currency || !supportedCurrencies.includes(currency.toLowerCase())) {
-      console.error('❌ Unsupported currency:', currency)
-      return res.status(400).json({ error: 'Unsupported currency. Use USD, EUR, GBP, etc.' })
+      console.error('❌ Unsupported currency:', currency);
+      return res.status(400).json({ error: 'Unsupported currency. Use USD, EUR, GBP, etc.' });
     }
     // ✅ Optimize metadata
     const metadata = {
@@ -236,51 +231,49 @@ router.post('/create-payment-intent', async (req, res) => {
       cartSummary: cartItems.map((item) => item.name).join(', '),
       cartItemIds: JSON.stringify(cartItems.map((item) => item.id)),
       bookingLinks: JSON.stringify(cartItems.map((item) => calendlyMapping[item.name] || null)),
-    }
-    console.log('📡 Sending Payment Intent with Metadata:', metadata)
+    };
+    console.log('📡 Sending Payment Intent with Metadata:', metadata);
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amount,
       currency: currency.toLowerCase(),
       payment_method_types: ['card'],
       metadata,
-    })
+    });
     if (!paymentIntent.client_secret) {
-      console.error('❌ Missing client_secret in response:', paymentIntent)
-      return res
-        .status(500)
-        .json({ error: 'Payment Intent creation failed. No client_secret returned.' })
+      console.error('❌ Missing client_secret in response:', paymentIntent);
+      return res.status(500).json({ error: 'Payment Intent creation failed. No client_secret returned.' });
     }
-    console.log(`✅ PaymentIntent Created: ${paymentIntent.id} for User: ${userId}`)
-    res.json({ clientSecret: paymentIntent.client_secret, id: paymentIntent.id })
+    console.log(`✅ PaymentIntent Created: ${paymentIntent.id} for User: ${userId}`);
+    res.json({ clientSecret: paymentIntent.client_secret, id: paymentIntent.id });
   } catch (error) {
-    console.error('❌ Stripe Payment Intent Error:', error)
-    res.status(500).json({ error: 'Payment creation failed. Please try again later.' })
+    console.error('❌ Stripe Payment Intent Error:', error);
+    res.status(500).json({ error: 'Payment creation failed. Please try again later.' });
   }
-})
+});
 
 router.post('/capture-stripe-payment', async (req, res) => {
   try {
-    const { paymentIntentId, user } = req.body
-    console.log('📡 Received Stripe Payment Capture Request:', { paymentIntentId, user })
+    const { paymentIntentId, user } = req.body;
+    console.log('📡 Received Stripe Payment Capture Request:', { paymentIntentId, user });
 
     if (!user || !user._id || !Array.isArray(user.cartItems) || user.cartItems.length === 0) {
-      console.error('❌ Missing required fields in Stripe Capture:', { paymentIntentId, user })
-      return res.status(400).json({ error: 'Missing required fields or empty cart items' })
+      console.error('❌ Missing required fields in Stripe Capture:', { paymentIntentId, user });
+      return res.status(400).json({ error: 'Missing required fields or empty cart items' });
     }
 
-    console.log('📡 Capturing Stripe Payment:', paymentIntentId)
-    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId)
+    console.log('📡 Capturing Stripe Payment:', paymentIntentId);
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
 
     if (!paymentIntent || paymentIntent.status !== 'succeeded') {
-      console.error('❌ Payment Intent Failed or Incomplete:', paymentIntent.status)
-      return res.status(400).json({ error: 'Payment not completed' })
+      console.error('❌ Payment Intent Failed or Incomplete:', paymentIntent.status);
+      return res.status(400).json({ error: 'Payment not completed' });
     }
 
-    console.log('✅ Stripe Payment Successful:', paymentIntentId)
+    console.log('✅ Stripe Payment Successful:', paymentIntentId);
 
     // ✅ Step 1: Save Payment in Database
     try {
-      console.log('🔹 Saving Payment Record to DB...')
+      console.log('🔹 Saving Payment Record to DB...');
       const newPayment = new Payment({
         orderId: `stripe_${Date.now()}`,
         paymentIntentId,
@@ -291,13 +284,13 @@ router.post('/capture-stripe-payment', async (req, res) => {
         status: 'Completed',
         paymentMethod: 'Stripe',
         cartItems: user.cartItems || [],
-      })
+      });
 
-      await newPayment.save()
-      console.log('✅ Payment Record Saved in Database!')
+      await newPayment.save();
+      console.log('✅ Payment Record Saved in Database!');
     } catch (saveError) {
-      console.error('❌ Error Saving Payment:', saveError)
-      return res.status(500).json({ error: 'Database error while saving payment.' })
+      console.error('❌ Error Saving Payment:', saveError);
+      return res.status(500).json({ error: 'Database error while saving payment.' });
     }
 
     // ✅ Step 2: Call addPurchasedClass API
@@ -309,7 +302,7 @@ router.post('/capture-stripe-payment', async (req, res) => {
           description: item.description || 'No description available',
         })),
         userEmail: user.billingEmail || 'No email',
-      })
+      });
 
       const purchaseResponse = await fetch(
         'https://backend-production-cbe2.up.railway.app/api/add-purchased-class',
@@ -324,38 +317,40 @@ router.post('/capture-stripe-payment', async (req, res) => {
             })),
             userEmail: user.billingEmail || 'No email',
           }),
-        },
-      )
+        }
+      );
 
-      const purchaseResult = await purchaseResponse.json()
-      console.log('✅ Purchased Classes API Response:', purchaseResult)
+      const purchaseResult = await purchaseResponse.json();
+      console.log('✅ Purchased Classes API Response:', purchaseResult);
 
       if (!purchaseResponse.ok) {
-        console.warn('⚠️ Issue updating purchased classes:', purchaseResult.message)
+        console.warn('⚠️ Issue updating purchased classes:', purchaseResult.message);
       }
     } catch (purchaseError) {
-      console.error('❌ Error calling addPurchasedClass API:', purchaseError)
+      console.error('❌ Error calling addPurchasedClass API:', purchaseError);
     }
 
     // ✅ Step 3: Send Clear Cart Signal to Frontend
     res.json({
       message: 'Payment captured & records updated successfully.',
       clearCart: true, // 🔹 Explicitly tell frontend to clear the cart
-    })
+    });
+
   } catch (error) {
-    console.error('❌ Error Capturing Stripe Payment:', error)
-    res.status(500).json({ error: 'Internal Server Error', details: error.message || error })
+    console.error('❌ Error Capturing Stripe Payment:', error);
+    res.status(500).json({ error: 'Internal Server Error', details: error.message || error });
   }
-})
+});
+
 
 router.get('/payment-details/:paymentIntentId', async (req, res) => {
   try {
-    const paymentIntentId = req.params.paymentIntentId
+    const paymentIntentId = req.params.paymentIntentId;
     if (!paymentIntentId || !paymentIntentId.startsWith('pi_')) {
-      return res.status(400).json({ error: 'Invalid Payment Intent ID.' })
+      return res.status(400).json({ error: 'Invalid Payment Intent ID.' });
     }
-    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId)
-    console.log(`✅ Payment Retrieved: ID=${paymentIntent.id}, Status=${paymentIntent.status}`)
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    console.log(`✅ Payment Retrieved: ID=${paymentIntent.id}, Status=${paymentIntent.status}`);
     res.json({
       id: paymentIntent.id,
       amount: paymentIntent.amount / 100,
@@ -363,24 +358,24 @@ router.get('/payment-details/:paymentIntentId', async (req, res) => {
       status: paymentIntent.status,
       payment_method: paymentIntent.payment_method_types[0] || 'unknown',
       created_at: new Date(paymentIntent.created * 1000).toISOString(),
-    })
+    });
   } catch (error) {
-    console.error('❌ Stripe API Error:', error.message)
+    console.error('❌ Stripe API Error:', error.message);
     if (error.type === 'StripeInvalidRequestError') {
-      return res.status(400).json({ error: 'Invalid Payment Intent ID.' })
+      return res.status(400).json({ error: 'Invalid Payment Intent ID.' });
     }
-    res.status(500).json({ error: 'Failed to retrieve payment details. Try again later.' })
+    res.status(500).json({ error: 'Failed to retrieve payment details. Try again later.' });
   }
-})
+});
 
 router.post('/create-checkout-session', async (req, res) => {
   try {
-    const { userId, cartItems } = req.body
+    const { userId, cartItems } = req.body;
     if (!userId || !Array.isArray(cartItems) || cartItems.length === 0) {
-      return res.status(400).json({ error: 'Invalid request, missing userId or cartItems.' })
+      return res.status(400).json({ error: 'Invalid request, missing userId or cartItems.' });
     }
-    console.log('🔹 Creating Checkout Session for User:', userId)
-    console.log('🛒 Cart Items:', cartItems)
+    console.log('🔹 Creating Checkout Session for User:', userId);
+    console.log('🛒 Cart Items:', cartItems);
     const lineItems = cartItems.map((item) => ({
       price_data: {
         currency: item.currency || 'usd',
@@ -388,7 +383,7 @@ router.post('/create-checkout-session', async (req, res) => {
         unit_amount: Math.round(item.price * 100),
       },
       quantity: 1,
-    }))
+    }));
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: lineItems,
@@ -400,427 +395,327 @@ router.post('/create-checkout-session', async (req, res) => {
         userId: userId,
         planName: cartItems.length > 0 ? cartItems[0].name : 'Unknown Plan',
       },
-    })
-    console.log('✅ Checkout Session Created:', session.id)
-    res.json({ sessionId: session.id })
+    });
+    console.log('✅ Checkout Session Created:', session.id);
+    res.json({ sessionId: session.id });
   } catch (error) {
-    console.error('❌ Error creating checkout session:', error)
-    res.status(500).json({ error: 'Error creating checkout session' })
+    console.error('❌ Error creating checkout session:', error);
+    res.status(500).json({ error: 'Error creating checkout session' });
   }
-})
+});
 
+// ✅ Webhook for Stripe Payments
 router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req, res) => {
-  let event
-  const sig = req.headers['stripe-signature']
-
+  let event;
+  const sig = req.headers['stripe-signature'];
   try {
-    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET)
+    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
   } catch (err) {
-    console.error('❌ Webhook Signature Verification Failed:', err.message)
-    return res.status(400).send(`Webhook Error: ${err.message}`)
+    console.error('❌ Webhook Signature Verification Failed:', err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
   }
-
-  console.log('🔔 Received Stripe Webhook Event:', event.type)
-
+  console.log('🔔 Received Stripe Webhook Event:', event.type);
   if (event.type === 'payment_intent.succeeded') {
-    console.log('✅ Payment Intent Succeeded Event Triggered')
-    const paymentIntent = event.data.object
-
+    console.log('✅ Payment Intent Succeeded Event Triggered');
+    const paymentIntent = event.data.object;
     // ✅ Extract User & Cart Data
-    const userId = paymentIntent.metadata?.userId
-    const cartSummary = paymentIntent.metadata?.cartSummary ? paymentIntent.metadata.cartSummary.split(', ') : [];
-    const userEmail = paymentIntent.metadata?.userEmail || 'No email provided'
-    console.log('🛒 Raw cartSummary from metadata:', paymentIntent.metadata?.cartSummary);
-    console.log('🛒 Processed cartSummary:', cartSummary);
-
+    const userId = paymentIntent.metadata?.userId;
+    const cartSummary = paymentIntent.metadata?.cartSummary?.split(', ') || [];
+    const userEmail = paymentIntent.metadata?.userEmail || 'No email provided';
+    console.log('🔹 User ID:', userId);
+    console.log('🛒 Purchased Items:', cartSummary);
     if (!userId || cartSummary.length === 0) {
       console.warn('⚠️ Missing user ID or cart summary. Skipping update.');
       return res.status(400).json({ error: 'Invalid payment data' });
     }
-
-    // ✅ Fetch User
-    const user = await Register.findById(userId);
-    if (!user) {
-      console.error('❌ Error: User not found in database!');
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    // ✅ Generate Purchased Classes
-    const purchasedItems = cartSummary.map((item) => ({
-      name: item,
-      sessionCount: sessionMapping[item] || 0,
-      remainingSessions: sessionMapping[item] || 0,
-      bookingLink: calendlyMapping[item] || null,
-      status: 'Active',
-      purchaseDate: new Date(),
-    }));
-
-    // ✅ Save Purchased Classes
-    if (purchasedItems.length > 0) {
-      console.log('✅ Storing purchased classes in DB...', purchasedItems);
-      await Register.findByIdAndUpdate(userId, { $push: { purchasedClasses: { $each: purchasedItems } } }, { new: true });
-      console.log('✅ Purchased classes saved successfully!');
-    } else {
-      console.log('⚠️ No new purchased classes to add.');
-    }
-
-    // ✅ Call `addPurchasedClass` API
     try {
-      console.log('📡 Calling addPurchasedClass API...');
-      const purchaseResponse = await fetch('https://backend-production-cbe2.up.railway.app/api/add-purchased-class', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user._id, purchasedItems, userEmail: user.billingEmail }),
-      });
-
-      const purchaseResult = await purchaseResponse.json();
-      console.log('✅ Purchased Classes API Response:', purchaseResult);
-      if (!purchaseResponse.ok) {
-        console.warn('⚠️ Issue updating purchased classes:', purchaseResult.message);
+      // ✅ Fetch user first to check for existing purchases
+      const user = await Register.findById(userId);
+      if (!user) {
+        console.error('❌ Error: User not found in database!');
+        return res.status(404).json({ error: 'User not found' });
       }
-    } catch (purchaseError) {
-      console.error('❌ Error calling addPurchasedClass API:', purchaseError);
-    }
+      // ✅ **Send Welcome Email**
+      console.log(`📧 Sending Welcome Email to: ${userEmail}`);
+      let welcomeSubject = `🎉 Welcome to Rockstar Math, ${user.username}!`;
+      let welcomeHtml = `
+   <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
+    
+    <div style="text-align: center; padding-bottom: 20px;">
+      <img src="https://your-logo-url.com/logo.png" alt="Rockstar Math" style="width: 150px; margin-bottom: 10px;">
+     <h2 style="color: #2C3E50;">🎉 Welcome, ${user.username}!</h2>
+     <p style="font-size: 16px;">We're thrilled to have you join <b>Rockstar Math</b>! 🚀</p>
+   </div>
 
+   <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+     <h3 style="color: #007bff;">📢 Your Account is Ready!</h3>
+     <p>Congratulations! Your account has been successfully created. You now have access to personalized math tutoring, expert guidance, and interactive learning resources.</p>
+     <p><b>Username:</b> ${user.username}</p>
+     <p><b>Email:</b> ${user.email}</p>
+   </div>
 
+   <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+     <h3 style="color: #007bff;">📌 What's Next?</h3>
+     <p>Start your learning journey today by logging into your dashboard, exploring available sessions, and scheduling your first class!</p>
+     <p><b>Access your dashboard here:</b> <a href="https://your-website.com/login" target="_blank" style="color: #007bff;">Go to Dashboard</a></p>
+   </div>
 
-    await sendEmail(
-      user.billingEmail,
-      `🎉 Thank You for Your Purchase – Welcome to RockstarMath!`,
-      ``,
-      `
-      <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
-        
-        <div style="text-align: center; padding-bottom: 20px;">
-          <img src="https://your-logo-url.com/logo.png" alt="Rockstar Math" style="width: 150px; margin-bottom: 10px;">
-          <h2 style="color: #2C3E50;">🎉 Thank You for Your Purchase – Welcome to RockstarMath!</h2>
-        </div>
-    
-        <p>Hi <b>${user.username}</b>,</p>
-        
-        <p>Thank you for your purchase! 🎉 We’re thrilled to have you as part of the RockstarMath community and are excited to help you achieve your math goals.</p>
-    
-        <h3 style="color: #007bff;">🚀 Get Started Now!</h3>
-        <p>To begin, log in to your dashboard:</p>
-        <p style="text-align: center;">
-          <a href="https://www.rockstarmath.com/login" target="_blank" style="background: #007bff; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px; font-weight: bold;">Go to Dashboard</a>
-        </p>
-        
-        <p>Use the username and password you created during registration to log in.</p>
-    
-        <h3 style="color: #007bff;">📌 What You Can Do in Your Dashboard:</h3>
-        <ul>
-          <li>🔹 <b>Update your Profile</b> to personalize your experience.</li>
-          <li>📅 <b>View and manage your scheduled sessions.</b></li>
-          <li>🎟 <b>Explore available coupons</b> and purchase additional classes.</li>
-          <li>📚 <b>Access your classes, schedule, and archived sessions.</b></li>
-        </ul>
-    
-        <div style="text-align: center; padding-bottom: 20px;">
-        <h2 style="color: #2C3E50;">Home tab</h2>
-          <img src="https://media.discordapp.net/attachments/1342205365160513606/1347268823023357962/image.png?ex=67cb355e&is=67c9e3de&hm=827b9dd763ffb93b43636063994c4393c58abafdebcac242af2a649f7de173ba&=&format=webp&quality=lossless&width=960&height=423" alt="Rockstar Math" style="width: 500px; margin-bottom: 10px;">
-        </div>
-    <br/>
-        <div style="text-align: center; padding-bottom: 20px;">
-        <h2 style="color: #2C3E50;">My Classes</h2>
-          <img src="https://media.discordapp.net/attachments/1342205365160513606/1347263992153903174/image.png?ex=67cb30de&is=67c9df5e&hm=a25b7b982e6ebf5ab53a0bf800647a586aa3fea7f13853914ede7ea1bf58f591&=&format=webp&quality=lossless&width=847&height=423" alt="Rockstar Math" style="width: 500px; margin-bottom: 10px;">
-        </div>
-    
-         <br/>
-        <div style="text-align: center; padding-bottom: 20px;">
-        <h2 style="color: #2C3E50;">Schedule</h2>
-          <img src="https://media.discordapp.net/attachments/1342205365160513606/1347264195657469969/image.png?ex=67cb310f&is=67c9df8f&hm=92dafeccde2eb0ab06361c092b7f671e0f5a4673d0bcc1494ce1df05c8a77e1e&=&format=webp&quality=lossless&width=842&height=423" alt="Rockstar Math" style="width: 500px; margin-bottom: 10px;">
-        </div>
-    
-          <br/>
-        <div style="text-align: center; padding-bottom: 20px;">
-        <h2 style="color: #2C3E50;">Archive</h2>
-          <img src="https://media.discordapp.net/attachments/1342205365160513606/1347269423693693121/image.png?ex=67cb35ed&is=67c9e46d&hm=3ea0974b2f7938f8a12c50a4a8db2f049480c83ba6243035281cd25e72ed12cd&=&format=webp&quality=lossless&width=842&height=423" alt="Rockstar Math" style="width: 500px; margin-bottom: 10px;">
-        </div>
-    
-          <br/>
-        <div style="text-align: center; padding-bottom: 20px;">
-        <h2 style="color: #2C3E50;">Profile</h2>
-          <img src="https://media.discordapp.net/attachments/1342205365160513606/1347264471894331422/image.png?ex=67cb3151&is=67c9dfd1&hm=8032ef7c5ff44c9e2d8370cbe377fe50df237883587434d879d468dda008277d&=&format=webp&quality=lossless&width=852&height=423" alt="Rockstar Math" style="width: 500px; margin-bottom: 10px;">
-        </div>
+   <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+     <h3 style="color: #007bff;">💡 Need Help?</h3>
+     <p>Our team is always here to assist you! If you have any questions, reach out to us at <b>support@rockstarmath.com</b>.</p>
+   </div>
 
-        <h3 style="color: #007bff;">📞 Need Assistance?</h3>
-        <p>If you have any questions or need help, feel free to reach out to us:</p>
-        <ul>
-          <li>📧 Reply to this email</li>
-          <li>📞 Call us at <b>510-410-4963</b></li>
-        </ul>
-    
-        <p>Thank you again for choosing RockstarMath! We can’t wait to see you excel! 🚀</p>
-    
-        <p style="text-align: center; font-size: 14px; color: #555; margin-top: 20px;">
-          Best regards,<br>
-          <b>Amy Gemme</b><br>
-          Founder, RockstarMath<br>
-          📞 510-410-4963 | 🌍 <a href="https://www.rockstarmath.com" target="_blank">www.rockstarmath.com</a>
-        </p>
-    
-      </div>
-      `,
-    )
+   <p style="text-align: center; font-size: 16px;">Let's make math learning fun and exciting! We can't wait to see you in class. 🚀</p>
 
-    
-    try {
+   <div style="text-align: center; margin-top: 20px;">
+     <a href="https://calendly.com/rockstarmathtutoring" target="_blank"
+       style="display:inline-block; padding:12px 24px; background-color:#007bff; color:#fff; text-decoration:none; border-radius:6px; font-weight:bold; font-size:16px;">
+       📅 Schedule Your First Session
+     </a>
+   </div>
 
-      // ✅ Step 1: Send **Welcome Email**
-      console.log(`📧 Sending Welcome Email to: ${userEmail}`)
-      const welcomeSubject = `🎉 Welcome to Rockstar Math, ${user.username}!`
-      const welcomeHtml = `
-      <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
-        
-        <div style="text-align: center; padding-bottom: 20px;">
-          <img src="https://your-logo-url.com/logo.png" alt="Rockstar Math" style="width: 150px; margin-bottom: 10px;">
-        <h2 style="color: #2C3E50;">🎉 Welcome, ${user.username}!</h2>
-        <p style="font-size: 16px;">We're thrilled to have you join <b>Rockstar Math</b>! 🚀</p>
-      </div>
-  
-      <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-        <h3 style="color: #007bff;">📢 Your Account is Ready!</h3>
-        <p>Congratulations! Your account has been successfully created. You now have access to personalized math tutoring, expert guidance, and interactive learning resources.</p>
-        <p><b>Username:</b> ${user.username}</p>
-        <p><b>Email:</b> ${user.billingEmail}</p>
-      </div>
-  
-      <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-        <h3 style="color: #007bff;">📌 What's Next?</h3>
-        <p>Start your learning journey today by logging into your dashboard, exploring available sessions, and scheduling your first class!</p>
-        <p><b>Access your dashboard here:</b> <a href="https://www.rockstarmath.com/login" target="_blank" style="color: #007bff;">Go to Dashboard</a></p>
-      </div>
-  
-      <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-        <h3 style="color: #007bff;">💡 Need Help?</h3>
-        <p>Our team is always here to assist you! If you have any questions, reach out to us at <b>rockstarmathtutoring@gmail.com</b>.</p>
-      </div>
-  
-      <p style="text-align: center; font-size: 16px;">Let's make math learning fun and exciting! We can't wait to see you in class. 🚀</p>
-  
-      <p style="text-align: center; font-size: 14px; color: #555; margin-top: 20px;">
-        Best regards,<br>
-        <b>Amy Gemme</b><br>
-        Rockstar Math Tutoring<br>
-        📞 510-410-4963
-      </p>
-    </div>
-    `
-      await sendEmail(user.billingEmail, welcomeSubject, '', welcomeHtml)
-      console.log('✅ Welcome email sent successfully!')
-
-      // ✅ Check for existing purchased classes to prevent duplicates
-      const existingClasses = new Set(
-        (user.purchasedClasses || []).map((cls) => cls.name.toLowerCase().trim()),
-      )
-
+   <p style="text-align: center; font-size: 14px; color: #555; margin-top: 20px;">
+     Best regards,<br>
+     <b>Amy Gemme</b><br>
+     Rockstar Math Tutoring<br>
+     📞 510-410-4963
+   </p>
+ </div>
+ `;
+      await sendEmail(userEmail, welcomeSubject, '', welcomeHtml);
+      console.log('✅ Welcome email sent successfully!');
+      // ✅ Track existing purchased classes to prevent duplicates
+      const existingClasses = new Set(user.purchasedClasses.map(cls => cls.name.toLowerCase().trim()));
       // ✅ Filter new purchases to avoid duplicate entries
       const purchasedItems = cartSummary
-        .filter((item) => !existingClasses.has(item.toLowerCase().trim()))
-        .map((item) => ({
+        .filter(item => !existingClasses.has(item.toLowerCase().trim()))
+        .map(item => ({
           name: item,
           sessionCount: sessionMapping[item] || 0,
           remainingSessions: sessionMapping[item] || 0,
           bookingLink: calendlyMapping[item] || null,
-          status: 'Active',
-          purchaseDate: new Date(),
-        }))
-
+          status: "Active",
+        }));
       if (purchasedItems.length > 0) {
-        console.log('✅ Storing purchased classes in DB...', purchasedItems)
-        await Register.findByIdAndUpdate(
-          userId,
-          { $push: { purchasedClasses: { $each: purchasedItems } } },
-          { new: true }
-        );
-        
-        console.log('✅ Purchased classes saved successfully!')
+        await Register.findByIdAndUpdate(userId, {
+          $push: { purchasedClasses: { $each: purchasedItems } }
+        }, { new: true });
       } else {
-        console.log('⚠️ No new purchased classes to add.')
+        console.log("⚠️ No new purchased classes to add.");
       }
-      // ✅ Step 2: Fetch **Calendly & Zoom Links**
-      let calendlyLinks = cartSummary
-        .map((item) => ({ name: item, link: calendlyMapping[item] || null }))
-        .filter((item) => item.link !== null)
-
-      let zoomLinks = []
+      // ✅ Continue with Zoom links, Calendly, Coupons, and Emails
+      const activeCoupons = await getActiveCoupons();
+      console.log('🎟 Active Coupons from Stripe:', activeCoupons);
+      let userCoupons = activeCoupons.filter((coupon) => {
+        return cartSummary.some((item) => {
+          return item.toLowerCase().includes(coupon.code.toLowerCase());
+        });
+      });
+      console.log('🛒 Purchased Items from Metadata:', cartSummary);
+      let zoomLinks = [];
       if (['Learn', 'Achieve', 'Excel'].some((course) => cartSummary.includes(course))) {
-        zoomLinks = zoomCourseMapping
+        zoomLinks = zoomCourseMapping;
       }
 
+       await sendEmail(
+        user.billingEmail,
+        `🎉 Thank You for Your Purchase – Welcome to RockstarMath!`,
+        ``,
+        `
+        <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
+          
+          <div style="text-align: center; padding-bottom: 20px;">
+            <img src="https://your-logo-url.com/logo.png" alt="Rockstar Math" style="width: 150px; margin-bottom: 10px;">
+            <h2 style="color: #2C3E50;">🎉 Thank You for Your Purchase – Welcome to RockstarMath!</h2>
+          </div>
+      
+          <p>Hi <b>${user.username}</b>,</p>
+          
+          <p>Thank you for your purchase! 🎉 We’re thrilled to have you as part of the RockstarMath community and are excited to help you achieve your math goals.</p>
+      
+          <h3 style="color: #007bff;">🚀 Get Started Now!</h3>
+          <p>To begin, log in to your dashboard:</p>
+          <p style="text-align: center;">
+            <a href="https://www.rockstarmath.com/login" target="_blank" style="background: #007bff; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px; font-weight: bold;">Go to Dashboard</a>
+          </p>
+          
+          <p>Use the username and password you created during registration to log in.</p>
+      
+          <h3 style="color: #007bff;">📌 What You Can Do in Your Dashboard:</h3>
+          <ul>
+            <li>🔹 <b>Update your Profile</b> to personalize your experience.</li>
+            <li>📅 <b>View and manage your scheduled sessions.</b></li>
+            <li>🎟 <b>Explore available coupons</b> and purchase additional classes.</li>
+            <li>📚 <b>Access your classes, schedule, and archived sessions.</b></li>
+          </ul>
+      
+          <div style="text-align: center; padding-bottom: 20px;">
+          <h2 style="color: #2C3E50;">Home tab</h2>
+            <img src="https://media.discordapp.net/attachments/1342205365160513606/1347268823023357962/image.png?ex=67cb355e&is=67c9e3de&hm=827b9dd763ffb93b43636063994c4393c58abafdebcac242af2a649f7de173ba&=&format=webp&quality=lossless&width=960&height=423" alt="Rockstar Math" style="width: 500px; margin-bottom: 10px;">
+          </div>
+      <br/>
+          <div style="text-align: center; padding-bottom: 20px;">
+          <h2 style="color: #2C3E50;">My Classes</h2>
+            <img src="https://media.discordapp.net/attachments/1342205365160513606/1347263992153903174/image.png?ex=67cb30de&is=67c9df5e&hm=a25b7b982e6ebf5ab53a0bf800647a586aa3fea7f13853914ede7ea1bf58f591&=&format=webp&quality=lossless&width=847&height=423" alt="Rockstar Math" style="width: 500px; margin-bottom: 10px;">
+          </div>
+      
+           <br/>
+          <div style="text-align: center; padding-bottom: 20px;">
+          <h2 style="color: #2C3E50;">Schedule</h2>
+            <img src="https://media.discordapp.net/attachments/1342205365160513606/1347264195657469969/image.png?ex=67cb310f&is=67c9df8f&hm=92dafeccde2eb0ab06361c092b7f671e0f5a4673d0bcc1494ce1df05c8a77e1e&=&format=webp&quality=lossless&width=842&height=423" alt="Rockstar Math" style="width: 500px; margin-bottom: 10px;">
+          </div>
+      
+            <br/>
+          <div style="text-align: center; padding-bottom: 20px;">
+          <h2 style="color: #2C3E50;">Archive</h2>
+            <img src="https://media.discordapp.net/attachments/1342205365160513606/1347269423693693121/image.png?ex=67cb35ed&is=67c9e46d&hm=3ea0974b2f7938f8a12c50a4a8db2f049480c83ba6243035281cd25e72ed12cd&=&format=webp&quality=lossless&width=842&height=423" alt="Rockstar Math" style="width: 500px; margin-bottom: 10px;">
+          </div>
+      
+            <br/>
+          <div style="text-align: center; padding-bottom: 20px;">
+          <h2 style="color: #2C3E50;">Profile</h2>
+            <img src="https://media.discordapp.net/attachments/1342205365160513606/1347264471894331422/image.png?ex=67cb3151&is=67c9dfd1&hm=8032ef7c5ff44c9e2d8370cbe377fe50df237883587434d879d468dda008277d&=&format=webp&quality=lossless&width=852&height=423" alt="Rockstar Math" style="width: 500px; margin-bottom: 10px;">
+          </div>
+
+          <h3 style="color: #007bff;">📞 Need Assistance?</h3>
+          <p>If you have any questions or need help, feel free to reach out to us:</p>
+          <ul>
+            <li>📧 Reply to this email</li>
+            <li>📞 Call us at <b>510-410-4963</b></li>
+          </ul>
+      
+          <p>Thank you again for choosing RockstarMath! We can’t wait to see you excel! 🚀</p>
+      
+          <p style="text-align: center; font-size: 14px; color: #555; margin-top: 20px;">
+            Best regards,<br>
+            <b>Amy Gemme</b><br>
+            Founder, RockstarMath<br>
+            📞 510-410-4963 | 🌍 <a href="https://www.rockstarmath.com" target="_blank">www.rockstarmath.com</a>
+          </p>
+      
+        </div>
+        `,
+      )
       const hasCommonCore = cartSummary.some(
-        (item) => item.toLowerCase() === 'common core for parents',
-      )
+        (item) => item.toLowerCase() === 'common core for parents'
+      );
       if (hasCommonCore) {
-        zoomLinks.push(COMMONCORE_ZOOM_LINK)
+        zoomLinks.push(COMMONCORE_ZOOM_LINK);
       }
-
-      // ✅ Step 3: Apply **Discount Coupons**
-      const activeCoupons = await getActiveCoupons()
-      let appliedCoupons = []
-
-      user.cartItems.forEach((item) => {
-        let itemName = item.name.toLowerCase().trim()
-        activeCoupons.forEach((coupon) => {
-          let couponCode = coupon.code.toLowerCase().trim()
-          let match = false
-          if (itemName.includes(couponCode)) {
-            match = true
+      let calendlyLinks = [];
+      cartSummary.forEach((item) => {
+        const formattedItemName = item.trim().toLowerCase();
+        Object.keys(calendlyMapping).forEach((calendlyKey) => {
+          if (formattedItemName === calendlyKey.toLowerCase().trim()) {
+            calendlyLinks.push({
+              name: item,
+              link: calendlyMapping[calendlyKey],
+            });
           }
-
-          if (itemName === 'achieve') {
-            appliedCoupons.push(
-              { code: 'fs4n9tti', percent_off: 100 },
-              { code: 'qRBcEmgS', percent_off: 30 },
-            )
-          }
-
-          if (match) {
-            appliedCoupons.push({
-              code: coupon.code,
-              percent_off: coupon.percent_off,
-              expires: coupon.expires,
-            })
-          }
-        })
-      })
-
-      appliedCoupons = appliedCoupons.filter(
-        (coupon, index, self) => index === self.findIndex((c) => c.code === coupon.code),
-      )
-
-      console.log('🎟 Final Applied Coupons:', appliedCoupons)
-
+        });
+      });
+      let appliedCoupons = [];
+      cartSummary.forEach((item) => {
+        let matchedCoupon = activeCoupons.find((coupon) => {
+          if (item === 'Learn' && coupon.percent_off === 10) return true;
+          if (item === 'Achieve' && coupon.percent_off === 30) return true;
+          if (item === 'Excel' && coupon.percent_off === 20) return true;
+          return false;
+        });
+        if (matchedCoupon && matchedCoupon.code) {
+          appliedCoupons.push({
+            code: matchedCoupon.code,
+            percent_off: matchedCoupon.percent_off,
+            expires: matchedCoupon.expires,
+          });
+        }
+      });
       if (appliedCoupons.length > 0) {
-        await Register.findByIdAndUpdate(user._id, {
-          $push: { coupons: { $each: appliedCoupons } },
-        })
+        appliedCoupons = appliedCoupons.filter((coupon) => coupon.code && coupon.code.trim() !== '');
+        if (appliedCoupons.length > 0) {
+          await Register.findByIdAndUpdate(userId, {
+            $push: { coupons: { $each: appliedCoupons } },
+          });
+        }
       }
-
-      // ✅ Step 4: Send **Booking Confirmation Email**
-      // ✅ Ensure Booking Email is Sent
-      if (zoomLinks.length > 0 || calendlyLinks.length > 0) {
-        console.log('📧 Sending booking email...')
-
-        const bookingEmailHtml = generateEmailHtml(user, zoomLinks, appliedCoupons, calendlyLinks)
-
-        await sendEmail(user.billingEmail, '📚 Your Rockstar Math Booking Details', '', bookingEmailHtml)
-
-        console.log('✅ Booking email sent successfully!')
-      } else {
-        console.warn('⚠️ No Zoom or Calendly links found. Skipping booking email.')
+      if (calendlyLinks.length > 0) {
+        await Register.findByIdAndUpdate(userId, {
+          $push: { calendlyBookings: { $each: calendlyLinks } },
+        });
       }
-
-      console.log('✅ Purchase confirmation email sent successfully!')
-      return res.status(200).json({ message: 'Purchase updated & all emails sent!' })
+      console.log('🛒 Purchased Items from Metadata:', cartSummary);
+      console.log('📅 Available Calendly Links:', Object.keys(calendlyMapping));
+      console.log('📧 Sending Email with Zoom Links & Calendly Links:', zoomLinks, calendlyLinks);
+      console.log('🎟 Sending Email with Coupons:', appliedCoupons);
+      const emailHtml = generateEmailHtml(user, zoomLinks, appliedCoupons, calendlyLinks);
+      await sendEmail(userEmail, '📚 Your Rockstar Math Purchase Details', '', emailHtml);
+      console.log('✅ Purchase confirmation email sent successfully!');
+      return res.status(200).json({ message: 'Purchase updated & all emails sent!' });
     } catch (error) {
-      console.error('❌ Error processing purchase:', error)
-      return res.status(500).json({ error: 'Error updating purchased classes' })
+      console.error('❌ Error processing purchase:', error);
+      return res.status(500).json({ error: 'Error updating purchased classes' });
     }
   }
-  res.sendStatus(200)
-})
+  res.sendStatus(200);
+});
 
+// ✅ Function to Generate Email HTML
 function generateEmailHtml(user, zoomLinks, userCoupons, calendlyLinks) {
-  // ✅ Calendly Proxy URL
-  const proxyBaseUrl = 'https://backend-production-cbe2.up.railway.app/api/proxy-calendly'
-
-  console.log('📧 Generating Email HTML for:', user.billingEmail)
-  console.log('🎟 Coupons Included in Email:', userCoupons)
-
+  // Use proxy link for Calendly bookings instead of direct links
+  const proxyBaseUrl = "https://backend-production-cbe2.up.railway.app/api/proxy-calendly";
   let detailsHtml = `
-        <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
-            <h2 style="color: #2C3E50;">🎉 Hello, ${user.username}!</h2>
-            <p>We're excited to have you on board! 🚀 Below are your registration details.</p>
-            <h3 style="color: #007bff;">🔗 Available Courses & Registration Links:</h3>
-            <ul style="list-style-type: none; padding: 0;">`
-
-  // ✅ Add Zoom Links (if available)
+      <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
+          <h2 style="color: #2C3E50;">🎉 Hello ${user.username}!</h2>
+          <p>We're excited to have you on board! 🚀 Below are your registration details.</p>
+          <h3 style="color: #007bff;">🔗 Available Courses & Registration Links:</h3>
+          <ul style="list-style-type: none; padding: 0;">`;
   if (zoomLinks.length > 0) {
-    detailsHtml += `<h3>🔗 Your Course Zoom Links:</h3><ul>`
+    detailsHtml += `<h3>🔗 Your Course Zoom Links:</h3><ul>`;
     zoomLinks.forEach((course) => {
-      detailsHtml += `<li>📚 <b>${course.name}</b> – <a href="${course.link}" target="_blank">Register Here</a></li>`
-    })
-    detailsHtml += `</ul>`
+      detailsHtml += `<li>📚 <b>${course.name}</b> – <a href="${course.link}" target="_blank">Register Here</a></li>`;
+    });
+    detailsHtml += `</ul>`;
   }
-
-  // ✅ Add Discount Coupons (if available)
   if (userCoupons.length > 0) {
-    detailsHtml += `<h3 style="color: #d9534f;">🎟 Your Exclusive Discount Coupons:</h3>`
-
+    detailsHtml += `<h3 style="color: #d9534f;">🎟 Your Exclusive Discount Coupons:</h3>`;
     userCoupons.forEach((coupon) => {
-      if (coupon.percent_off === 100) {
-        detailsHtml += `
-          <p>
-            <b>Coupon Code:</b> ${coupon.code} - <b>${coupon.percent_off}% off</b> (Expires: ${
-          coupon.expires || 'undefined'
-        })  
-            For a Free 60-minute session valued at $100.00 Purchase here ---> 
-            <a href="https://www.rockstarmath.com/services" target="_blank">https://www.rockstarmath.com/services</a>
-          </p>
-        `
-      } else if (coupon.percent_off === 30) {
-        detailsHtml += `
-          <p>
-            <b>Coupon Code:</b> ${coupon.code} - <b>${coupon.percent_off}% off</b> (Expires: ${
-          coupon.expires || 'undefined'
-        })  
-            Applies to all products on the Tutoring Page Here ---> 
-            <a href="https://www.rockstarmath.com/services" target="_blank">https://www.rockstarmath.com/services</a>
-          </p>
-        `
-      }
-    })
+      detailsHtml += `<p><b>Coupon Code:</b> ${coupon.code} - ${coupon.percent_off}% off (Expires: ${coupon.expires})</p>`;
+    });
   }
-
-  // ✅ Add Calendly Proxy Links (if available)
   if (calendlyLinks.length > 0) {
+    // ✅ Add structured heading
     detailsHtml += `<h3>📅 Your Scheduled Calendly Sessions:</h3>
-      <p>Thank you for your purchase! Below is your registration link and important instructions on how to book your sessions</p>
-      <ul>`
+    <p>Thank you for purchasing! Below is your registration link and important instructions on how to book your sessions:</p>
+    
+    <ul>`;
 
     calendlyLinks.forEach((session) => {
-      const proxyLink = `${proxyBaseUrl}?userId=${user._id}&session=${encodeURIComponent(
-        session.name,
-      )}`
+        // ✅ Create the proxy link with user ID and session name parameters
+        const proxyLink = `${proxyBaseUrl}?userId=${user._id}&session=${encodeURIComponent(session.name)}`;
 
-      // ✅ Get the session count from sessionMapping
-      const sessionCount = sessionMapping[session.name.trim()] ?? 1
-
-      detailsHtml += `<li>📚 <b>${session.name}</b> – <a href="${proxyLink}" target="_blank"><b>Book Now</b></a> (${sessionCount} sessions)</li>`
-    })
-
-    // ✅ Display dynamic session count in email
-    const totalSessions = calendlyLinks.reduce(
-      (sum, session) => sum + (sessionMapping[session.name.trim()] ?? 1),
-      0,
-    )
+        detailsHtml += `<li>
+            📚 <b>${session.name}</b> – Click the link below <b>${session.quantity}</b> times to book all of your sessions.
+            <br/>
+            <a href="${proxyLink}" target="_blank"><b>Book Now</b></a>
+        </li>`;
+    });
 
     detailsHtml += `</ul>
-      <p>Please click the "BOOK NOW" link <b>${totalSessions}</b> times to book all of your sessions and get started.</p>
-      <ul>`
 
-    detailsHtml += `</ul>
-      <p>📌Once you have booked all of your sessions, head over to your RockstarMath Dashboard where you can:</p>
-      <ul>
-          <li>📅 View all your scheduled sessions</li>
-          <li>✏️ Reschedule sessions if needed</li>
-          <li>❌ Cancel any session</li>
-          <li>🛒 Purchase additional sessions</li>
-      </ul>`
+    <p>📌 Once you have booked all your sessions, head over to your <b>RockstarMath Dashboard</b> where you can:</p>
+    <ul>
+        <li>📅 View all your scheduled sessions</li>
+        <li>✏️ Reschedule sessions if needed</li>
+        <li>❌ Cancel any session</li>
+        <li>🛒 Purchase additional sessions</li>
+    </ul>
 
-    detailsHtml += `</ul>
-      <p>📌If you have any questions please feel free to contact us at: rockstartmathtutoring@gmail.com or (510) 410-4963</p>
-     `
-  }
+    <p>🚀 Start your learning journey now!</p>
+    <p>Best Regards, <br/> Rockstar Math Team</p>`;
+}
 
-  detailsHtml += `</div>`
-
-  // ✅ Log Final Email Content Before Sending
-  console.log('📧 Final Email Content:\n', detailsHtml)
-
-  return detailsHtml
+  detailsHtml += `</div>`;
+  return detailsHtml;
 }
 
 module.exports = router
