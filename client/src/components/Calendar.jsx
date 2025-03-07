@@ -25,9 +25,9 @@ const Calendar = () => {
       { name: "8-9pm: Calc 2", type: "study" },
     ],
     Thursday: [
-      { name: "3-6pm: ", type: "seasonal" },
-      { name: "7-8pm: ", type: "seasonal" },
-      { name: "8-9pm: ", type: "seasonal" },
+      { name: "3-6pm: seasonal", type: "seasonal" },
+      { name: "7-8pm: seasonal", type: "seasonal" },
+      { name: "8-9pm: seasonal", type: "seasonal" },
     ],
     // Friday: [
     //   { name: "3-6pm: ", type: "seasonal" },

@@ -10,8 +10,7 @@ const CalenderSection = () => {
         { name: "Opening Tutoring", type: "individual" },
         { name: "Opening Tutoring", type: "individual" },
         { name: "Opening Tutoring", type: "individual" },
-        { name: "", type: "gold" }, // ✅ Updated
-        { name: "", type: "gold" }, // ✅ Updated
+        { name: "TBD", type: "gold" }, // ✅ Updated
 
       ],
     },
@@ -22,8 +21,7 @@ const CalenderSection = () => {
         { name: "Geometry", type: "studyGroup" },
         { name: "Algebra I", type: "studyGroup" },
         { name: "Algebra II", type: "studyGroup" },
-        { name: "", type: "gold" }, // ✅ Updated
-        { name: "", type: "gold" }, // ✅ Updated
+        { name: "TBD", type: "gold" }, // ✅ Updated
 
       ],
     },
@@ -34,8 +32,7 @@ const CalenderSection = () => {
         { name: "PreCal/Trig", type: "studyGroup" },
         { name: "Calc 1", type: "studyGroup" },
         { name: "Calc 2", type: "studyGroup" },
-        { name: "", type: "gold" }, // ✅ Updated
-        { name: "", type: "gold" }, // ✅ Updated
+        { name: "TBD", type: "gold" }, // ✅ Updated
 
       ],
     },
@@ -67,7 +64,6 @@ const CalenderSection = () => {
               <th className="border  border-black p-4 text-left text-lg">Tuesday</th>
               <th className="border  border-black p-4 text-left text-lg">Wednesday</th>
               <th className="border  border-black p-4 text-left text-lg">Thursday</th>
-              <th className="border  border-black p-4 text-left text-lg">Friday</th>
 
             </tr>
           </thead>
