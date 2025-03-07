@@ -358,18 +358,19 @@ const CheckoutPage = () => {
       const result = await response.json()
       console.log('📡 Stripe Capture Response:', result) // ADD THIS LINE
 
-      if (result.clearCart) {
-        console.log('🛒 Clearing Cart after Successful Payment...')
-        localStorage.removeItem('cartItems') // ✅ Remove from localStorage
-        setCartItems([]) // ✅ Update State
-        window.dispatchEvent(new Event('storage')) // ✅ Trigger update in all tabs
-  
-        toast.success('🎉 Payment Successful! Redirecting...')
+      try {
+        console.log('🎉 Payment Successful! Redirecting...');
+        localStorage.removeItem('cartItems'); // ✅ Clear Local Cart
+        setCartItems([]);
+        window.dispatchEvent(new Event('storage')); // ✅ Sync across tabs
+    
+        toast.success('🎉 Payment Successful! Redirecting...');
         setTimeout(() => {
-          window.location.href = '/dashboard'
-        }, 1000)
-      } else {
-        console.warn('⚠️ Backend did not send `{ clearCart: true }` - Skipping cart clear.')
+          window.location.href = '/dashboard';
+        }, 1000);
+      } catch (error) {
+        console.error('❌ Error in Payment Process:', error);
+        toast.error('Payment processing error.');
       }
     } catch (error) {
       console.error('❌ Error in Payment Process:', error)
