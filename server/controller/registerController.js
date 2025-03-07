@@ -536,9 +536,9 @@ exports.cancelSession = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // ✅ Find the session in bookedSessions by calendlyEventUri
+    // ✅ Find the session in bookedSessions using calendlyEventUri
     const sessionIndex = user.bookedSessions.findIndex(
-      (session) => session.calendlyEventUri === calendlyEventUri
+      (session) => session.calendlyEventUri.trim().toLowerCase() === calendlyEventUri.trim().toLowerCase()
     );
 
     if (sessionIndex === -1) {
@@ -549,25 +549,23 @@ exports.cancelSession = async (req, res) => {
 
     console.log(`✅ Found session: ${canceledSession.eventName} at ${canceledSession.startTime}`);
 
-    // ✅ Find the purchased plan linked to this session
-    let purchasedPlan = user.purchasedClasses.find((item) => item.name === canceledSession.eventName);
+    // ✅ Find any active purchased plan (remove name comparison)
+    let purchasedPlan = user.purchasedClasses.find((item) => item.remainingSessions > 0);
 
     if (!purchasedPlan) {
-      return res.status(400).json({ message: 'Purchased plan not found for this session' });
+      console.warn(`⚠️ No active purchased plan found, but proceeding with cancellation.`);
+    } else {
+      // ✅ Restore Session Count
+      purchasedPlan.remainingSessions += 1;
     }
-
-    console.log(`📌 Purchased plan found: ${purchasedPlan.name}`);
-
-    // ✅ Restore Session Count
-    purchasedPlan.remainingSessions += 1;
 
     // ✅ Move Session to Archived Classes
     user.archivedClasses.push({
       name: canceledSession.eventName,
       description: 'Session was canceled by the user',
       archivedAt: new Date(),
-      sessionCount: purchasedPlan.sessionCount,
-      remainingSessions: purchasedPlan.remainingSessions,
+      sessionCount: purchasedPlan ? purchasedPlan.sessionCount : 1,
+      remainingSessions: purchasedPlan ? purchasedPlan.remainingSessions : 1,
     });
 
     // ✅ Remove session from bookedSessions
@@ -585,6 +583,7 @@ exports.cancelSession = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
 
 
 exports.rescheduleBooking = async (req, res) => {
