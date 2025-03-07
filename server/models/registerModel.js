@@ -17,19 +17,23 @@ const purchasedClassSchema = new mongoose.Schema({
 })
 
 const bookedSessionSchema = new mongoose.Schema({
-  eventName: { type: String, required: true },
-  calendlyEventUri: { type: String, required: true },
-  startTime: { type: Date, required: true },
-  endTime: { type: Date, required: true },
-  timezone: { type: String, required: true },
+  eventName: { type: String, required: true }, // ✅ Event Name
+  calendlyEventUri: { type: String, required: true, unique: true, sparse: true }, // ✅ Unique Event URI
+  startTime: { type: Date, required: true }, // ✅ Event Start Time
+  // zoomMeetingLink: String, // ✅ Add Zoom Link
+  endTime: { type: Date, required: false }, // ✅ Optional: End Time
+  timezone: { type: String, required: false }, // ✅ Timezone (if available)
+  // ✅ Event Status
   status: {
     type: String,
-    enum: ['Booked', 'Cancelled', 'Completed', 'Pending - No Sessions Left'], // ✅ Added new status
-    default: 'Booked'
-  },
+    enum: ['Booked', 'Completed', 'Cancelled', 'Active', 'Pushed', 'Rescheduled'], // ✅ Added "Rescheduled"
+    default: 'Booked',
+},
+note: { type: String, default: "" }, // ✅ New Field for Notes  
+
   createdAt: { type: Date, default: Date.now }, // ✅ When Booking Was Stored
-  updatedAt: { type: Date, default: null } // ✅ Prevents validation errors
-});
+  updatedAt: { type: Date, required: false }, // ✅ When Last Updated
+})
 
 
 // ✅ Coupon Schema Inside Register Model
