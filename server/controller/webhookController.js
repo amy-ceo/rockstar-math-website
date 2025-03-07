@@ -12,11 +12,13 @@ exports.calendlyWebhook = async (req, res) => {
 
     const payload = req.body.payload
 
-    // ✅ Extract Invitee & Event Details
-    const inviteeEmail = payload?.invitee?.email || '❌ Missing'
+    // ✅ Extract Invitee & Event Details Correctly
+    const inviteeEmail = payload?.invitees?.[0]?.email || payload?.invitee?.email || '❌ Missing'
+
     const eventName = payload?.name || payload?.event?.name || '❌ Missing'
     const eventUri = payload?.uri || payload?.event?.uri || '❌ Missing'
-    // ✅ Extract `startTime` and `endTime`
+
+    // ✅ Extract Start Time and End Time Correctly
     const startTime =
       payload?.start_time || payload?.event?.start_time || payload?.scheduled_event?.start_time
         ? new Date(
