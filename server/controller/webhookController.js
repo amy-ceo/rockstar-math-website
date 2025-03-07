@@ -58,10 +58,13 @@ exports.calendlyWebhook = async (req, res) => {
     console.log('👤 User Found:', user)
 
     // ✅ Normalize URLs for comparison
-    const normalizeUrl = (url) => url?.split('?')[0].trim().toLowerCase()
+    const normalizeUrl = (url) => {
+      return url?.split('?')[0].trim().replace(/;$/, '').toLowerCase();
+    };
+    
 
-    const normalizedEventUri = normalizeUrl(eventUri)
-    console.log('🔍 Normalized Event URI:', normalizedEventUri)
+    const normalizedEventUri = normalizeUrl(eventUri);
+console.log('🔍 Normalized Event URI:', normalizedEventUri);
 
     console.log(`🛠 Debug: User ${user.username} has these booking links:`)
     user.purchasedClasses.forEach((cls) =>
@@ -70,8 +73,8 @@ exports.calendlyWebhook = async (req, res) => {
     console.log('🔍 Normalized Event URI:', normalizedEventUri)
 
     let purchasedClass = user.purchasedClasses.find((cls) => {
-      return normalizeUrl(cls.bookingLink) === normalizedEventUri
-    })
+      return normalizeUrl(cls.bookingLink) === normalizedEventUri;
+    });
 
     // ✅ If no match, update the first available class's booking link
     // ✅ If no match, update the booking link and proceed with booking
