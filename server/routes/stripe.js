@@ -434,29 +434,45 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
     console.log('✅ Stripe Webhook - Payment Succeeded:', paymentIntent.id)
 
     // ✅ Store Payment in Database
+    // ✅ Prevent Duplicate Payment Entries in DB
     try {
-      const newPayment = new Payment({
-        orderId: `stripe_${Date.now()}`,
-        paymentIntentId: paymentIntent.id,
-        userId: paymentIntent.metadata?.userId,
-        billingEmail: paymentIntent.metadata?.userEmail || 'No email',
-        amount: paymentIntent.amount / 100,
-        currency: paymentIntent.currency.toUpperCase(),
-        status: 'Completed',
-        paymentMethod: 'Stripe',
-        cartItems: JSON.parse(paymentIntent.metadata?.cartItemIds || '[]'),
-      })
+      const existingPayment = await Payment.findOne({ paymentIntentId: paymentIntent.id })
 
-      await newPayment.save()
-      console.log('✅ Payment Recorded via Webhook')
+      if (!existingPayment) {
+        console.log('🔹 Payment does not exist. Saving new payment record...')
+
+        const newPayment = new Payment({
+          orderId: `stripe_${Date.now()}`,
+          paymentIntentId: paymentIntent.id,
+          userId: paymentIntent.metadata?.userId,
+          billingEmail: paymentIntent.metadata?.userEmail || 'No email',
+          amount: paymentIntent.amount / 100,
+          currency: paymentIntent.currency.toUpperCase(),
+          status: 'Completed',
+          paymentMethod: 'Stripe',
+          cartItems: JSON.parse(paymentIntent.metadata?.cartItemIds || '[]'),
+        })
+
+        await newPayment.save()
+        console.log('✅ Payment Recorded via Webhook')
+      } else {
+        console.log('⚠️ Payment already exists in DB. Skipping duplicate entry.')
+      }
     } catch (error) {
       console.error('❌ Error Saving Webhook Payment:', error)
+      return res.status(500).json({ error: 'Database error while saving payment.' })
     }
 
     console.log('✅ Payment Intent Succeeded Event Triggered')
     // ✅ Extract User & Cart Data
     const userId = paymentIntent.metadata?.userId
-    const cartSummary = paymentIntent.metadata?.cartSummary?.split(', ') || []
+    const cartSummary = paymentIntent.metadata?.cartSummary
+      ? paymentIntent.metadata.cartSummary.split(', ')
+      : []
+    if (!Array.isArray(cartSummary) || cartSummary.length === 0) {
+      console.warn('⚠️ No items found in cartSummary. Skipping...')
+      return res.status(400).json({ error: 'Invalid cart data' })
+    }
     const userEmail = paymentIntent.metadata?.userEmail || 'No email provided'
     console.log('🔹 User ID:', userId)
     console.log('🛒 Purchased Items:', cartSummary)
@@ -608,7 +624,6 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
         }
       })
 
-
       // ✅ Ensure duplicates are removed (if any)
       appliedCoupons = appliedCoupons.filter(
         (coupon, index, self) => index === self.findIndex((c) => c.code === coupon.code),
@@ -637,21 +652,21 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
       console.log('🎟 Sending Email with Coupons:', appliedCoupons)
       const emailHtml = generateEmailHtml(user, zoomLinks, appliedCoupons, calendlyLinks)
       // ✅ Send confirmation email to both billingEmail and schedulingEmails
-      try {
-        const emailRecipients = [user.billingEmail, ...user.schedulingEmails].filter(Boolean);
-        console.log('📧 Sending Confirmation Email to:', emailRecipients);
-        console.log('📧 Email Content:', emailHtml);
-      
-        await sendEmail(emailRecipients, '📚 Your Rockstar Math Purchase Details', '', emailHtml);
-        
-        console.log('✅ Purchase confirmation email sent successfully!');
-      } catch (error) {
-        console.error('❌ Error sending purchase confirmation email:', error.message || error);
+      const emailRecipients = [user.billingEmail, ...user.schedulingEmails].filter(Boolean)
+      if (emailRecipients.length === 0) {
+        console.error('❌ No valid email found for confirmation email.')
+        return
       }
-      
-      console.log('✅ Confirmation email sent successfully to both billing and scheduling emails!')
-      console.log('📧 Sending Purchase Email to:', user.billingEmail, user.schedulingEmails)
+
+      console.log('📧 Sending Confirmation Email to:', emailRecipients)
       console.log('📧 Email Content:', emailHtml)
+
+      try {
+        await sendEmail(emailRecipients, '📚 Your Rockstar Math Purchase Details', '', emailHtml)
+        console.log('✅ Purchase confirmation email sent successfully!')
+      } catch (error) {
+        console.error('❌ Error sending purchase confirmation email:', error.message || error)
+      }
 
       return res.status(200).json({ message: 'Purchase updated & all emails sent!' })
     } catch (error) {
