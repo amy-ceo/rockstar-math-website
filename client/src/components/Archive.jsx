@@ -9,7 +9,8 @@ const Archive = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  useEffect(() => {
+  // ✅ Fetch Archived Classes
+  const fetchArchivedClasses = async () => {
     if (!users || !users._id) {
       console.error("❌ User ID not available!");
       setError("User authentication required.");
@@ -17,48 +18,61 @@ const Archive = () => {
       return;
     }
 
-    const fetchArchivedData = async () => {
-      try {
-        const response = await fetch(`https://backend-production-cbe2.up.railway.app/api/user/archived-classes/${users._id}`);
-        const data = await response.json();
+    try {
+      console.log("📡 Fetching archived classes for user:", users._id);
+      const response = await fetch(
+        `https://backend-production-cbe2.up.railway.app/api/${users._id}/archived-classes`
+      );
+      const data = await response.json();
 
-        if (!response.ok) throw new Error(data.message || "Failed to fetch archived data.");
+      if (!response.ok) throw new Error(data.message || "Failed to fetch archived data.");
 
-        setArchivedClasses(data.archivedClasses || []);
-      } catch (error) {
-        console.error("❌ Error fetching archived data:", error);
-        setError("Error loading archived classes. Try again later.");
-      } finally {
-        setLoading(false);
-      }
-    };
+      console.log("📥 Archived Classes Response:", data); // ✅ Debugging log
 
-    fetchArchivedData();
+      setArchivedClasses(data.archivedClasses || []);
+      setError("");
+    } catch (error) {
+      console.error("❌ Error fetching archived data:", error);
+      setError("Error loading archived classes. Try again later.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchArchivedClasses();
   }, [users]);
 
   // ✅ **Restore Function**
-  const handleRestore = async (className) => {
-    if (!window.confirm(`Are you sure you want to restore ${className}?`)) return;
+  // const handleRestore = async (className) => {
+  //   if (!window.confirm(`Are you sure you want to restore ${className}?`)) return;
 
-    try {
-      const response = await fetch(`https://backend-production-cbe2.up.railway.app/api/user/restore-class`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: users._id, className }),
-      });
+  //   try {
+  //     console.log("📤 Sending restore request for:", className);
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Failed to restore class.");
+  //     const response = await fetch(
+  //       `https://backend-production-cbe2.up.railway.app/api/restore-class`,
+  //       {
+  //         method: "POST",
+  //         headers: { "Content-Type": "application/json" },
+  //         body: JSON.stringify({ userId: users._id, className }),
+  //       }
+  //     );
 
-      // ✅ Remove Restored Class from Archived List
-      setArchivedClasses((prev) => prev.filter((c) => c.name !== className));
+  //     const data = await response.json();
+  //     console.log("📥 Restore API Response:", data); // ✅ Debugging log
 
-      toast.success(`✅ ${className} restored successfully!`);
-    } catch (error) {
-      console.error("❌ Error restoring class:", error);
-      toast.error("Failed to restore class. Try again.");
-    }
-  };
+  //     if (!response.ok) throw new Error(data.message || "Failed to restore class.");
+
+  //     // ✅ Remove Restored Class from Archived List
+  //     setArchivedClasses((prev) => prev.filter((c) => c.name !== className));
+
+  //     toast.success(`✅ ${className} restored successfully!`);
+  //   } catch (error) {
+  //     console.error("❌ Error restoring class:", error);
+  //     toast.error("Failed to restore class. Try again.");
+  //   }
+  // };
 
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
@@ -97,12 +111,12 @@ const Archive = () => {
               )}
 
               {/* ✅ Restore Button */}
-              <button
+              {/* <button
                 className="mt-4 bg-green-600 text-white py-2 px-4 rounded flex items-center gap-2 hover:bg-green-700 transition-all"
                 onClick={() => handleRestore(classItem.name)}
               >
                 <FaUndo /> Restore
-              </button>
+              </button> */}
             </div>
           ))}
         </div>

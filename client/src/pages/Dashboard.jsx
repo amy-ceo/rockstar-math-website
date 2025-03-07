@@ -197,18 +197,17 @@ const Dashboard = () => {
   }
 
   const cancelBooking = async (eventUri) => {
-    // ✅ Ensure eventUri is a valid string
     if (!eventUri || typeof eventUri !== 'string') {
-      toast.error('Invalid Calendly Event URI!')
-      console.error('❌ Invalid calendlyEventUri:', eventUri)
-      return
+      toast.error('Invalid Calendly Event URI!');
+      console.error('❌ Invalid calendlyEventUri:', eventUri);
+      return;
     }
 
     try {
       console.log('📡 Sending cancel request to API...', {
         userId: users._id,
         calendlyEventUri: eventUri,
-      })
+      });
 
       const response = await fetch(
         'https://backend-production-cbe2.up.railway.app/api/cancel-booking',
@@ -217,87 +216,45 @@ const Dashboard = () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             userId: users._id,
-            calendlyEventUri: eventUri, // ✅ Now correctly sending the URI
+            calendlyEventUri: eventUri,
           }),
-        },
-      )
+        }
+      );
 
-      console.log('📥 API Response Status:', response.status)
-      const data = await response.json()
-      console.log('📥 API Response Data:', data)
+      const data = await response.json();
+      console.log('📥 API Response:', data);
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to cancel session.')
+      if (response.ok) {
+        toast.success('✅ Session Canceled & Moved to Archive!');
+        
+        // ✅ Remove the canceled session from the UI
+        setCalendlyBookings((prev) =>
+          prev.filter((b) => b.calendlyEventUri !== eventUri)
+        );
+
+        // ✅ Fetch updated archived classes
+        fetchArchivedClasses();
+
+        setShowCancelPopup(false);
+        setSelectedEventUri(null);
+      } else {
+        console.warn('⚠️ API returned an error:', data.message);
+        
+        // ✅ Show error message only for real API errors
+        if (data.message && data.message.includes('already canceled')) {
+          toast.info('⚠️ This session was already canceled.');
+        } else {
+          toast.error(`⚠️ ${data.message || 'Failed to cancel session.'}`);
+        }
       }
-
-      toast.success('Session Canceled & Moved to Archive! ✅')
-
-      // ✅ Remove canceled session from active bookings
-      setCalendlyBookings((prev) => prev.filter((b) => b.calendlyEventUri !== eventUri))
-
-      // ✅ Fetch updated archived classes
-      fetchArchivedClasses()
-
-      setShowCancelPopup(false)
-      setSelectedEventUri(null)
     } catch (error) {
-      console.error('❌ Error canceling session:', error.message)
-      toast.error('Failed to cancel session. Try again.')
+      console.error('❌ Error canceling session:', error.message);
+      
+      // ✅ Show an error only when there's a real network failure
+      toast.error('Failed to connect to the server. Try again.');
     }
-  }
+};
 
-  const handleReschedule = async () => {
-    if (!selectedRescheduleEvent || !newDateTime) {
-      console.warn('❌ No event or new date selected!')
-      return
-    }
-
-    try {
-      console.log('📤 Sending request to reschedule:', {
-        userId: users._id,
-        eventUri: selectedRescheduleEvent,
-        newDateTime,
-      })
-
-      const response = await fetch(
-        'https://backend-production-cbe2.up.railway.app/api/reschedule-booking',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId: users._id,
-            eventUri: selectedRescheduleEvent,
-            newDateTime,
-          }),
-        },
-      )
-
-      const data = await response.json()
-      console.log('📥 API Response:', data)
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Rescheduling failed.')
-      }
-
-      alert('Session Rescheduled Successfully ✅')
-
-      // ✅ Update UI
-      setCalendlyBookings((prev) =>
-        prev.map((booking) =>
-          booking.calendlyEventUri === selectedRescheduleEvent
-            ? { ...booking, startTime: newDateTime, rescheduled: true }
-            : booking,
-        ),
-      )
-
-      // ✅ Close popup
-      setShowReschedulePopup(false)
-      setSelectedRescheduleEvent(null)
-      setNewDateTime(null)
-    } catch (error) {
-      console.error('❌ Error rescheduling session:', error)
-    }
-  }
 
   const openReschedulePopup = (eventUri) => {
     setSelectedRescheduleEvent(eventUri)
