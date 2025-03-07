@@ -652,8 +652,6 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
       console.log('🎟 Sending Email with Coupons:', appliedCoupons)
       const emailHtml = generateEmailHtml(user, zoomLinks, appliedCoupons, calendlyLinks)
       // ✅ Send confirmation email to both billingEmail and schedulingEmails
-     
-    
 
       console.log('📧 Email Content:', emailHtml)
 
