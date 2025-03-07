@@ -438,6 +438,52 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
       return res.status(400).json({ error: 'Invalid payment data' });
     }
 
+    // ✅ Fetch User
+    const user = await Register.findById(userId);
+    if (!user) {
+      console.error('❌ Error: User not found in database!');
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // ✅ Generate Purchased Classes
+    const purchasedItems = cartSummary.map((item) => ({
+      name: item,
+      sessionCount: sessionMapping[item] || 0,
+      remainingSessions: sessionMapping[item] || 0,
+      bookingLink: calendlyMapping[item] || null,
+      status: 'Active',
+      purchaseDate: new Date(),
+    }));
+
+    // ✅ Save Purchased Classes
+    if (purchasedItems.length > 0) {
+      console.log('✅ Storing purchased classes in DB...', purchasedItems);
+      await Register.findByIdAndUpdate(userId, { $push: { purchasedClasses: { $each: purchasedItems } } }, { new: true });
+      console.log('✅ Purchased classes saved successfully!');
+    } else {
+      console.log('⚠️ No new purchased classes to add.');
+    }
+
+    // ✅ Call `addPurchasedClass` API
+    try {
+      console.log('📡 Calling addPurchasedClass API...');
+      const purchaseResponse = await fetch('https://backend-production-cbe2.up.railway.app/api/add-purchased-class', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user._id, purchasedItems, userEmail: user.billingEmail }),
+      });
+
+      const purchaseResult = await purchaseResponse.json();
+      console.log('✅ Purchased Classes API Response:', purchaseResult);
+      if (!purchaseResponse.ok) {
+        console.warn('⚠️ Issue updating purchased classes:', purchaseResult.message);
+      }
+    } catch (purchaseError) {
+      console.error('❌ Error calling addPurchasedClass API:', purchaseError);
+    }
+
+
+
     await sendEmail(
       user.billingEmail,
       `🎉 Thank You for Your Purchase – Welcome to RockstarMath!`,
@@ -518,50 +564,7 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
       `,
     )
 
-    // ✅ Fetch User
-    const user = await Register.findById(userId);
-    if (!user) {
-      console.error('❌ Error: User not found in database!');
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    // ✅ Generate Purchased Classes
-    const purchasedItems = cartSummary.map((item) => ({
-      name: item,
-      sessionCount: sessionMapping[item] || 0,
-      remainingSessions: sessionMapping[item] || 0,
-      bookingLink: calendlyMapping[item] || null,
-      status: 'Active',
-      purchaseDate: new Date(),
-    }));
-
-    // ✅ Save Purchased Classes
-    if (purchasedItems.length > 0) {
-      console.log('✅ Storing purchased classes in DB...', purchasedItems);
-      await Register.findByIdAndUpdate(userId, { $push: { purchasedClasses: { $each: purchasedItems } } }, { new: true });
-      console.log('✅ Purchased classes saved successfully!');
-    } else {
-      console.log('⚠️ No new purchased classes to add.');
-    }
-
-    // ✅ Call `addPurchasedClass` API
-    try {
-      console.log('📡 Calling addPurchasedClass API...');
-      const purchaseResponse = await fetch('https://backend-production-cbe2.up.railway.app/api/add-purchased-class', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user._id, purchasedItems, userEmail: user.billingEmail }),
-      });
-
-      const purchaseResult = await purchaseResponse.json();
-      console.log('✅ Purchased Classes API Response:', purchaseResult);
-      if (!purchaseResponse.ok) {
-        console.warn('⚠️ Issue updating purchased classes:', purchaseResult.message);
-      }
-    } catch (purchaseError) {
-      console.error('❌ Error calling addPurchasedClass API:', purchaseError);
-    }
-
+    
     try {
 
       // ✅ Step 1: Send **Welcome Email**
