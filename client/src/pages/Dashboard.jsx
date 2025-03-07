@@ -199,19 +199,19 @@ const Dashboard = () => {
     setShowCancelPopup(true)
   }
 
-  const cancelBooking = async () => {
-    if (!selectedStartTime || isNaN(new Date(selectedStartTime).getTime())) {
-      toast.error('Invalid session start time!')
-      console.error('❌ Invalid startTime:', selectedStartTime)
-      return
+  const cancelBooking = async (eventUri) => {
+    if (!eventUri) {
+      toast.error('Invalid Calendly Event URI!');
+      console.error('❌ Invalid calendlyEventUri:', eventUri);
+      return;
     }
-
+  
     try {
       console.log('📡 Sending cancel request to API...', {
         userId: users._id,
-        startTime: new Date(selectedStartTime).toISOString(),
-      })
-
+        calendlyEventUri: eventUri,
+      });
+  
       const response = await fetch(
         'https://backend-production-cbe2.up.railway.app/api/cancel-booking',
         {
@@ -219,35 +219,37 @@ const Dashboard = () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             userId: users._id,
-            startTime: new Date(selectedStartTime).toISOString(),
+            calendlyEventUri: eventUri, // ✅ Now using calendlyEventUri
           }),
-        },
-      )
-
-      console.log('📥 API Response Status:', response.status)
-      const data = await response.json()
-      console.log('📥 API Response Data:', data)
-
+        }
+      );
+  
+      console.log('📥 API Response Status:', response.status);
+      const data = await response.json();
+      console.log('📥 API Response Data:', data);
+  
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to cancel session.')
+        throw new Error(data.message || 'Failed to cancel session.');
       }
-
-      toast.success('Session Canceled & Moved to Archive! ✅')
-
+  
+      toast.success('Session Canceled & Moved to Archive! ✅');
+  
       // ✅ Remove canceled session from active bookings
       setCalendlyBookings((prev) =>
-        prev.filter(
-          (b) => new Date(b.startTime).toISOString() !== new Date(selectedStartTime).toISOString(),
-        ),
-      )
-
-      setShowCancelPopup(false)
-      setSelectedStartTime(null)
+        prev.filter((b) => b.calendlyEventUri !== eventUri)
+      );
+  
+      // ✅ Fetch updated archived classes
+      fetchArchivedClasses();
+  
+      setShowCancelPopup(false);
+      setSelectedEventUri(null);
     } catch (error) {
-      console.error('❌ Error canceling session:', error.message)
-      toast.error('Failed to cancel session. Try again.')
+      console.error('❌ Error canceling session:', error.message);
+      toast.error('Failed to cancel session. Try again.');
     }
-  }
+  };
+  
 
   const handleReschedule = async () => {
     if (!selectedRescheduleEvent || !newDateTime) {
