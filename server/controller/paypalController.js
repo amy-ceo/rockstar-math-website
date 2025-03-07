@@ -618,6 +618,7 @@ function generateEmailHtml(user, zoomLinks, userCoupons, calendlyLinks) {
  
  // ✅ Add Discount Coupons (if available)
 if (userCoupons.length > 0) {
+  
   detailsHtml += `<h3 style="color: #d9534f;">🎟 Your Exclusive Discount Coupons:</h3>`;
 
   userCoupons.forEach((coupon) => {
