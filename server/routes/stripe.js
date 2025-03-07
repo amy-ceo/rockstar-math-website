@@ -614,30 +614,56 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
           }
         });
       });
-      let appliedCoupons = [];
-      cartSummary.forEach((item) => {
-        let matchedCoupon = activeCoupons.find((coupon) => {
-          if (item === 'Learn' && coupon.percent_off === 10) return true;
-          if (item === 'Achieve' && coupon.percent_off === 30) return true;
-          if (item === 'Excel' && coupon.percent_off === 20) return true;
-          return false;
-        });
-        if (matchedCoupon && matchedCoupon.code) {
-          appliedCoupons.push({
-            code: matchedCoupon.code,
-            percent_off: matchedCoupon.percent_off,
-            expires: matchedCoupon.expires,
-          });
-        }
-      });
-      if (appliedCoupons.length > 0) {
-        appliedCoupons = appliedCoupons.filter((coupon) => coupon.code && coupon.code.trim() !== '');
-        if (appliedCoupons.length > 0) {
-          await Register.findByIdAndUpdate(userId, {
-            $push: { coupons: { $each: appliedCoupons } },
-          });
-        }
-      }
+     // ✅ Apply Discount Coupons Based on Course Name (Ensure all relevant coupons are applied)
+         let appliedCoupons = []
+     
+         user.cartItems.forEach((item) => {
+           let matchedCoupons = activeCoupons.filter((coupon) => {
+             if (item.name === 'Learn' && coupon.percent_off === 10) return true
+             if (item.name === 'Achieve' && (coupon.percent_off === 30 || coupon.percent_off === 100))
+               return true
+             if (item.name === 'Excel' && coupon.percent_off === 20) return true
+             return false
+           })
+     
+           if (matchedCoupons.length > 0) {
+             matchedCoupons.forEach((coupon) => {
+               appliedCoupons.push({
+                 code: coupon.code,
+                 percent_off: coupon.percent_off,
+                 expires: coupon.expires,
+               })
+             })
+           }
+     
+           // ✅ **Ensure both 30% and 100% Achieve coupons are applied**
+           if (item.name === 'Achieve') {
+             appliedCoupons.push(
+               { code: 'fs4n9tti', percent_off: 100, }, // ✅ 100% Off Coupon
+               { code: 'qRBcEmgS', percent_off: 30,  }, // ✅ 30% Off Coupon
+             )
+           }
+         })
+     
+         // ✅ Ensure duplicates are removed (if any)
+         appliedCoupons = appliedCoupons.filter(
+           (coupon, index, self) => index === self.findIndex((c) => c.code === coupon.code),
+         )
+     
+         console.log('🎟 Final Applied Coupons:', appliedCoupons)
+         if (appliedCoupons.length > 0) {
+           appliedCoupons = appliedCoupons.filter((coupon) => coupon.code && coupon.code.trim() !== '')
+     
+           // ✅ Step 7: Save Coupons in User's Database
+           if (appliedCoupons.length > 0) {
+             await Register.findByIdAndUpdate(user._id, {
+               $push: { coupons: { $each: appliedCoupons } },
+             })
+           }
+         }
+     
+         console.log('📧 Sending Email with Zoom Links:', zoomLinks)
+         console.log('🎟 Sending Email with Coupons:', appliedCoupons)
       if (calendlyLinks.length > 0) {
         await Register.findByIdAndUpdate(userId, {
           $push: { calendlyBookings: { $each: calendlyLinks } },
@@ -676,12 +702,30 @@ function generateEmailHtml(user, zoomLinks, userCoupons, calendlyLinks) {
     });
     detailsHtml += `</ul>`;
   }
-  if (userCoupons.length > 0) {
-    detailsHtml += `<h3 style="color: #d9534f;">🎟 Your Exclusive Discount Coupons:</h3>`;
-    userCoupons.forEach((coupon) => {
-      detailsHtml += `<p><b>Coupon Code:</b> ${coupon.code} - ${coupon.percent_off}% off (Expires: ${coupon.expires})</p>`;
-    });
-  }
+  // ✅ Add Discount Coupons (if available)
+if (userCoupons.length > 0) {
+  detailsHtml += `<h3 style="color: #d9534f;">🎟 Your Exclusive Discount Coupons:</h3>`;
+
+  userCoupons.forEach((coupon) => {
+    if (coupon.percent_off === 100) {
+      detailsHtml += `
+        <p>
+          <b>Coupon Code:</b> ${coupon.code} - <b>${coupon.percent_off}% off</b> (Expires: ${coupon.expires || 'undefined'})  
+          For a Free 60-minute session valued at $100.00 Purchase here ---> 
+          <a href="https://www.rockstarmath.com/services" target="_blank">https://www.rockstarmath.com/services</a>
+        </p>
+      `;
+    } else if (coupon.percent_off === 30) {
+      detailsHtml += `
+        <p>
+          <b>Coupon Code:</b> ${coupon.code} - <b>${coupon.percent_off}% off</b> (Expires: ${coupon.expires || 'undefined'})  
+          Applies to all products on the Tutoring Page Here ---> 
+          <a href="https://www.rockstarmath.com/services" target="_blank">https://www.rockstarmath.com/services</a>
+        </p>
+      `;
+    }
+  });
+}
   if (calendlyLinks.length > 0) {
     // ✅ Add structured heading
     detailsHtml += `<h3>📅 Your Scheduled Calendly Sessions:</h3>
