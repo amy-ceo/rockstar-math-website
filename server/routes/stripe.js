@@ -458,8 +458,13 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
       console.log('✅ Stripe Payment Saved in Database!')
 
       // ✅ Clear Cart in Database (Assuming user has a `cart` field in `Register` Model)
-      await Register.findByIdAndUpdate(userId, { $set: { cart: [] } })
-      console.log('🛒 Cart Cleared Successfully')
+      const updatedUser = await Register.findByIdAndUpdate(
+        userId, 
+        { $set: { cart: [] } }, 
+        { new: true }  // ✅ Returns updated user
+      );
+      
+      console.log('Updated User After Clearing Cart:', updatedUser);
 
       // ✅ **Send Welcome Email**
       console.log(`📧 Sending Welcome Email to: ${userEmail}`)
