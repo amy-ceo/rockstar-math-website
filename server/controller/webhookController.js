@@ -16,8 +16,11 @@ exports.calendlyWebhook = async (req, res) => {
     const inviteeEmail = payload?.email || '❌ Missing';
     const eventName = payload?.name || payload?.event?.name || '❌ Missing';
     const eventUri = payload?.event?.uri || payload?.event?.invitee?.uri || payload?.scheduled_event?.uri || '❌ Missing';
-    const normalizedEventUri = eventUri !== '❌ Missing' ? normalizeUrl(eventUri) : null;
 
+    // ✅ Move normalizeUrl ABOVE its first usage
+    const normalizeUrl = (url) => url?.split('?')[0].trim().toLowerCase();
+
+    const normalizedEventUri = eventUri !== '❌ Missing' ? normalizeUrl(eventUri) : null;
 
     // ✅ Extract `startTime` and `endTime`
     const startTime =
@@ -56,18 +59,10 @@ exports.calendlyWebhook = async (req, res) => {
 
     console.log('👤 User Found:', user);
 
-    // // ✅ Generate Zoom Link for Session
-    // const zoomMeetingLink = await createZoomMeeting(eventName, startTime);
-    // if (!zoomMeetingLink) {
-    //     console.warn("⚠️ Failed to generate Zoom meeting. Proceeding without it.");
-    // }
-
     if (!normalizedEventUri) {
       console.error('❌ Missing valid Calendly Event URI');
       return res.status(400).json({ error: 'Invalid or missing Calendly Event URL' });
     }
-    // ✅ Normalize URLs for comparison
-    const normalizeUrl = (url) => url?.split('?')[0].trim().toLowerCase();
 
     // ✅ Find Matching Purchased Class
     let purchasedClass = user.purchasedClasses.find((cls) => {
@@ -79,14 +74,13 @@ exports.calendlyWebhook = async (req, res) => {
       console.warn(`⚠️ No valid purchased class found for user: ${inviteeEmail}`);
 
       if (user.purchasedClasses.length > 0) {
-        // ✅ Update the first available purchased class with the Calendly event URI
         user.purchasedClasses[0].bookingLink = normalizedEventUri;
         user.purchasedClasses[0].description = user.purchasedClasses[0].description || "Calendly Booking";
-        user.markModified('purchasedClasses'); // Ensure Mongoose detects the change
+        user.markModified('purchasedClasses'); 
         await user.save();
         console.log(`🔄 Updated booking link to: ${normalizedEventUri}`);
 
-        purchasedClass = user.purchasedClasses[0]; // Now proceed with the booking
+        purchasedClass = user.purchasedClasses[0]; 
       } else {
         return res.status(400).json({ error: "No valid purchased class for this booking." });
       }
@@ -100,9 +94,8 @@ exports.calendlyWebhook = async (req, res) => {
 
     // ✅ Deduct 1 Session
     purchasedClass.remainingSessions -= 1;
-    user.markModified('purchasedClasses'); // Ensure change is detected by Mongoose
+    user.markModified('purchasedClasses');
 
-    // ✅ If Remaining Sessions = 0, Mark as Expired
     if (purchasedClass.remainingSessions === 0) {
       purchasedClass.status = "Expired";
     }
@@ -117,11 +110,10 @@ exports.calendlyWebhook = async (req, res) => {
       return res.status(200).json({ message: 'Event already stored, skipping' });
     }
 
-    // ✅ Create New Booking Object (Following User's `bookedSessions` Schema)
+    // ✅ Create New Booking Object
     const newBooking = {
       eventName,
       calendlyEventUri: eventUri,
-      // zoomMeetingLink: zoomMeetingLink || null, // Save Zoom Link
       startTime,
       endTime,
       timezone,
@@ -146,6 +138,7 @@ exports.calendlyWebhook = async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
 
 exports.getCalendlyBookings = async (req, res) => {
   try {
