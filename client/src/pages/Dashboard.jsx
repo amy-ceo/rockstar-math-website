@@ -191,6 +191,60 @@ const Dashboard = () => {
     ]).finally(() => setLoading(false))
   }, [user]) // ✅ Depend only on `users`
 
+
+  const handleReschedule = async () => {
+    if (!selectedRescheduleEvent || !newDateTime) {
+      console.warn('❌ No event or new date selected!')
+      return
+    }
+
+    try {
+      console.log('📤 Sending request to reschedule:', {
+        userId: users._id,
+        eventUri: selectedRescheduleEvent,
+        newDateTime,
+      })
+
+      const response = await fetch(
+        'https://backend-production-cbe2.up.railway.app/api/reschedule-booking',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: users._id,
+            eventUri: selectedRescheduleEvent,
+            newDateTime,
+          }),
+        },
+      )
+
+      const data = await response.json()
+      console.log('📥 API Response:', data)
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Rescheduling failed.')
+      }
+
+      alert('Session Rescheduled Successfully ✅')
+
+      // ✅ Update UI
+      setCalendlyBookings((prev) =>
+        prev.map((booking) =>
+          booking.calendlyEventUri === selectedRescheduleEvent
+            ? { ...booking, startTime: newDateTime, rescheduled: true }
+            : booking,
+        ),
+      )
+
+      // ✅ Close popup
+      setShowReschedulePopup(false)
+      setSelectedRescheduleEvent(null)
+      setNewDateTime(null)
+    } catch (error) {
+      console.error('❌ Error rescheduling session:', error)
+    }
+  }
+
   const confirmCancel = (eventUri) => {
     setSelectedEventUri(eventUri)
     setShowCancelPopup(true)
