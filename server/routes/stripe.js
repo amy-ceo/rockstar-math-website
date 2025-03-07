@@ -608,6 +608,7 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
         }
       })
 
+
       // ✅ Ensure duplicates are removed (if any)
       appliedCoupons = appliedCoupons.filter(
         (coupon, index, self) => index === self.findIndex((c) => c.code === coupon.code),
@@ -637,17 +638,17 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
       const emailHtml = generateEmailHtml(user, zoomLinks, appliedCoupons, calendlyLinks)
       // ✅ Send confirmation email to both billingEmail and schedulingEmails
       try {
-        await sendEmail(
-          [user.billingEmail, ...user.schedulingEmails],
-          '📚 Your Rockstar Math Purchase Details',
-          '',
-          emailHtml,
-        )
-        console.log('✅ Purchase confirmation email sent successfully')
+        const emailRecipients = [user.billingEmail, ...user.schedulingEmails].filter(Boolean);
+        console.log('📧 Sending Confirmation Email to:', emailRecipients);
+        console.log('📧 Email Content:', emailHtml);
+      
+        await sendEmail(emailRecipients, '📚 Your Rockstar Math Purchase Details', '', emailHtml);
+        
+        console.log('✅ Purchase confirmation email sent successfully!');
       } catch (error) {
-        console.error('❌ Error sending purchase confirmation email:', error)
+        console.error('❌ Error sending purchase confirmation email:', error.message || error);
       }
-
+      
       console.log('✅ Confirmation email sent successfully to both billing and scheduling emails!')
       console.log('📧 Sending Purchase Email to:', user.billingEmail, user.schedulingEmails)
       console.log('📧 Email Content:', emailHtml)
