@@ -360,11 +360,13 @@ const CheckoutPage = () => {
 
       if (result.clearCart) {
         console.log('🛒 Clearing Cart after Successful Payment...')
-        clearCart() // ✅ Use clearCart function
+        localStorage.removeItem('cartItems') // ✅ Remove from localStorage
+        setCartItems([]) // ✅ Update State
+        window.dispatchEvent(new Event('storage')) // ✅ Trigger update in all tabs
+  
         toast.success('🎉 Payment Successful! Redirecting...')
-        // ✅ Fix: Ensure navigation is triggered after successful payment
         setTimeout(() => {
-          navigate('/dashboard') // ✅ Redirect to dashboard
+          window.location.href = '/dashboard'
         }, 1000)
       } else {
         console.warn('⚠️ Backend did not send `{ clearCart: true }` - Skipping cart clear.')

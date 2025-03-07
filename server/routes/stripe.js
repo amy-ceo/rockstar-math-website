@@ -330,12 +330,10 @@ router.post('/capture-stripe-payment', async (req, res) => {
       console.error('❌ Error calling addPurchasedClass API:', purchaseError);
     }
 
-    // ✅ Step 3: Send Clear Cart Signal to Frontend
     res.json({
       message: 'Payment captured & records updated successfully.',
-      clearCart: true, // 🔹 Explicitly tell frontend to clear the cart
+      clearCart: true, // 🔹 Ensure frontend clears the cart
     });
-
   } catch (error) {
     console.error('❌ Error Capturing Stripe Payment:', error);
     res.status(500).json({ error: 'Internal Server Error', details: error.message || error });

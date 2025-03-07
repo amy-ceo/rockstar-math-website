@@ -26,6 +26,7 @@ const Dashboard = () => {
   const [selectedRescheduleEvent, setSelectedRescheduleEvent] = useState(null)
   const [newDateTime, setNewDateTime] = useState(null)
   const [zoomBookings, setZoomBookings] = useState([])
+  const [popupKey, setPopupKey] = useState(0);
 
   // ✅ Allowed Time Slots (3-6 PM, 7-8 PM, 8-9 PM with breaks)
   const allowedTimes = [
@@ -289,8 +290,10 @@ const Dashboard = () => {
         // ✅ Fetch updated archived classes
         fetchArchivedClasses();
 
-        setShowCancelPopup(false);
         setSelectedEventUri(null);
+
+        setShowCancelPopup(false);
+        setPopupKey((prevKey) => prevKey + 1); // Force re-render
       } else {
         console.warn('⚠️ API returned an error:', data.message);
         
