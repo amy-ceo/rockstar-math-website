@@ -6,6 +6,7 @@ require('dotenv').config(); // Ensure environment variables are loaded
 const bodyParser = require('body-parser'); // Ensure body-parser is imported
 const Register = require('../models/registerModel'); // ✅ Using Register Model
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const StripePayment = require('../models/StripePayment'); // ✅ Import the new model
 
 // ✅ Fetch Active Coupons from Stripe
 async function getActiveCoupons() {
@@ -271,27 +272,21 @@ router.post('/capture-stripe-payment', async (req, res) => {
 
     console.log('✅ Stripe Payment Successful:', paymentIntentId);
 
-    // ✅ Step 1: Save Payment in Database
-    try {
-      console.log('🔹 Saving Payment Record to DB...');
-      const newPayment = new Payment({
-        orderId: `stripe_${Date.now()}`,
-        paymentIntentId,
-        userId: user._id,
-        billingEmail: user.billingEmail || 'No email',
-        amount: paymentIntent.amount / 100,
-        currency: paymentIntent.currency.toUpperCase(),
-        status: 'Completed',
-        paymentMethod: 'Stripe',
-        cartItems: user.cartItems || [],
-      });
+    // ✅ Save Stripe Payment in Separate Model
+    const newStripePayment = new StripePayment({
+      orderId: `stripe_${Date.now()}`,
+      paymentIntentId,
+      userId: user._id,
+      billingEmail: user.billingEmail || 'No email',
+      amount: paymentIntent.amount / 100,
+      currency: paymentIntent.currency.toUpperCase(),
+      status: 'Completed',
+      paymentMethod: 'Stripe',
+      cartItems: user.cartItems || [],
+    });
 
-      await newPayment.save();
-      console.log('✅ Payment Record Saved in Database!');
-    } catch (saveError) {
-      console.error('❌ Error Saving Payment:', saveError);
-      return res.status(500).json({ error: 'Database error while saving payment.' });
-    }
+    await newStripePayment.save();
+    console.log('✅ Stripe Payment Saved in Database!');
 
     // ✅ Step 2: Call addPurchasedClass API
     try {
