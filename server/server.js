@@ -39,12 +39,13 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 const allowedOrigins = [
   "http://localhost:8080",
-  "https://www.rockstarmath.com", // ✅ Ensure this matches your frontend
+  "https://www.rockstarmath.com",
 ];
 
 app.use(
   cors({
     origin: function (origin, callback) {
+      // ✅ Allow requests without an origin (e.g., from Zoom Webhook)
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
@@ -57,6 +58,7 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
 
 
 app.use('/uploads', express.static('uploads')); // Serve uploaded images
