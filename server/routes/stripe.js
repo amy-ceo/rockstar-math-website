@@ -652,11 +652,13 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
       console.log('🎟 Sending Email with Coupons:', appliedCoupons)
       const emailHtml = generateEmailHtml(user, zoomLinks, appliedCoupons, calendlyLinks)
       // ✅ Send confirmation email to both billingEmail and schedulingEmails
-      const emailRecipients = [user.billingEmail, ...user.schedulingEmails].filter(Boolean)
-      if (emailRecipients.length === 0) {
-        console.error('❌ No valid email found for confirmation email.')
-        return
-      }
+     
+      await sendEmail(
+        [user.billingEmail, '📚 Your Rockstar Math Purchase Details', ...user.schedulingEmails],
+        welcomeSubject,
+        '',
+        emailHtml,
+      )
 
       console.log('📧 Sending Confirmation Email to:', emailRecipients)
       console.log('📧 Email Content:', emailHtml)
