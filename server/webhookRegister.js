@@ -6,20 +6,20 @@ const registerCalendlyWebhook = async () => {
         const calendlyApiKey = "eyJraWQiOiIxY2UxZTEzNjE3ZGNmNzY2YjNjZWJjY2Y4ZGM1YmFmYThhNjVlNjg0MDIzZjdjMzJiZTgzNDliMjM4MDEzNWI0IiwidHlwIjoiUEFUIiwiYWxnIjoiRVMyNTYifQ.eyJpc3MiOiJodHRwczovL2F1dGguY2FsZW5kbHkuY29tIiwiaWF0IjoxNzQwNzczMDgxLCJqdGkiOiJiYjdiYzE0ZC05OWU4LTRhZmUtYjdkNy01MDZlNDAxYTMzNzkiLCJ1c2VyX3V1aWQiOiJCRkZEQ1ZMSk1TT0RLRDdXIn0.3DXMEQ1-8ksgLuFWFZ6y5oqDYxb_HbUcNacovXWkdinfZjM5hVPGs-4yjgTkENprR1WUhtI1ersucpDjieAmZg"; // Load API key from .env
         const webhookUrl = "https://backend-production-cbe2.up.railway.app/api/webhook/calendly"; // Your Webhook URL
 
-        // Get your organization ID from the /users/me API response
-        const organizationId = "https://api.calendly.com/organizations/AADABSJONSZO3TK2"; // Replace with actual org ID
-
         if (!calendlyApiKey) {
             throw new Error("⚠️ Missing Calendly API Key. Set it in .env!");
         }
 
+        const organizationId = "https://api.calendly.com/organizations/AADABSJONSZO3TK2"; // ✅ Use correct Org ID
+
+        // ✅ Register the Webhook with Correct Events
         const response = await axios.post(
             'https://api.calendly.com/webhook_subscriptions',
             {
                 url: webhookUrl, // Webhook URL to receive event data
-                events: ["scheduled_event.created"], // ✅ Correct Event Type
-                organization: organizationId, // ✅ Fix: Include the organization ID
-                scope: "organization" // ✅ Fix: Include the scope (must be 'organization')
+                events: ["invitee.created", "invitee.canceled"], // ✅ Fix: Correct Event Types
+                organization: organizationId, // ✅ Fix: Correct organization ID
+                scope: "organization" // ✅ Fix: Must be "organization"
             },
             {
                 headers: {
@@ -29,7 +29,7 @@ const registerCalendlyWebhook = async () => {
             }
         );
 
-        console.log('✅ Calendly Webhook Registered:', response.data);
+        console.log('✅ Calendly Webhook Registered Successfully:', response.data);
     } catch (error) {
         console.error('❌ Error Registering Calendly Webhook:', error.response ? error.response.data : error.message);
     }
