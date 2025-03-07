@@ -4,7 +4,7 @@ const crypto = require('crypto')
 
 const purchasedClassSchema = new mongoose.Schema({
   name: { type: String, required: true }, // Product Name
-  description: { type: String, }, // Product Description
+  description: { type: String }, // Product Description
   purchaseDate: { type: Date, default: Date.now }, // Date of Purchase
   sessionCount: { type: Number, required: true }, // ✅ Total Purchased
   remainingSessions: { type: Number, required: true }, // ✅ Sessions Left
@@ -28,13 +28,30 @@ const bookedSessionSchema = new mongoose.Schema({
     type: String,
     enum: ['Booked', 'Completed', 'Cancelled', 'Active', 'Pushed', 'Rescheduled'], // ✅ Added "Rescheduled"
     default: 'Booked',
-},
-note: { type: String, default: "" }, // ✅ New Field for Notes  
+  },
+  note: { type: String, default: '' }, // ✅ New Field for Notes
 
   createdAt: { type: Date, default: Date.now }, // ✅ When Booking Was Stored
   updatedAt: { type: Date, required: false }, // ✅ When Last Updated
 })
 
+// ✅ Zoom Booking Schema (NEW SEPARATE SCHEMA)
+const zoomBookingSchema = new mongoose.Schema({
+  eventName: { type: String, required: true },
+  firstName: { type: String, required: true },
+  lastName: { type: String, required: true },
+  zoomMeetingId: { type: String, required: true, unique: true },
+  zoomMeetingLink: { type: String, required: true },
+  startTime: { type: Date, required: true },
+  endTime: { type: Date },
+  timezone: { type: String, default: 'UTC' },
+  status: {
+    type: String,
+    enum: ['Booked', 'Completed', 'Cancelled'],
+    default: 'Booked',
+  },
+  createdAt: { type: Date, default: Date.now },
+})
 
 // ✅ Coupon Schema Inside Register Model
 const couponSchema = new mongoose.Schema({
@@ -90,6 +107,8 @@ const RegisterSchema = new mongoose.Schema(
     archivedClasses: [purchasedClassSchema], // ✅ Archived Classes
     // ✅ Store User Coupons
     coupons: [couponSchema],
+    // ✅ New Separate Zoom Bookings
+    zoomBookings: [zoomBookingSchema],
     // ✅ Purchased Classes & Services
     purchasedClasses: [purchasedClassSchema], // ✅ Includes both Zoom & Service purchases
     // ✅ New: Calendly Bookings

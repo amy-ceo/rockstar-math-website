@@ -126,19 +126,26 @@ const Dashboard = () => {
 
     const fetchZoomBookings = async () => {
       try {
+        if (!user || !user.email) {
+          console.warn("⚠️ No user email found.");
+          return;
+        }
+
         const response = await fetch(
-          `https://backend-production-cbe2.up.railway.app/api/user/${user._id}/zoom-bookings`,
-        )
-        const data = await response.json()
+          `https://backend-production-cbe2.up.railway.app/api/zoom/bookings?email=${user.email}`
+        );
 
-        if (!response.ok) throw new Error(data.message || 'Failed to fetch Zoom bookings.')
+        const data = await response.json();
 
-        setZoomBookings(data.zoomBookings || [])
+        if (!response.ok) throw new Error(data.error || "Failed to fetch Zoom bookings.");
+
+        setZoomBookings(data.zoomBookings || []);
       } catch (error) {
-        console.error('❌ Error fetching Zoom sessions:', error)
-        setZoomBookings([])
+        console.error("❌ Error fetching Zoom bookings:", error);
+        setZoomBookings([]);
       }
-    }
+    };
+
 
     // Fetch Coupons
     const fetchCoupons = async () => {
@@ -446,39 +453,40 @@ const Dashboard = () => {
               </div>
             </section>
           )}
-          {zoomBookings.length > 0 && (
+         {/* ✅ Zoom Sessions Section */}
+         {zoomBookings.length > 0 && (
             <section className="mt-6 p-6 bg-white shadow-lg rounded-lg">
-              <h3 className="text-2xl font-bold mb-4 text-gray-800">
-                🎥 Your Registered Zoom Sessions
-              </h3>
+              <h3 className="text-2xl font-bold mb-4 text-gray-800">🎥 Your Registered Zoom Sessions</h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                 {zoomBookings.map((session, index) => (
-                  <div
-                    key={index}
-                    className="p-5 bg-white rounded-xl shadow-lg border border-gray-200"
-                  >
-                    {/* Event Name */}
+                  <div key={index} className="p-5 bg-white rounded-xl shadow-lg border border-gray-200">
+                    {/* Session Title */}
                     <h4 className="text-xl font-semibold text-blue-700 mb-2">
-                      {session.eventName}
+                      {session.eventName || "Unnamed Session"}
                     </h4>
 
-                    {/* Start Time */}
+                    {/* Session Start Time */}
                     <p className="text-gray-600">
-                      <strong>📅 Start Time:</strong> {new Date(session.startTime).toLocaleString()}
+                      <strong>📅 Start Time:</strong>{" "}
+                      {session.startTime ? new Date(session.startTime).toLocaleString() : "TBA"}
                     </p>
 
-                    {/* View Link */}
-                    <div className="mt-3">
-                      <a
-                        href={session.zoomMeetingLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 font-medium hover:underline"
-                      >
-                        🔗 Join Zoom Session
-                      </a>
-                    </div>
+                    {/* Zoom Meeting Link */}
+                    {session.zoomMeetingLink ? (
+                      <div className="mt-3">
+                        <a
+                          href={session.zoomMeetingLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 font-medium hover:underline"
+                        >
+                          🔗 Join Zoom Session
+                        </a>
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 mt-2">⚠️ Meeting link not available</p>
+                    )}
                   </div>
                 ))}
               </div>

@@ -13,6 +13,7 @@ const subscribeRoute = require("./routes/subscribeRoute");
 const contactRoutes = require('./routes/contactRoutes');
 const stripeRoutes = require("./routes/stripe"); // Import the Stripe route
 const twilio = require("twilio");
+const zoomRoutes = require('./routes/zoomRoutes.js');
 const consultationRoutes = require("./routes/consultationRoutes");
 const waitlist = require("./routes/waitlist");
 const userRoutes = require("./routes/userRoutes")
@@ -164,7 +165,7 @@ app.use('/api/contact', contactRoutes);
 app.use("/api/stripe", stripeRoutes); // Set up route
 app.use("/api", registerRoutes);
 app.use("/api", userRoutes);
-
+app.use('/api/zoom', zoomRoutes);
 // ✅ **Use Webhook Route Properly**
 // app.use("/api/otp", otpRoutes);
 app.use("/api/webhook", webhookRoutes);
