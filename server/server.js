@@ -32,11 +32,13 @@ bcrypt.setRandomFallback((len) => global.crypto.randomBytes(len)); // ✅ Fixes 
 
 connectDB();
 const app = express();
+
 // ✅ JSON Middleware for Other Routes (Not Webhook)
 // ✅ **Place Webhook Route BEFORE express.json()**
-app.use("/api/stripe/webhook", bodyParser.raw({ type: "application/json" })); // 👈 Raw body only for Stripe
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use("/api/stripe/webhook", bodyParser.raw({ type: "application/json" }));
+app.use("/api/zoom/webhook", express.json()); // ✅ Zoom Webhook // 👈 Raw body only for Stripe
+app.use(express.json()); // ✅ Allows JSON parsing
+app.use(express.urlencoded({ extended: true })); // ✅ Support for URL-encoded bodies
 const allowedOrigins = [
   "http://localhost:8080",
   "https://www.rockstarmath.com",
