@@ -243,15 +243,11 @@ const Dashboard = () => {
         // ✅ Show error message only for real API errors
         if (data.message && data.message.includes('already canceled')) {
           toast.info('⚠️ This session was already canceled.');
-        } else {
-          toast.error(`⚠️ ${data.message || 'Failed to cancel session.'}`);
-        }
+        } 
       }
     } catch (error) {
       console.error('❌ Error canceling session:', error.message);
       
-      // ✅ Show an error only when there's a real network failure
-      toast.error('Failed to connect to the server. Try again.');
     }
 };
 
