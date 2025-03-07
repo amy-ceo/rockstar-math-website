@@ -466,19 +466,25 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
     console.log('✅ Payment Intent Succeeded Event Triggered')
     // ✅ Extract User & Cart Data
     const userId = paymentIntent.metadata?.userId
+    // ✅ Fix cartSummary to ensure it's always an array
     const cartSummary = paymentIntent.metadata?.cartSummary
-      ? paymentIntent.metadata.cartSummary.split(', ')
+      ? String(paymentIntent.metadata.cartSummary).split(', ')
       : []
+
     if (!Array.isArray(cartSummary) || cartSummary.length === 0) {
-      console.warn('⚠️ No items found in cartSummary. Skipping...')
-      return res.status(400).json({ error: 'Invalid cart data' })
+      console.warn('⚠️ cartSummary is missing or not an array, skipping...')
     }
     const userEmail = paymentIntent.metadata?.userEmail || 'No email provided'
     console.log('🔹 User ID:', userId)
     console.log('🛒 Purchased Items:', cartSummary)
-    if (!userId || cartSummary.length === 0) {
-      console.warn('⚠️ Missing user ID or cart summary. Skipping update.')
-      return res.status(400).json({ error: 'Invalid payment data' })
+
+    // ✅ Fix user.cartItems check
+    if (user && Array.isArray(user.cartItems)) {
+      user.cartItems.forEach((item) => {
+        console.log(`🛒 Processing Cart Item: ${item.name}`)
+      })
+    } else {
+      console.warn('⚠️ User or user.cartItems is missing.')
     }
     try {
       // ✅ Fetch user first to check for existing purchases
@@ -578,14 +584,20 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
       console.log('🎟 Matched Coupons for User:', userCoupons)
 
       console.log('🎟 Matched Coupons for User:', userCoupons)
+      // ✅ Initialize empty arrays for safety
       let zoomLinks = []
-      cartSummary.forEach((course) => {
-        const match = zoomCourseMapping.find(
-          (zoom) => zoom.name.toLowerCase() === course.toLowerCase(),
-        )
-        if (match) zoomLinks.push(match)
-      })
+      let appliedCoupons = []
+      let calendlyLinks = []
 
+      // ✅ Ensure we are looping over valid arrays
+      if (Array.isArray(cartSummary)) {
+        cartSummary.forEach((course) => {
+          const match = zoomCourseMapping.find(
+            (zoom) => zoom.name.toLowerCase() === course.toLowerCase(),
+          )
+          if (match) zoomLinks.push(match)
+        })
+      }
       console.log('🎥 Zoom Links:', zoomLinks)
 
       const hasCommonCore = cartSummary.some(
@@ -594,21 +606,28 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
       if (hasCommonCore) {
         zoomLinks.push(COMMONCORE_ZOOM_LINK)
       }
-      let calendlyLinks = [];
-      cartSummary.forEach((item) => {
-        const formattedItemName = item.trim().toLowerCase();
-        if (calendlyMapping[formattedItemName]) {
-          calendlyLinks.push({
-            name: item,
-            link: calendlyMapping[formattedItemName],
-          });
-        }
-      });
-      
-      console.log('📅 Calendly Booking Links:', calendlyLinks);
-      
+      if (Array.isArray(cartSummary)) {
+        cartSummary.forEach((item) => {
+          const formattedItemName = item.trim().toLowerCase()
+          if (calendlyMapping[formattedItemName]) {
+            calendlyLinks.push({
+              name: item,
+              link: calendlyMapping[formattedItemName],
+            })
+          }
+        })
+      }
+      if (Array.isArray(calendlyLinks) && calendlyLinks.length > 0) {
+        calendlyLinks.forEach((session) => {
+          console.log(`📅 Calendly Link: ${session.name} -> ${session.link}`)
+        })
+      } else {
+        console.warn('⚠️ No Calendly links found, skipping...')
+      }
+
+      console.log('📅 Calendly Booking Links:', calendlyLinks)
+
       // ✅ Apply Discount Coupons Based on Course Name (Ensure all relevant coupons are applied)
-      let appliedCoupons = []
 
       user.cartItems.forEach((item) => {
         let matchedCoupons = activeCoupons.filter((coupon) => {
@@ -638,10 +657,17 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
         }
       })
 
-      // ✅ Ensure duplicates are removed (if any)
+      // ✅ Ensure appliedCoupons does not contain empty codes
       appliedCoupons = appliedCoupons.filter(
-        (coupon, index, self) => index === self.findIndex((c) => c.code === coupon.code),
+        (coupon) => typeof coupon.code === 'string' && coupon.code.trim() !== '',
       )
+      if (Array.isArray(appliedCoupons) && appliedCoupons.length > 0) {
+        appliedCoupons.forEach((coupon) => {
+          console.log(`🎟 Applying Coupon: ${coupon.code} - ${coupon.percent_off}% off`)
+        })
+      } else {
+        console.warn('⚠️ No Coupons Found to Apply.')
+      }
 
       console.log('🎟 Final Applied Coupons:', appliedCoupons)
       if (appliedCoupons.length > 0) {
@@ -664,24 +690,36 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
       console.log('📅 Available Calendly Links:', Object.keys(calendlyMapping))
       console.log('📧 Sending Email with Zoom Links & Calendly Links:', zoomLinks, calendlyLinks)
       console.log('🎟 Sending Email with Coupons:', appliedCoupons)
-      if (zoomLinks.length > 0 || appliedCoupons.length > 0 || calendlyLinks.length > 0) {
-        console.log('📧 Preparing Purchase Confirmation Email...');
-        
-        const emailHtml = generateEmailHtml(user, zoomLinks, appliedCoupons, calendlyLinks);
-        
-        console.log('📧 Email Content:', emailHtml);
-      
+      // ✅ Send Confirmation Email only if needed
+      if (
+        (Array.isArray(zoomLinks) && zoomLinks.length > 0) ||
+        (Array.isArray(appliedCoupons) && appliedCoupons.length > 0) ||
+        (Array.isArray(calendlyLinks) && calendlyLinks.length > 0)
+      ) {
+        console.log('📧 Preparing Purchase Confirmation Email...')
+        const emailHtml = generateEmailHtml(user, zoomLinks, appliedCoupons, calendlyLinks)
+        console.log('📧 Email Content:', emailHtml)
+
         try {
-          await sendEmail(user.billingEmail, '📚 Your Rockstar Math Purchase Details', '', emailHtml);
-          await sendEmail(user.schedulingEmails, '📚 Your Rockstar Math Purchase Details', '', emailHtml);
-          console.log('✅ Purchase confirmation email sent successfully!');
+          await sendEmail(
+            user.billingEmail,
+            '📚 Your Rockstar Math Purchase Details',
+            '',
+            emailHtml,
+          )
+          await sendEmail(
+            user.schedulingEmails,
+            '📚 Your Rockstar Math Purchase Details',
+            '',
+            emailHtml,
+          )
+          console.log('✅ Purchase confirmation email sent successfully!')
         } catch (error) {
-          console.error('❌ Error sending purchase confirmation email:', error.message || error);
+          console.error('❌ Error sending purchase confirmation email:', error.message || error)
         }
       } else {
-        console.warn('⚠️ Skipping email: No zoom links, coupons, or calendly bookings found.');
+        console.warn('⚠️ Skipping email: No zoom links, coupons, or calendly bookings found.')
       }
-      
 
       return res.status(200).json({ message: 'Purchase updated & all emails sent!' })
     } catch (error) {
@@ -695,43 +733,43 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
 // ✅ Function to Generate Email HTML
 function generateEmailHtml(user, zoomLinks, userCoupons, calendlyLinks) {
   // Ensure user ID exists for Calendly proxy links
-  const userId = user?._id || 'unknown-user';
-  const proxyBaseUrl = 'https://backend-production-cbe2.up.railway.app/api/proxy-calendly';
+  const userId = user?._id || 'unknown-user'
+  const proxyBaseUrl = 'https://backend-production-cbe2.up.railway.app/api/proxy-calendly'
 
   let detailsHtml = `
     <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
       <h2 style="color: #2C3E50; text-align: center;">🎉 Hello, ${user.username}!</h2>
       <p style="text-align: center;">We're thrilled to have you on board! 🚀 Below are your registration details.</p>
-  `;
+  `
 
   // ✅ **Zoom Course Links Section**
   if (zoomLinks && zoomLinks.length > 0) {
     detailsHtml += `
       <h3 style="color: #007bff;">🔗 Your Course Zoom Links:</h3>
       <ul style="list-style-type: none; padding: 0;">
-    `;
+    `
     zoomLinks.forEach((course) => {
-      detailsHtml += `<li>📚 <b>${course.name}</b> – <a href="${course.link}" target="_blank">Register Here</a></li>`;
-    });
-    detailsHtml += `</ul>`;
+      detailsHtml += `<li>📚 <b>${course.name}</b> – <a href="${course.link}" target="_blank">Register Here</a></li>`
+    })
+    detailsHtml += `</ul>`
   }
 
   // ✅ **Discount Coupons Section**
   if (userCoupons && userCoupons.length > 0) {
-    detailsHtml += `<h3 style="color: #d9534f;">🎟 Your Exclusive Discount Coupons:</h3><ul>`;
-    
+    detailsHtml += `<h3 style="color: #d9534f;">🎟 Your Exclusive Discount Coupons:</h3><ul>`
+
     userCoupons.forEach((coupon) => {
-      const expiryText = coupon.expires ? ` (Expires: ${coupon.expires})` : ' (No Expiry)';
-      
+      const expiryText = coupon.expires ? ` (Expires: ${coupon.expires})` : ' (No Expiry)'
+
       detailsHtml += `
         <li>
           <b>Coupon Code:</b> ${coupon.code} - <b>${coupon.percent_off}% off</b>${expiryText}
           <br>✅ Apply to your next purchase <a href="https://www.rockstarmath.com/services" target="_blank">here</a>.
         </li>
-      `;
-    });
+      `
+    })
 
-    detailsHtml += `</ul>`;
+    detailsHtml += `</ul>`
   }
 
   // ✅ **Calendly Booking Links Section**
@@ -740,22 +778,24 @@ function generateEmailHtml(user, zoomLinks, userCoupons, calendlyLinks) {
       <h3 style="color: #007bff;">📅 Your Scheduled Calendly Sessions:</h3>
       <p>Click the links below to book your sessions:</p>
       <ul>
-    `;
+    `
 
-    let totalSessions = 0; // Track total session count for display
+    let totalSessions = 0 // Track total session count for display
     calendlyLinks.forEach((session) => {
-      const sessionCount = sessionMapping[session.name.trim()] || 1;
-      totalSessions += sessionCount;
+      const sessionCount = sessionMapping[session.name.trim()] || 1
+      totalSessions += sessionCount
 
-      const proxyLink = `${proxyBaseUrl}?userId=${userId}&session=${encodeURIComponent(session.name)}`;
+      const proxyLink = `${proxyBaseUrl}?userId=${userId}&session=${encodeURIComponent(
+        session.name,
+      )}`
 
-      detailsHtml += `<li>📚 <b>${session.name}</b> – <a href="${proxyLink}" target="_blank"><b>Book Now</b></a> (${sessionCount} sessions)</li>`;
-    });
+      detailsHtml += `<li>📚 <b>${session.name}</b> – <a href="${proxyLink}" target="_blank"><b>Book Now</b></a> (${sessionCount} sessions)</li>`
+    })
 
     detailsHtml += `
       </ul>
       <p>📌 Please click the "BOOK NOW" link <b>${totalSessions}</b> times to book all of your sessions.</p>
-    `;
+    `
   }
 
   // ✅ **Final Information Section**
@@ -769,10 +809,9 @@ function generateEmailHtml(user, zoomLinks, userCoupons, calendlyLinks) {
     </ul>
     <p>If you have any questions, feel free to contact us at <b>rockstarmathtutoring@gmail.com</b> or call <b>(510) 410-4963</b>.</p>
     <p style="text-align: center;">🚀 Happy Learning! - <b>Rockstar Math Tutoring</b></p>
-  </div>`;
+  </div>`
 
-  return detailsHtml;
+  return detailsHtml
 }
-
 
 module.exports = router
