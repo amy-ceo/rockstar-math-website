@@ -50,7 +50,9 @@ const CheckoutPage = () => {
   }, [])
 
   useEffect(() => {
-    const storedCart = JSON.parse(localStorage.getItem('cartItems')) || []
+    console.log('🔄 Checking localStorage cart...');
+    const storedCart = JSON.parse(localStorage.getItem('cartItems')) || [];
+    setCartItems(storedCart);
     if (!storedCart || storedCart.length === 0) {
       navigate('/cart')
     } else {
@@ -325,11 +327,11 @@ const CheckoutPage = () => {
 
   const clearCartAfterPayment = () => {
     console.log("🛒 Clearing Cart from LocalStorage...");
-    localStorage.removeItem('cartItems'); // ✅ Remove Cart
-    setCartItems([]);  // ✅ Update State
-    window.dispatchEvent(new Event('storage')); // ✅ Sync across tabs
+    localStorage.setItem('cartItems', JSON.stringify([])); // 🛑 Ensure it's empty
+    setCartItems([]);
+    window.dispatchEvent(new Event('storage'));
   };
-
+  
   const handlePaymentSuccess = async () => {
     try {
       const user = JSON.parse(localStorage.getItem('user'))

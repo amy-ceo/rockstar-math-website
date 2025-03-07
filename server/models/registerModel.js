@@ -81,6 +81,7 @@ const RegisterSchema = new mongoose.Schema(
     goals: { type: String, required: true },
     didUserApproveSMS: { type: Boolean, default: false },
     didUserApproveWebcam: { type: Boolean, default: false },
+    cart: { type: Array, default: [] }, // 🛑 Ensure this is defined!
 
     // ✅ Password Reset Fields
     resetPasswordToken: { type: String },

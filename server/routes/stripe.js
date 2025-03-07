@@ -461,10 +461,9 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
       const updatedUser = await Register.findByIdAndUpdate(
         userId, 
         { $set: { cart: [] } }, 
-        { new: true }  // ✅ Returns updated user
+        { new: true }
       );
-      
-      console.log('Updated User After Clearing Cart:', updatedUser);
+      console.log('🔍 Cart After Clearing:', updatedUser.cart)
 
       // ✅ **Send Welcome Email**
       console.log(`📧 Sending Welcome Email to: ${userEmail}`)
