@@ -64,6 +64,17 @@ exports.calendlyWebhook = async (req, res) => {
       return res.status(400).json({ error: 'Invalid or missing Calendly Event URL' });
     }
 
+    // ✅ Check if Event Already Exists in User's bookedSessions (Avoid Duplicates)
+    const eventAlreadyExists = user.bookedSessions.some(
+      (session) => session.calendlyEventUri === eventUri
+    );
+
+    // ✅ If event already exists, do NOT deduct session again
+    if (eventAlreadyExists) {
+      console.log(`⚠️ Duplicate Event Detected: ${eventName}. Skipping Booking.`);
+      return res.status(200).json({ message: 'Event already stored, skipping' });
+    }
+
     // ✅ Find Matching Purchased Class
     let purchasedClass = user.purchasedClasses.find((cls) => {
       return normalizeUrl(cls.bookingLink) === normalizedEventUri;
@@ -92,22 +103,12 @@ exports.calendlyWebhook = async (req, res) => {
       return res.status(403).json({ error: "You have no remaining sessions left." });
     }
 
-    // ✅ Deduct 1 Session
+    // ✅ Deduct 1 Session (Only If Not Already Stored)
     purchasedClass.remainingSessions -= 1;
     user.markModified('purchasedClasses');
 
     if (purchasedClass.remainingSessions === 0) {
       purchasedClass.status = "Expired";
-    }
-
-    // ✅ Check if Event Already Exists in User's bookedSessions (Avoid Duplicates)
-    const eventAlreadyExists = user.bookedSessions.some(
-      (session) => session.calendlyEventUri === eventUri
-    );
-
-    if (eventAlreadyExists) {
-      console.log(`⚠️ Event Already Exists in User Bookings: ${eventName}`);
-      return res.status(200).json({ message: 'Event already stored, skipping' });
     }
 
     // ✅ Create New Booking Object
