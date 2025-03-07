@@ -200,7 +200,8 @@ const Dashboard = () => {
   }
 
   const cancelBooking = async (eventUri) => {
-    if (!eventUri) {
+    // ✅ Ensure eventUri is a valid string
+    if (!eventUri || typeof eventUri !== 'string') {
       toast.error('Invalid Calendly Event URI!');
       console.error('❌ Invalid calendlyEventUri:', eventUri);
       return;
@@ -219,7 +220,7 @@ const Dashboard = () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             userId: users._id,
-            calendlyEventUri: eventUri, // ✅ Now using calendlyEventUri
+            calendlyEventUri: eventUri, // ✅ Now correctly sending the URI
           }),
         }
       );
@@ -249,6 +250,7 @@ const Dashboard = () => {
       toast.error('Failed to cancel session. Try again.');
     }
   };
+  
   
 
   const handleReschedule = async () => {
@@ -547,7 +549,7 @@ const Dashboard = () => {
           <div className="bg-white p-6 rounded shadow-lg text-center">
             <h3 className="text-lg font-bold">Are you sure you want to cancel this session?</h3>
             <div className="mt-4 flex justify-center space-x-4">
-              <button className="bg-red-500 text-white px-4 py-2 rounded" onClick={cancelBooking}>
+              <button className="bg-red-500 text-white px-4 py-2 rounded" onClick={() => cancelBooking(calendlyEventUri)}>
                 Yes, Cancel
               </button>
               <button
