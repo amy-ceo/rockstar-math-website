@@ -222,25 +222,28 @@ const CheckoutPage = () => {
         return;
     }
 
-    // ✅ Strictly apply "fs4ngtti" ONLY to "60 Minute Tutoring Session"
+    // ✅ Apply "fs4ngtti" ONLY to "60 Minute Tutoring Session"
     if (coupon.code.toLowerCase() === 'fs4ngtti') {
-        const eligibleItem = cartItems.find((item) => item.name.trim().toLowerCase() === '60 minute tutoring session');
+        let eligibleItem = cartItems.find((item) => item.name.trim().toLowerCase() === '60 minute tutoring session');
 
-        if (!eligibleItem || cartItems.length !== 1) {
-            toast.error('❌ This coupon is only valid when purchasing "60 Minute Tutoring Session" alone.');
+        if (!eligibleItem) {
+            toast.error('❌ This coupon is only valid for "60 Minute Tutoring Session".');
             return;
         }
 
-        // ✅ Apply 100% discount only to "60 Minute Tutoring Session"
+        // ✅ Apply discount ONLY to "60 Minute Tutoring Session" without affecting other products
         setDiscount(eligibleItem.price);
-        setTotal(0);
-        toast.success('🎉 100% Off Coupon Applied to "60 Minute Tutoring Session"!');
 
-        return; // ✅ Exit function to prevent other discounts from applying
+        // ✅ Subtract discount from the total (excluding other products)
+        const newTotal = subtotal - eligibleItem.price;
+        setTotal(newTotal > 0 ? newTotal : 0);
+
+        toast.success('🎉 100% Off Coupon Applied to "60 Minute Tutoring Session"!');
+        return; // ✅ Stop here, preventing any other discount logic
     }
 
-    // ✅ For all other coupons (exclude specific products)
-    const excludedProducts = ['Learn', 'Achieve', 'Excel', 'Common Core- Parents', '60 Minute Tutoring Session']; // ❌ Exclude "60 Minute Tutoring Session" for other coupons
+    // ✅ For all other coupons, exclude certain products
+    const excludedProducts = ['Learn', 'Achieve', 'Excel', 'Common Core- Parents'];
     const eligibleItems = cartItems.filter((item) => !excludedProducts.includes(item.name.trim()));
 
     if (eligibleItems.length === 0) {
@@ -248,9 +251,10 @@ const CheckoutPage = () => {
         return;
     }
 
-    // ✅ Apply percentage discount on eligible items only
+    // ✅ Apply percentage discount on eligible items only (excluding "60 Minute Tutoring Session")
     const eligibleSubtotal = eligibleItems.reduce((total, item) => total + Number(item.price || 0), 0);
     const discountAmount = (eligibleSubtotal * coupon.percent_off) / 100;
+    
     setDiscount(discountAmount);
     setTotal(subtotal - discountAmount);
 
