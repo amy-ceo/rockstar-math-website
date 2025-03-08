@@ -213,7 +213,7 @@ const CheckoutPage = () => {
 
   const applyCoupon = () => {
     console.log('🔍 Entered Coupon Code:', couponCode);
-    console.log('✅ Available Coupons:', validCoupons);
+    console.log('✅ Available Coupons from Backend:', validCoupons);
 
     const coupon = validCoupons.find((c) => c.code.toLowerCase() === couponCode.toLowerCase());
 
@@ -224,19 +224,27 @@ const CheckoutPage = () => {
 
     // ✅ Apply "fs4ngtti" ONLY to "60 Minute Tutoring Session"
     if (coupon.code.toLowerCase() === 'fs4ngtti') {
-        let eligibleItem = cartItems.find((item) => item.name.trim().toLowerCase() === '60 minute tutoring session');
+        // ✅ Debug: Print cart items to check if product exists
+        console.log('🛒 Cart Items:', cartItems);
+
+        // ✅ Fix: Normalize text for case-sensitive comparison
+        let eligibleItem = cartItems.find((item) => 
+            item.name.trim().toLowerCase() === '60 minute tutoring session'
+        );
 
         if (!eligibleItem) {
             toast.error('❌ This coupon is only valid for "60 Minute Tutoring Session".');
             return;
         }
 
-        // ✅ Apply discount ONLY to "60 Minute Tutoring Session" without affecting other products
+        // ✅ Apply discount ONLY to "60 Minute Tutoring Session"
         setDiscount(eligibleItem.price);
+        console.log(`💰 Discount Applied: $${eligibleItem.price}`);
 
         // ✅ Subtract discount from the total (excluding other products)
         const newTotal = subtotal - eligibleItem.price;
         setTotal(newTotal > 0 ? newTotal : 0);
+        console.log(`🛒 New Total After Discount: $${newTotal}`);
 
         toast.success('🎉 100% Off Coupon Applied to "60 Minute Tutoring Session"!');
         return; // ✅ Stop here, preventing any other discount logic
@@ -254,7 +262,7 @@ const CheckoutPage = () => {
     // ✅ Apply percentage discount on eligible items only (excluding "60 Minute Tutoring Session")
     const eligibleSubtotal = eligibleItems.reduce((total, item) => total + Number(item.price || 0), 0);
     const discountAmount = (eligibleSubtotal * coupon.percent_off) / 100;
-    
+
     setDiscount(discountAmount);
     setTotal(subtotal - discountAmount);
 
