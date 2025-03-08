@@ -222,28 +222,24 @@ const CheckoutPage = () => {
         return;
     }
 
-    // ❌ Exclude these products from discount
-    const excludedProducts = ['Learn', 'Achieve', 'Excel'];
-
-    // ✅ Special validation for the 100% off coupon (fs4ngtti)
+    // ✅ Ensure only "60 Minute Tutoring Session" gets 100% off
     if (coupon.code.toLowerCase() === 'fs4ngtti') {
-        const specialProduct = cartItems.find(
-            (item) => item.name.trim() === '60 Minute Tutoring Session'
-        );
+        const eligibleItem = cartItems.find((item) => item.name.trim() === '60 Minute Tutoring Session');
 
-        if (!specialProduct) {
-            toast.error('❌ This coupon is only valid for "60 Minute Tutoring Session".');
+        if (!eligibleItem || cartItems.length > 1) {
+            toast.error('❌ This coupon is only valid when purchasing "60 Minute Tutoring Session" alone.');
             return;
         }
 
-        // ✅ Apply discount only to this product
-        setDiscount(specialProduct.price);
-        setTotal(subtotal - specialProduct.price);
+        // ✅ Apply 100% discount
+        setDiscount(eligibleItem.price);
+        setTotal(0);
         toast.success('🎉 100% Off Coupon Applied to "60 Minute Tutoring Session"!');
         return;
     }
 
-    // ✅ For other coupons, filter out the excluded products
+    // ✅ For all other coupons (exclude certain products)
+    const excludedProducts = ['Learn', 'Achieve', 'Excel', 'Common Core- Parents'];
     const eligibleItems = cartItems.filter((item) => !excludedProducts.includes(item.name.trim()));
 
     if (eligibleItems.length === 0) {
@@ -251,16 +247,10 @@ const CheckoutPage = () => {
         return;
     }
 
-    // ✅ Calculate discount ONLY on eligible items
-    const eligibleSubtotal = eligibleItems.reduce(
-        (total, item) => total + Number(item.price || 0),
-        0
-    );
-
+    // ✅ Calculate discount on eligible items only
+    const eligibleSubtotal = eligibleItems.reduce((total, item) => total + Number(item.price || 0), 0);
     const discountAmount = (eligibleSubtotal * coupon.percent_off) / 100;
     setDiscount(discountAmount);
-
-    // ✅ Update total (exclude discount on Learn/Achieve/Excel)
     setTotal(subtotal - discountAmount);
 
     toast.success(`🎉 Coupon Applied! ${coupon.percent_off}% Off on eligible products.`);
