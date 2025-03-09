@@ -37,33 +37,40 @@ const app = express();
 // ✅ **Place Webhook Route BEFORE express.json()**
 app.use("/api/stripe/webhook", bodyParser.raw({ type: "application/json" }));
 app.use("/api/zoom/webhook", express.json()); // ✅ Zoom Webhook // 👈 Raw body only for Stripe
-app.use(express.json()); // ✅ Allows JSON parsing
-app.use(express.urlencoded({ extended: true })); // ✅ Support for URL-encoded bodies
+
 const allowedOrigins = [
   "http://localhost:8080",
   "https://www.rockstarmath.com",
 ];
 
-// app.use(
-//   cors({
-//     origin: function (origin, callback) {
-//       // ✅ Allow requests without an origin (e.g., from Zoom Webhook)
-//       if (!origin || allowedOrigins.includes(origin)) {
-//         callback(null, true);
-//       } else {
-//         console.error(`❌ CORS Blocked: ${origin}`);
-//         callback(new Error("Not allowed by CORS"));
-//       }
-//     },
-//     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-//     credentials: true,
-//     allowedHeaders: ["Content-Type", "Authorization"],
-//   })
-// );
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // ✅ Allow requests without an origin (e.g., from Zoom Webhook)
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.error(`❌ CORS Blocked: ${origin}`);
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
-
+// ✅ JSON & URL-Encoded Middleware (General)
+app.use(express.json()); 
+app.use(express.urlencoded({ extended: true })); 
 
 app.use('/uploads', express.static('uploads')); // Serve uploaded images
+
+
+app.use((req, res, next) => {
+  console.log(`📢 Incoming Request: ${req.method} ${req.url}`);
+  next();
+});
 
 // // ✅ Remove Manual Header Setting (Fixes conflict)
 // app.use((req, res, next) => {
