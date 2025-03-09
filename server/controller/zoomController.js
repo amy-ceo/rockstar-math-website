@@ -2,58 +2,56 @@
 
   exports.zoomWebhook = async (req, res) => {
     try {
-      console.log("📢 FULL Zoom Webhook Payload:", JSON.stringify(req.body, null, 2));
+        console.log("📢 FULL Zoom Webhook Payload:", JSON.stringify(req.body, null, 2));
 
-      // ✅ 1. Handle Zoom URL Validation Request (VERY IMPORTANT)
-      if (req.body.event === "endpoint.url_validation" && req.body.payload?.plainToken) {
-        const response = { plainToken: req.body.payload.plainToken };
-        
-        console.log("✅ Sending Immediate Validation Response:", response);
-    
-        // 🚀 Test karo ke ye line execute ho rahi hai ya nahi
-        return res.status(200).json(response);
-    }
-    
-    console.log("❌ Validation block execute nahi hua!");
-      // ✅ 2. If it's another event, handle normally
-      console.log("🔹 Received a Non-Validation Webhook Event:", req.body.event);
-      res.status(200).json({ message: "Webhook received successfully" });
-      // ✅ 3. Validate Incoming Zoom Webhook Payload
-      if (!req.body.payload || !req.body.payload.object) {
-        console.error("❌ Invalid Webhook Payload:", req.body);
-        return res.status(400).json({ error: "Invalid Webhook Payload - Missing required fields" });
-      }
+        // ✅ 1. Handle Zoom URL Validation Request (VERY IMPORTANT)
+        if (req.body.event === "endpoint.url_validation" && req.body.payload?.plainToken) {
+            const response = { plainToken: req.body.payload.plainToken };
+
+            console.log("✅ Sending Immediate Validation Response:", response);
+
+            // 🚀 Ensure immediate response with correct headers
+            res.setHeader("Content-Type", "application/json");
+            return res.status(200).json(response);
+        }
+
+        console.log("❌ Validation block not executed! Checking for other webhook events...");
+
+        // ✅ 2. Ensure Incoming Zoom Webhook Payload is Valid
+        if (!req.body.payload || !req.body.payload.object) {
+            console.error("❌ Invalid Webhook Payload:", req.body);
+            return res.status(400).json({ error: "Invalid Webhook Payload - Missing required fields" });
+        }
 
         const payload = req.body.payload.object;
         const registrant = payload.registrant || {};
-        const inviteeEmail = registrant.email || "❌ Missing";
-        const meetingTopic = payload.topic || "❌ Missing";
-        const meetingId = payload.id || "❌ Missing";
-        const joinUrl = registrant.join_url || "❌ Missing";
+        const inviteeEmail = registrant.email || null;
+        const meetingTopic = payload.topic || "Unknown Topic";
+        const meetingId = payload.id || "Unknown ID";
+        const joinUrl = registrant.join_url || "No Join URL Provided";
 
         const startTime = payload.start_time ? new Date(payload.start_time) : null;
-        if (inviteeEmail === "❌ Missing" || !startTime) {
+
+        if (!inviteeEmail || !startTime) {
             console.error("❌ Missing required data:", { inviteeEmail, startTime });
             return res.status(400).json({ error: "Missing required fields" });
         }
 
-        // ✅ Find user in MongoDB
-        const user = await Register.findOne({ billingEmail: inviteeEmail }).exec();
+        // ✅ 3. Check if User Exists in MongoDB
+        const user = await Register.findOne({ billingEmail: new RegExp(`^${inviteeEmail}$`, "i") }).exec();
         if (!user) {
             console.error("❌ No user found with email:", inviteeEmail);
             return res.status(404).json({ error: "User not found" });
         }
 
-        // ✅ Check if Zoom Event Already Exists
-        const eventAlreadyExists = user.zoomBookings.some(
-            (booking) => booking.zoomMeetingId === meetingId
-        );
+        // ✅ 4. Check for Duplicate Zoom Event
+        const eventAlreadyExists = user.zoomBookings.some(booking => booking.zoomMeetingId === meetingId);
         if (eventAlreadyExists) {
             console.log(`⚠️ Duplicate Zoom Event Detected: ${meetingTopic}. Skipping Booking.`);
             return res.status(200).json({ message: "Event already stored, skipping" });
         }
 
-        // ✅ Store Zoom Booking Separately (No Session Deduction)
+        // ✅ 5. Store Zoom Booking in User Document
         const newZoomBooking = {
             eventName: meetingTopic,
             firstName: registrant.first_name || "N/A",
@@ -61,7 +59,7 @@
             zoomMeetingId: meetingId,
             zoomMeetingLink: joinUrl,
             startTime,
-            endTime: new Date(startTime.getTime() + (payload.duration || 30) * 60000),
+            endTime: new Date(startTime.getTime() + ((payload.duration || 30) * 60000)),
             timezone: "UTC",
             status: "Booked",
         };
@@ -70,13 +68,14 @@
         await user.save();
 
         console.log(`✅ Successfully Stored Zoom Booking for ${inviteeEmail}`);
-        res.status(200).json({ message: "Zoom Booking stored successfully", updatedUser: user });
+        return res.status(200).json({ message: "Zoom Booking stored successfully", updatedUser: user });
 
     } catch (error) {
         console.error("❌ Error handling Zoom webhook:", error);
-        res.status(500).json({ error: "Internal Server Error" });
+        return res.status(500).json({ error: "Internal Server Error" });
     }
-  };
+};
+
 
     
 
