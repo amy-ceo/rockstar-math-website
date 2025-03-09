@@ -132,7 +132,7 @@ const Dashboard = () => {
         }
 
         const response = await fetch(
-          `https://backend-production-cbe2.up.railway.app/api/zoom/bookings?email=${user.email}`
+          `https://backend-production-cbe2.up.railway.app/api/zoom/bookings?email=${user.billingEmail}`
         );
 
         const data = await response.json();
