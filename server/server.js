@@ -46,12 +46,12 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: function (origin, callback) {
-      // ✅ Allow requests without an origin (e.g., from Zoom Webhook)
+      // ✅ Always allow requests WITHOUT an origin (Zoom Webhooks)
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
         console.error(`❌ CORS Blocked: ${origin}`);
-        callback(new Error("Not allowed by CORS"));
+        callback(null, false); // ✅ Instead of throwing an error, just deny access
       }
     },
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -60,6 +60,7 @@ app.use(
   })
 );
 
+
 // ✅ JSON & URL-Encoded Middleware (General)
 app.use(express.json()); 
 app.use(express.urlencoded({ extended: true })); 
@@ -67,10 +68,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static('uploads')); // Serve uploaded images
 
 
-app.use((req, res, next) => {
-  console.log(`📢 Incoming Request: ${req.method} ${req.url}`);
-  next();
-});
+
 
 // // ✅ Remove Manual Header Setting (Fixes conflict)
 // app.use((req, res, next) => {
