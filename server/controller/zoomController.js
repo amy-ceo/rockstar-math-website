@@ -9,11 +9,12 @@
         const response = { plainToken: req.body.payload.plainToken };
         
         console.log("✅ Sending Immediate Validation Response:", response);
-  
-        // 🚀 Send the response IMMEDIATELY
+    
+        // 🚀 Test karo ke ye line execute ho rahi hai ya nahi
         return res.status(200).json(response);
-      }
-  
+    }
+    
+    console.log("❌ Validation block execute nahi hua!");
       // ✅ 2. If it's another event, handle normally
       console.log("🔹 Received a Non-Validation Webhook Event:", req.body.event);
       res.status(200).json({ message: "Webhook received successfully" });

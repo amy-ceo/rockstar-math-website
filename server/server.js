@@ -36,29 +36,37 @@ const app = express();
 // ✅ JSON Middleware for Other Routes (Not Webhook)
 // ✅ **Place Webhook Route BEFORE express.json()**
 app.use("/api/stripe/webhook", bodyParser.raw({ type: "application/json" }));
-app.use("/api/zoom/webhook", express.json()); // ✅ Zoom Webhook // 👈 Raw body only for Stripe
 
 const allowedOrigins = [
   "http://localhost:8080",
   "https://www.rockstarmath.com",
 ];
 
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      // ✅ Always allow requests WITHOUT an origin (Zoom Webhooks)
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        console.error(`❌ CORS Blocked: ${origin}`);
-        callback(null, false); // ✅ Instead of throwing an error, just deny access
-      }
-    },
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    credentials: true,
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
+// app.use(
+//   cors({
+//     origin: function (origin, callback) {
+//       // ✅ Always allow requests WITHOUT an origin (Zoom Webhooks)
+//       if (!origin || allowedOrigins.includes(origin)) {
+//         callback(null, true);
+//       } else {
+//         console.error(`❌ CORS Blocked: ${origin}`);
+//         callback(null, false); // ✅ Instead of throwing an error, just deny access
+//       }
+//     },
+//     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+//     credentials: true,
+//     allowedHeaders: ["Content-Type", "Authorization"],
+//   })
+// );
+
+if (!origin || allowedOrigins.includes(origin)) {
+  callback(null, true);
+} else {
+  console.error(`❌ CORS Blocked: ${origin}`);
+  callback(null, false);
+}
+app.use(cors()); // ⚠️ Testing ke liye open CORS
+
 
 
 // ✅ JSON & URL-Encoded Middleware (General)
