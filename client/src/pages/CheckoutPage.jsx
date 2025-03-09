@@ -50,9 +50,9 @@ const CheckoutPage = () => {
   }, [])
 
   useEffect(() => {
-    console.log('🔄 Checking localStorage cart...');
-    const storedCart = JSON.parse(localStorage.getItem('cartItems')) || [];
-    setCartItems(storedCart);
+    console.log('🔄 Checking localStorage cart...')
+    const storedCart = JSON.parse(localStorage.getItem('cartItems')) || []
+    setCartItems(storedCart)
     if (!storedCart || storedCart.length === 0) {
       navigate('/cart')
     } else {
@@ -183,6 +183,8 @@ const CheckoutPage = () => {
       }
 
       console.log('📡 Fetching updated user data...')
+      // ✅ **Fetch Updated User Data After Payment**
+      console.log('📡 Fetching updated user data...')
       const userResponse = await fetch(
         `https://backend-production-cbe2.up.railway.app/api/user/${user._id}`,
       )
@@ -192,9 +194,10 @@ const CheckoutPage = () => {
       } else {
         const updatedUser = await userResponse.json()
         console.log('✅ Updated User Data:', updatedUser)
+
+        // ✅ **Update User in `localStorage`**
         localStorage.setItem('user', JSON.stringify(updatedUser))
       }
-
       // ✅ **Clear Cart After Successful PayPal Payment**
       console.log('🛒 Clearing Cart after Successful Payment...')
       localStorage.removeItem('cartItems') // ✅ Remove from localStorage
@@ -212,63 +215,65 @@ const CheckoutPage = () => {
   }
 
   const applyCoupon = () => {
-    console.log('🔍 Entered Coupon Code:', couponCode);
-    console.log('✅ Available Coupons from Backend:', validCoupons);
+    console.log('🔍 Entered Coupon Code:', couponCode)
+    console.log('✅ Available Coupons from Backend:', validCoupons)
 
-    const coupon = validCoupons.find((c) => c.code.toLowerCase() === couponCode.toLowerCase());
+    const coupon = validCoupons.find((c) => c.code.toLowerCase() === couponCode.toLowerCase())
 
     if (!coupon) {
-        toast.error('❌ Invalid Coupon Code!');
-        return;
+      toast.error('❌ Invalid Coupon Code!')
+      return
     }
 
     // ✅ Apply "fs4ngtti" ONLY to "60 Minute Tutoring Session"
     if (coupon.code.toLowerCase() === 'fs4ngtti') {
-        // ✅ Debug: Print cart items to check if product exists
-        console.log('🛒 Cart Items:', cartItems);
+      // ✅ Debug: Print cart items to check if product exists
+      console.log('🛒 Cart Items:', cartItems)
 
-        // ✅ Fix: Normalize text for case-sensitive comparison
-        let eligibleItem = cartItems.find((item) => 
-            item.name.trim().toLowerCase() === '60 minute tutoring session'
-        );
+      // ✅ Fix: Normalize text for case-sensitive comparison
+      let eligibleItem = cartItems.find(
+        (item) => item.name.trim().toLowerCase() === '60 minute tutoring session',
+      )
 
-        if (!eligibleItem) {
-            toast.error('❌ This coupon is only valid for "60 Minute Tutoring Session".');
-            return;
-        }
+      if (!eligibleItem) {
+        toast.error('❌ This coupon is only valid for "60 Minute Tutoring Session".')
+        return
+      }
 
-        // ✅ Apply discount ONLY to "60 Minute Tutoring Session"
-        setDiscount(eligibleItem.price);
-        console.log(`💰 Discount Applied: $${eligibleItem.price}`);
+      // ✅ Apply discount ONLY to "60 Minute Tutoring Session"
+      setDiscount(eligibleItem.price)
+      console.log(`💰 Discount Applied: $${eligibleItem.price}`)
 
-        // ✅ Subtract discount from the total (excluding other products)
-        const newTotal = subtotal - eligibleItem.price;
-        setTotal(newTotal > 0 ? newTotal : 0);
-        console.log(`🛒 New Total After Discount: $${newTotal}`);
+      // ✅ Subtract discount from the total (excluding other products)
+      const newTotal = subtotal - eligibleItem.price
+      setTotal(newTotal > 0 ? newTotal : 0)
+      console.log(`🛒 New Total After Discount: $${newTotal}`)
 
-        toast.success('🎉 100% Off Coupon Applied to "60 Minute Tutoring Session"!');
-        return; // ✅ Stop here, preventing any other discount logic
+      toast.success('🎉 100% Off Coupon Applied to "60 Minute Tutoring Session"!')
+      return // ✅ Stop here, preventing any other discount logic
     }
 
     // ✅ For all other coupons, exclude certain products
-    const excludedProducts = ['Learn', 'Achieve', 'Excel', 'Common Core- Parents'];
-    const eligibleItems = cartItems.filter((item) => !excludedProducts.includes(item.name.trim()));
+    const excludedProducts = ['Learn', 'Achieve', 'Excel', 'Common Core- Parents']
+    const eligibleItems = cartItems.filter((item) => !excludedProducts.includes(item.name.trim()))
 
     if (eligibleItems.length === 0) {
-        toast.error('❌ Coupon cannot be applied to your cart items.');
-        return;
+      toast.error('❌ Coupon cannot be applied to your cart items.')
+      return
     }
 
     // ✅ Apply percentage discount on eligible items only (excluding "60 Minute Tutoring Session")
-    const eligibleSubtotal = eligibleItems.reduce((total, item) => total + Number(item.price || 0), 0);
-    const discountAmount = (eligibleSubtotal * coupon.percent_off) / 100;
+    const eligibleSubtotal = eligibleItems.reduce(
+      (total, item) => total + Number(item.price || 0),
+      0,
+    )
+    const discountAmount = (eligibleSubtotal * coupon.percent_off) / 100
 
-    setDiscount(discountAmount);
-    setTotal(subtotal - discountAmount);
+    setDiscount(discountAmount)
+    setTotal(subtotal - discountAmount)
 
-    toast.success(`🎉 Coupon Applied! ${coupon.percent_off}% Off on eligible products.`);
-};
-
+    toast.success(`🎉 Coupon Applied! ${coupon.percent_off}% Off on eligible products.`)
+  }
 
   // ✅ Prevent $0.00 Payments
   const handleZeroAmount = () => {
@@ -346,14 +351,13 @@ const CheckoutPage = () => {
     }
   }
 
-
   const clearCartAfterPayment = () => {
-    console.log("🛒 Clearing Cart from LocalStorage...");
-    localStorage.setItem('cartItems', JSON.stringify([])); // 🛑 Ensure it's empty
-    setCartItems([]);
-    window.dispatchEvent(new Event('storage'));
-  };
-  
+    console.log('🛒 Clearing Cart from LocalStorage...')
+    localStorage.setItem('cartItems', JSON.stringify([])) // 🛑 Ensure it's empty
+    setCartItems([])
+    window.dispatchEvent(new Event('storage'))
+  }
+
   const handlePaymentSuccess = async () => {
     try {
       const user = JSON.parse(localStorage.getItem('user'))
@@ -389,7 +393,7 @@ const CheckoutPage = () => {
 
       const result = await response.json()
       console.log('📡 Stripe Capture Response:', result) // ADD THIS LINE
-      clearCartAfterPayment();  // ✅ Ensure cart is cleared
+      clearCartAfterPayment() // ✅ Ensure cart is cleared
     } catch (error) {
       console.error('❌ Error in Payment Process:', error)
       toast.error(error.message || 'Payment processing error.')
