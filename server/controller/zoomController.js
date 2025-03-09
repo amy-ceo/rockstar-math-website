@@ -2,22 +2,20 @@ const Register = require('../models/registerModel')
 
 exports.zoomWebhook = async (req, res) => {
   try {
-      console.log("📢 FULL Zoom Webhook Payload:", req.body);
+    console.log("📢 Headers:", req.headers);
+    console.log("📢 Request IP:", req.headers["x-forwarded-for"] || req.connection.remoteAddress);
+    console.log("📢 Full Payload:", JSON.stringify(req.body, null, 2));
 
       // ✅ If request body is a Buffer, convert it to a JSON object
       if (Buffer.isBuffer(req.body)) {
           req.body = JSON.parse(req.body.toString("utf8"));
       }
 
-      // ✅ 1. Handle Zoom URL Validation Request (VERY IMPORTANT)
       if (req.body.event === "endpoint.url_validation" && req.body.payload?.plainToken) {
-          console.log("✅ Sending Immediate Validation Response:", req.body.payload.plainToken);
-
-          // 🚀 Ensure correct response type
-          res.setHeader("Content-Type", "text/plain");
-          return res.status(200).send(req.body.payload.plainToken);
-      }
-
+        console.log("✅ Sending Validation Response:", req.body.payload.plainToken);
+        return res.status(200).json({ plainToken: req.body.payload.plainToken });
+    }
+    
       console.log("🔹 Received a Non-Validation Webhook Event:", req.body.event);
 
       // ✅ 2. Ensure Incoming Zoom Webhook Payload is Valid
