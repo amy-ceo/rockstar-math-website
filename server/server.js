@@ -60,7 +60,11 @@ const allowedOrigins = [
 // );
 
 
-app.use(cors()); // ⚠️ Testing ke liye open CORS
+app.use(cors({
+  origin: "https://zoom.us", // ✅ Only allow requests from Zoom
+  methods: ["GET", "POST"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
 
 
 
