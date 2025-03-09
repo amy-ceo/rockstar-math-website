@@ -4,29 +4,33 @@ exports.zoomWebhook = async (req, res) => {
   try {
       console.log("📢 FULL Zoom Webhook Payload:", JSON.stringify(req.body, null, 2));
 
-      // ✅ 1. Handle Empty Payload Case
-      if (!req.body || Object.keys(req.body).length === 0) {
-          console.error("❌ Received an empty webhook payload!");
-          return res.status(400).json({ error: "Invalid Webhook Payload - Empty request" });
+     
+    // ✅ 1. Handle Empty Payload Case
+    if (!req.body || Object.keys(req.body).length === 0) {
+      console.error("❌ Received an empty webhook payload!");
+      return res.status(400).json({ error: "Invalid Webhook Payload - Empty request" });
+    }
+
+    // ✅ 2. Handle Zoom URL Validation Request (IMPORTANT!)
+    if (req.body.event === "endpoint.url_validation") {
+      console.log("✅ Zoom URL Validation Request Received!", req.body);
+
+      if (req.body.payload && req.body.payload.plainToken) {
+        console.log("✅ Sending Validation Response:", { plainToken: req.body.payload.plainToken });
+
+        // 🔥 Fix: Ensure response is correctly formatted
+        return res.status(200).json({ plainToken: req.body.payload.plainToken });
       }
 
-      // ✅ 2. Handle Zoom URL Validation Request
-      if (req.body.event === "endpoint.url_validation") {
-          console.log("✅ Zoom URL Validation Request Received!", req.body);
-          
-          if (req.body.payload && req.body.payload.plainToken) {
-              return res.json({ plainToken: req.body.payload.plainToken });
-          }
+      console.error("❌ Missing plainToken in Zoom validation request:", req.body);
+      return res.status(400).json({ error: "Missing plainToken for validation" });
+    }
 
-          console.error("❌ Missing plainToken in Zoom validation request:", req.body);
-          return res.status(400).json({ error: "Missing plainToken for validation" });
-      }
-
-      // ✅ 3. Validate Incoming Zoom Webhook Payload
-      if (!req.body.payload || !req.body.payload.object) {
-          console.error("❌ Invalid Webhook Payload:", req.body);
-          return res.status(400).json({ error: "Invalid Webhook Payload - Missing required fields" });
-      }
+    // ✅ 3. Validate Incoming Zoom Webhook Payload
+    if (!req.body.payload || !req.body.payload.object) {
+      console.error("❌ Invalid Webhook Payload:", req.body);
+      return res.status(400).json({ error: "Invalid Webhook Payload - Missing required fields" });
+    }
 
       const payload = req.body.payload.object;
       const registrant = payload.registrant || {};
