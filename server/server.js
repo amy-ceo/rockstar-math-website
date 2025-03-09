@@ -59,15 +59,15 @@ const allowedOrigins = [
 //   })
 // );
 
+// ✅ **Fix CORS: Allow Only Zoom**
 app.use(cors({
-  origin: "*",
+  origin: ["https://zoom.us"], // ✅ Allow only Zoom
   methods: ["GET", "POST"],
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
-
-
-app.use("/api/zoom/webhook", bodyParser.raw({ type: "application/json" })); // ✅ Use raw body
+// ✅ **Proper Webhook Middleware**
+app.use("/api/zoom/webhook", bodyParser.raw({ type: "application/json" })); // ✅ Use raw body for Zoom webhook
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
