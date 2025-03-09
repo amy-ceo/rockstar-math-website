@@ -11,7 +11,7 @@
             console.log("✅ Sending Immediate Validation Response:", response);
 
             // 🚀 Ensure immediate response with correct headers
-            res.setHeader("Content-Type", "application/json");
+            res.setHeader("Content-Type", "text/plain");
             return res.status(200).json(response);
         }
 
