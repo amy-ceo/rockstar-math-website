@@ -67,7 +67,14 @@ app.use(cors({
 }));
 
 // ✅ **Proper Webhook Middleware**
-app.use("/api/zoom/webhook", bodyParser.raw({ type: "application/json" })); // ✅ Use raw body for Zoom webhook
+// ✅ Use raw body ONLY for Zoom validation events
+app.use("/api/zoom/webhook", (req, res, next) => {
+  if (req.headers["content-type"] === "application/json") {
+      bodyParser.raw({ type: "application/json" })(req, res, next);
+  } else {
+      express.json()(req, res, next);
+  }
+});
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
