@@ -59,18 +59,17 @@ const allowedOrigins = [
 //   })
 // );
 
-
 app.use(cors({
-  origin: "https://zoom.us", // ✅ Only allow requests from Zoom
+  origin: "*",
   methods: ["GET", "POST"],
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
 
 
-// ✅ JSON & URL-Encoded Middleware (General)
-app.use(express.json()); 
-app.use(express.urlencoded({ extended: true })); 
+app.use("/api/zoom/webhook", express.json()); // ✅ Ensure this is before global middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 app.use('/uploads', express.static('uploads')); // Serve uploaded images
 
