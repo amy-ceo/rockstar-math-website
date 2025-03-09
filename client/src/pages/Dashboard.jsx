@@ -126,27 +126,22 @@ const Dashboard = () => {
 
     const fetchZoomBookings = async () => {
       try {
-        if (!user || !user.email) {
-          console.warn("⚠️ No user email found.");
-          return;
-        }
-
+        // ✅ Make the request WITHOUT the email filter
         const response = await fetch(
-          `https://backend-production-cbe2.up.railway.app/api/zoom/bookings?email=${user.billingEmail}`
+          `https://backend-production-cbe2.up.railway.app/api/zoom/bookings`
         );
-
+    
         const data = await response.json();
-
+    
         if (!response.ok) throw new Error(data.error || "Failed to fetch Zoom bookings.");
-
+    
         setZoomBookings(data.zoomBookings || []);
       } catch (error) {
         console.error("❌ Error fetching Zoom bookings:", error);
         setZoomBookings([]);
       }
     };
-
-
+    
     // Fetch Coupons
     const fetchCoupons = async () => {
       try {

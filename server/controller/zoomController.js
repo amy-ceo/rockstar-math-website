@@ -85,28 +85,33 @@ exports.zoomWebhook = async (req, res) => {
   
 
 exports.getUserZoomBookings = async (req, res) => {
-    try {
-      const { email } = req.query;
-  
-      if (!email) {
-        return res.status(400).json({ error: "Email is required" });
-      }
-  
-      // 🔎 Find User by Email (Case-Insensitive)
+  try {
+    const { email } = req.query;
+
+    // ✅ If an email is provided, filter by user
+    if (email) {
       const user = await Register.findOne({ billingEmail: new RegExp(`^${email}$`, "i") }).exec();
-  
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
-  
-      // 📢 Send Back Zoom Bookings
-      res.status(200).json({
+      return res.status(200).json({
         message: "Zoom bookings fetched successfully",
         zoomBookings: user.zoomBookings || [],
       });
-    } catch (error) {
-      console.error("❌ Error fetching Zoom bookings:", error);
-      res.status(500).json({ error: "Internal Server Error" });
     }
-  };
+
+    // ✅ If NO email is provided, fetch ALL users' Zoom bookings
+    const allUsers = await Register.find({}, { zoomBookings: 1, _id: 0 }).exec();
+    const allBookings = allUsers.flatMap((user) => user.zoomBookings || []);
+
+    return res.status(200).json({
+      message: "All Zoom bookings fetched successfully",
+      zoomBookings: allBookings,
+    });
+  } catch (error) {
+    console.error("❌ Error fetching Zoom bookings:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
   
