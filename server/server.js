@@ -67,7 +67,7 @@ app.use(cors({
 
 
 
-app.use("/api/zoom/webhook", express.json()); // ✅ Ensure this is before global middleware
+app.use("/api/zoom/webhook", bodyParser.raw({ type: "application/json" })); // ✅ Use raw body
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
