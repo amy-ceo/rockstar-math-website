@@ -59,12 +59,7 @@ const allowedOrigins = [
 //   })
 // );
 
-if (!origin || allowedOrigins.includes(origin)) {
-  callback(null, true);
-} else {
-  console.error(`❌ CORS Blocked: ${origin}`);
-  callback(null, false);
-}
+
 app.use(cors()); // ⚠️ Testing ke liye open CORS
 
 
