@@ -13,7 +13,10 @@ exports.zoomWebhook = async (req, res) => {
 
       if (req.body.event === "endpoint.url_validation" && req.body.payload?.plainToken) {
         console.log("✅ Sending Validation Response:", req.body.payload.plainToken);
-        return res.status(200).json({ plainToken: req.body.payload.plainToken });
+    
+        // ✅ Fix: Set response to `text/plain`
+        res.setHeader("Content-Type", "text/plain");
+        return res.status(200).send(req.body.payload.plainToken);
     }
     
       console.log("🔹 Received a Non-Validation Webhook Event:", req.body.event);
