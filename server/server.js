@@ -44,22 +44,22 @@ const allowedOrigins = [
   "https://www.rockstarmath.com",
 ];
 
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      // ✅ Allow requests without an origin (e.g., from Zoom Webhook)
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        console.error(`❌ CORS Blocked: ${origin}`);
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    credentials: true,
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
+// app.use(
+//   cors({
+//     origin: function (origin, callback) {
+//       // ✅ Allow requests without an origin (e.g., from Zoom Webhook)
+//       if (!origin || allowedOrigins.includes(origin)) {
+//         callback(null, true);
+//       } else {
+//         console.error(`❌ CORS Blocked: ${origin}`);
+//         callback(new Error("Not allowed by CORS"));
+//       }
+//     },
+//     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+//     credentials: true,
+//     allowedHeaders: ["Content-Type", "Authorization"],
+//   })
+// );
 
 
 
