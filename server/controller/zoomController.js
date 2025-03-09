@@ -57,18 +57,7 @@ exports.zoomWebhook = async (req, res) => {
           return res.status(200).json({ message: "Event already stored, skipping" });
       }
 
-      // ✅ Deduct 1 Session from Purchased Class
-      let purchasedClass = user.purchasedClasses.find((cls) => cls.remainingSessions > 0);
-      if (!purchasedClass) {
-          return res.status(400).json({ error: "No valid purchased class for this booking." });
-      }
-
-      purchasedClass.remainingSessions -= 1;
-      if (purchasedClass.remainingSessions === 0) {
-          purchasedClass.status = "Expired";
-      }
-
-      // ✅ Store Zoom Booking Separately
+      // ✅ Store Zoom Booking Separately (No Session Deduction)
       const newZoomBooking = {
           eventName: meetingTopic,
           firstName: registrant.first_name || "N/A",
