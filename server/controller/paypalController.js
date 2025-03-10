@@ -555,7 +555,7 @@ exports.captureOrder = async (req, res) => {
   }
 }
 
-function generateEmailHtml(user, zoomLinks, userCoupons, calendlyLinks) {
+function generateEmailHtml(user, zoomLinks, userCoupons, calendlyLinks, hasCommonCore) {
   // ✅ Calendly Proxy URL
   const proxyBaseUrl = 'https://backend-production-cbe2.up.railway.app/api/proxy-calendly'
 
