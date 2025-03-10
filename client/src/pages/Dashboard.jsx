@@ -55,24 +55,26 @@ const Dashboard = () => {
   const excludedPlans = ['Learn', 'Achieve', 'Excel']
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('user'))
-    if (!user || !user._id) {
-      console.warn('⚠️ User not logged in, redirecting to login...')
-      navigate('/login') // ✅ Redirect if user is not logged in
+    const storedUser = JSON.parse(localStorage.getItem('user'));
+    if (!storedUser || !storedUser._id) {
+      console.warn('⚠️ User not logged in, redirecting to login...');
+      navigate('/login'); // ✅ Redirect if user is not logged in
+    } else {
+      setUser(storedUser); // ✅ Store user in state
     }
-  }, [navigate])
+  }, [navigate]);
+  
 
   // ✅ Fetch all user data when component mounts
   useEffect(() => {
     if (!user || !user._id) {
-      console.warn('⚠️ User ID not found, skipping API calls.')
-      setLoading(false)
-      return
+      console.warn('⚠️ User ID not found, skipping API calls.');
+      setLoading(false);
+      return;
     }
-
-    console.log('📡 Fetching data for User ID:', user._id)
-
-    setLoading(true)
+  
+    console.log('📡 Fetching data for User ID:', user._id);
+    setLoading(true);
 
     // Fetch Purchased Classes
     const fetchPurchasedClasses = async () => {
