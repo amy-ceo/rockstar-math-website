@@ -183,8 +183,6 @@ const CheckoutPage = () => {
       }
 
       console.log('📡 Fetching updated user data...')
-      // ✅ **Fetch Updated User Data After Payment**
-      console.log('📡 Fetching updated user data...')
       const userResponse = await fetch(
         `https://backend-production-cbe2.up.railway.app/api/user/${user._id}`,
       )
@@ -195,7 +193,7 @@ const CheckoutPage = () => {
         const updatedUser = await userResponse.json()
         console.log('✅ Updated User Data:', updatedUser)
 
-        // ✅ **Update User in `localStorage`**
+        // ✅ Update User in `localStorage` to ensure session is maintained
         localStorage.setItem('user', JSON.stringify(updatedUser))
       }
       // ✅ **Clear Cart After Successful PayPal Payment**
@@ -205,8 +203,9 @@ const CheckoutPage = () => {
       window.dispatchEvent(new Event('storage')) // ✅ Trigger update in all tabs
 
       toast.success('🎉 Payment Successful! Redirecting...')
+      // ✅ Redirect Using React Router
       setTimeout(() => {
-        window.location.href = '/dashboard'
+        navigate('/dashboard') // ✅ React router ke navigate() function ka use karein
       }, 1000)
     } catch (error) {
       console.error('❌ Error in Payment Process:', error)

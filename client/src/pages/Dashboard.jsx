@@ -26,7 +26,7 @@ const Dashboard = () => {
   const [selectedRescheduleEvent, setSelectedRescheduleEvent] = useState(null)
   const [newDateTime, setNewDateTime] = useState(null)
   const [zoomBookings, setZoomBookings] = useState([])
-  const [popupKey, setPopupKey] = useState(0);
+  const [popupKey, setPopupKey] = useState(0)
 
   // ✅ Allowed Time Slots (3-6 PM, 7-8 PM, 8-9 PM with breaks)
   const allowedTimes = [
@@ -54,28 +54,11 @@ const Dashboard = () => {
   // ❌ Courses that should NOT appear in "Remaining Sessions"
   const excludedPlans = ['Learn', 'Achieve', 'Excel']
 
-  // ✅ Load user from `localStorage`
   useEffect(() => {
-    const storedUser = localStorage.getItem('user')
-
-    if (storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser)
-
-        if (parsedUser && parsedUser._id) {
-          console.log('✅ User ID found:', parsedUser._id)
-          setUser(parsedUser)
-        } else {
-          console.warn('⚠️ User ID missing in stored data. Redirecting to login...')
-          navigate('/login') // Redirect only if user ID is missing
-        }
-      } catch (error) {
-        console.error('❌ Error parsing user data from localStorage:', error)
-        navigate('/login')
-      }
-    } else {
-      console.warn('❌ No user found in localStorage. Redirecting to login...')
-      navigate('/login')
+    const user = JSON.parse(localStorage.getItem('user'))
+    if (!user || !user._id) {
+      console.warn('⚠️ User not logged in, redirecting to login...')
+      navigate('/login') // ✅ Redirect if user is not logged in
     }
   }, [navigate])
 
@@ -128,20 +111,20 @@ const Dashboard = () => {
       try {
         // ✅ Make the request WITHOUT the email filter
         const response = await fetch(
-          `https://backend-production-cbe2.up.railway.app/api/zoom/bookings`
-        );
-    
-        const data = await response.json();
-    
-        if (!response.ok) throw new Error(data.error || "Failed to fetch Zoom bookings.");
-    
-        setZoomBookings(data.zoomBookings || []);
+          `https://backend-production-cbe2.up.railway.app/api/zoom/bookings`,
+        )
+
+        const data = await response.json()
+
+        if (!response.ok) throw new Error(data.error || 'Failed to fetch Zoom bookings.')
+
+        setZoomBookings(data.zoomBookings || [])
       } catch (error) {
-        console.error("❌ Error fetching Zoom bookings:", error);
-        setZoomBookings([]);
+        console.error('❌ Error fetching Zoom bookings:', error)
+        setZoomBookings([])
       }
-    };
-    
+    }
+
     // Fetch Coupons
     const fetchCoupons = async () => {
       try {
@@ -193,7 +176,6 @@ const Dashboard = () => {
       fetchCoupons(),
     ]).finally(() => setLoading(false))
   }, [user]) // ✅ Depend only on `users`
-
 
   const handleReschedule = async () => {
     if (!selectedRescheduleEvent || !newDateTime) {
@@ -255,16 +237,16 @@ const Dashboard = () => {
 
   const cancelBooking = async (eventUri) => {
     if (!eventUri || typeof eventUri !== 'string') {
-      toast.error('Invalid Calendly Event URI!');
-      console.error('❌ Invalid calendlyEventUri:', eventUri);
-      return;
+      toast.error('Invalid Calendly Event URI!')
+      console.error('❌ Invalid calendlyEventUri:', eventUri)
+      return
     }
 
     try {
       console.log('📡 Sending cancel request to API...', {
         userId: users._id,
         calendlyEventUri: eventUri,
-      });
+      })
 
       const response = await fetch(
         'https://backend-production-cbe2.up.railway.app/api/cancel-booking',
@@ -275,41 +257,37 @@ const Dashboard = () => {
             userId: users._id,
             calendlyEventUri: eventUri,
           }),
-        }
-      );
+        },
+      )
 
-      const data = await response.json();
-      console.log('📥 API Response:', data);
+      const data = await response.json()
+      console.log('📥 API Response:', data)
 
       if (response.ok) {
-        toast.success('✅ Session Canceled & Moved to Archive!');
-        
+        toast.success('✅ Session Canceled & Moved to Archive!')
+
         // ✅ Remove the canceled session from the UI
-        setCalendlyBookings((prev) =>
-          prev.filter((b) => b.calendlyEventUri !== eventUri)
-        );
+        setCalendlyBookings((prev) => prev.filter((b) => b.calendlyEventUri !== eventUri))
 
         // ✅ Fetch updated archived classes
-        fetchArchivedClasses();
+        fetchArchivedClasses()
 
-        setSelectedEventUri(null);
+        setSelectedEventUri(null)
 
-        setShowCancelPopup(false);
-        setPopupKey((prevKey) => prevKey + 1); // Force re-render
+        setShowCancelPopup(false)
+        setPopupKey((prevKey) => prevKey + 1) // Force re-render
       } else {
-        console.warn('⚠️ API returned an error:', data.message);
-        
+        console.warn('⚠️ API returned an error:', data.message)
+
         // ✅ Show error message only for real API errors
         if (data.message && data.message.includes('already canceled')) {
-          toast.info('⚠️ This session was already canceled.');
-        } 
+          toast.info('⚠️ This session was already canceled.')
+        }
       }
     } catch (error) {
-      console.error('❌ Error canceling session:', error.message);
-      
+      console.error('❌ Error canceling session:', error.message)
     }
-};
-
+  }
 
   const openReschedulePopup = (eventUri) => {
     setSelectedRescheduleEvent(eventUri)
@@ -448,23 +426,28 @@ const Dashboard = () => {
               </div>
             </section>
           )}
-         {/* ✅ Zoom Sessions Section */}
-         {zoomBookings.length > 0 && (
+          {/* ✅ Zoom Sessions Section */}
+          {zoomBookings.length > 0 && (
             <section className="mt-6 p-6 bg-white shadow-lg rounded-lg">
-              <h3 className="text-2xl font-bold mb-4 text-gray-800">🎥 Your Registered Zoom Sessions</h3>
+              <h3 className="text-2xl font-bold mb-4 text-gray-800">
+                🎥 Your Registered Zoom Sessions
+              </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                 {zoomBookings.map((session, index) => (
-                  <div key={index} className="p-5 bg-white rounded-xl shadow-lg border border-gray-200">
+                  <div
+                    key={index}
+                    className="p-5 bg-white rounded-xl shadow-lg border border-gray-200"
+                  >
                     {/* Session Title */}
                     <h4 className="text-xl font-semibold text-blue-700 mb-2">
-                      {session.eventName || "Unnamed Session"}
+                      {session.eventName || 'Unnamed Session'}
                     </h4>
 
                     {/* Session Start Time */}
                     <p className="text-gray-600">
-                      <strong>📅 Start Time:</strong>{" "}
-                      {session.startTime ? new Date(session.startTime).toLocaleString() : "TBA"}
+                      <strong>📅 Start Time:</strong>{' '}
+                      {session.startTime ? new Date(session.startTime).toLocaleString() : 'TBA'}
                     </p>
 
                     {/* Zoom Meeting Link */}
