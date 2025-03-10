@@ -40,7 +40,7 @@ const zoomBookingSchema = new mongoose.Schema({
   eventName: { type: String, required: true },
   firstName: { type: String, required: true },
   lastName: { type: String, required: true },
-  zoomMeetingId: { type: String, required: true, unique: true },
+  zoomMeetingId: { type: String, required: true, unique: true ,sparse: true },
   zoomMeetingLink: { type: String, required: true },
   startTime: { type: Date, required: true },
   endTime: { type: Date },

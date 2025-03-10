@@ -163,41 +163,57 @@ app.post("/api/verify-otp", (req, res) => {
       return res.status(400).json({ error: "Invalid OTP or OTP expired." });
     }
   });
-async function fixMongoIndexes() {
-  try {
-    const db = mongoose.connection.db;
-
-    // 🛑 Drop existing `coupons.code_1` index
-    await db.collection("registers").dropIndex("coupons.code_1").catch(err => console.warn("⚠️ No existing index for coupons.code"));
-    console.log("✅ Dropped old coupons.code_1 index");
-
-    // ✅ Recreate `coupons.code` index with sparse
-    await db.collection("registers").createIndex({ "coupons.code": 1 }, { unique: true, sparse: true });
-    console.log("✅ Created new sparse index on coupons.code");
-
-    // 🛑 Drop existing `calendlyBookings.eventId_1` index
-    await db.collection("registers").dropIndex("calendlyBookings.eventId_1").catch(err => console.warn("⚠️ No existing index for calendlyBookings.eventId"));
-    console.log("✅ Dropped old calendlyBookings.eventId_1 index");
-
-    // ✅ Recreate `calendlyBookings.eventId` index with sparse
-    await db.collection("registers").createIndex({ "calendlyBookings.eventId": 1 }, { unique: true, sparse: true });
-    console.log("✅ Created new sparse index on calendlyBookings.eventId");
-
-    // 🛑 Drop existing `bookedSessions.calendlyEventUri_1` index
-    await db.collection("registers").dropIndex("bookedSessions.calendlyEventUri_1").catch(err => console.warn("⚠️ No existing index for bookedSessions.calendlyEventUri"));
-    console.log("✅ Dropped old bookedSessions.calendlyEventUri_1 index");
-
-    // ✅ Recreate `bookedSessions.calendlyEventUri` index with sparse
-    await db.collection("registers").createIndex({ "bookedSessions.calendlyEventUri": 1 }, { unique: true, sparse: true });
-    console.log("✅ Created new sparse index on bookedSessions.calendlyEventUri");
-
-  } catch (error) {
-    console.error("❌ Error updating MongoDB indexes:", error.message);
+  async function fixMongoIndexes() {
+    try {
+      const db = mongoose.connection.db;
+  
+      console.log("🔧 Running MongoDB Index Fix...");
+  
+      // 🛑 Drop existing `coupons.code_1` index
+      await db.collection("registers").dropIndex("coupons.code_1").catch(err => console.warn("⚠️ No existing index for coupons.code"));
+      console.log("✅ Dropped old coupons.code_1 index");
+  
+      // ✅ Recreate `coupons.code` index with sparse
+      await db.collection("registers").createIndex({ "coupons.code": 1 }, { unique: true, sparse: true });
+      console.log("✅ Created new sparse index on coupons.code");
+  
+      // 🛑 Drop existing `calendlyBookings.eventId_1` index
+      await db.collection("registers").dropIndex("calendlyBookings.eventId_1").catch(err => console.warn("⚠️ No existing index for calendlyBookings.eventId"));
+      console.log("✅ Dropped old calendlyBookings.eventId_1 index");
+  
+      // ✅ Recreate `calendlyBookings.eventId` index with sparse
+      await db.collection("registers").createIndex({ "calendlyBookings.eventId": 1 }, { unique: true, sparse: true });
+      console.log("✅ Created new sparse index on calendlyBookings.eventId");
+  
+      // 🛑 Drop existing `bookedSessions.calendlyEventUri_1` index
+      await db.collection("registers").dropIndex("bookedSessions.calendlyEventUri_1").catch(err => console.warn("⚠️ No existing index for bookedSessions.calendlyEventUri"));
+      console.log("✅ Dropped old bookedSessions.calendlyEventUri_1 index");
+  
+      // ✅ Recreate `bookedSessions.calendlyEventUri` index with sparse
+      await db.collection("registers").createIndex({ "bookedSessions.calendlyEventUri": 1 }, { unique: true, sparse: true });
+      console.log("✅ Created new sparse index on bookedSessions.calendlyEventUri");
+  
+      // 🛑 Drop existing `zoomBookings.zoomMeetingId_1` index to fix duplicate error
+      await db.collection("registers").dropIndex("zoomBookings.zoomMeetingId_1").catch(err => console.warn("⚠️ No existing index for zoomBookings.zoomMeetingId"));
+      console.log("✅ Dropped old zoomBookings.zoomMeetingId_1 index");
+  
+      // ✅ Recreate `zoomBookings.zoomMeetingId` index with sparse (to prevent null duplicates)
+      await db.collection("registers").createIndex(
+        { "zoomBookings.zoomMeetingId": 1 },
+        { unique: true, sparse: true }
+      );
+      console.log("✅ Created new sparse index on zoomBookings.zoomMeetingId");
+  
+      console.log("🎉 MongoDB Index Fix Completed!");
+  
+    } catch (error) {
+      console.error("❌ Error updating MongoDB indexes:", error.message);
+    }
   }
-}
-
-// Run index fix when the app starts
-mongoose.connection.once("open", fixMongoIndexes);
+  
+  // Run index fix when the app starts
+  mongoose.connection.once("open", fixMongoIndexes);
+  
 
 
 // Routes
