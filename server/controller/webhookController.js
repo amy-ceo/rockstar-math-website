@@ -1,9 +1,6 @@
 const Register = require('../models/registerModel')
 const sendEmail = require('../utils/emailSender')
 
-const Register = require('../models/registerModel');
-const sendEmail = require('../utils/emailSender');
-
 exports.calendlyWebhook = async (req, res) => {
   try {
     console.log('📢 FULL Webhook Payload:', JSON.stringify(req.body, null, 2));
