@@ -75,21 +75,22 @@ exports.calendlyWebhook = async (req, res) => {
       return res.status(200).json({ message: 'Event already stored, skipping' });
     }
 
-    // ✅ Find Matching Purchased Class
+    // ✅ Find Matching Purchased Class (Even if Expired)
     let purchasedClass = user.purchasedClasses.find((cls) => {
-      return normalizeUrl(cls.bookingLink) === normalizedEventUri && cls.status === "Active";
+      return normalizeUrl(cls.bookingLink) === normalizedEventUri;
     });
 
-    // ✅ If no match, try updating the first available class
     if (!purchasedClass) {
       console.warn(`⚠️ No valid purchased class found for user: ${inviteeEmail}`);
 
       if (user.purchasedClasses.length > 0) {
         user.purchasedClasses[0].bookingLink = normalizedEventUri;
         user.purchasedClasses[0].description = user.purchasedClasses[0].description || "Calendly Booking";
+        user.purchasedClasses[0].status = "Active"; // Reactivating Expired Classes
+        user.purchasedClasses[0].remainingSessions = user.purchasedClasses[0].sessionCount; // Reset Remaining Sessions
         user.markModified('purchasedClasses'); 
         await user.save();
-        console.log(`🔄 Updated booking link to: ${normalizedEventUri}`);
+        console.log(`🔄 Updated booking link & reactivated class for: ${normalizedEventUri}`);
 
         purchasedClass = user.purchasedClasses[0]; 
       } else {
@@ -173,7 +174,6 @@ exports.calendlyWebhook = async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
-
 
 exports.getCalendlyBookings = async (req, res) => {
   try {
