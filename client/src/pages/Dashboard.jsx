@@ -52,7 +52,7 @@ const Dashboard = () => {
 
   console.log(allowedTimes)
   // ❌ Courses that should NOT appear in "Remaining Sessions"
-  const excludedPlans = ['Learn', 'Achieve', 'Excel']
+  const excludedPlans = ['Learn', 'Achieve', 'Excel','Common Core- Parents']
 
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem('user'));

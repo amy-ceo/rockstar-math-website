@@ -17,9 +17,8 @@ exports.calendlyWebhook = async (req, res) => {
     const eventName = payload?.name || payload?.event?.name || '❌ Missing';
     const eventUri = payload?.event?.uri || payload?.event?.invitee?.uri || payload?.scheduled_event?.uri || '❌ Missing';
 
-    // ✅ Move normalizeUrl ABOVE its first usage
+    // ✅ Normalize the URL for consistent matching
     const normalizeUrl = (url) => url?.split('?')[0].trim().toLowerCase();
-
     const normalizedEventUri = eventUri !== '❌ Missing' ? normalizeUrl(eventUri) : null;
 
     // ✅ Extract `startTime` and `endTime`
@@ -49,8 +48,10 @@ exports.calendlyWebhook = async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // ✅ Find user in MongoDB using invitee email
-    const user = await Register.findOne({ billingEmail: inviteeEmail });
+    // ✅ Find user in MongoDB using invitee email (Match both billing & scheduling emails)
+    const user = await Register.findOne({
+      $or: [{ billingEmail: inviteeEmail }, { schedulingEmails: inviteeEmail }],
+    });
 
     if (!user) {
       console.error('❌ No user found:', inviteeEmail);
@@ -69,7 +70,6 @@ exports.calendlyWebhook = async (req, res) => {
       (session) => session.calendlyEventUri === eventUri
     );
 
-    // ✅ If event already exists, do NOT deduct session again
     if (eventAlreadyExists) {
       console.log(`⚠️ Duplicate Event Detected: ${eventName}. Skipping Booking.`);
       return res.status(200).json({ message: 'Event already stored, skipping' });
@@ -77,10 +77,10 @@ exports.calendlyWebhook = async (req, res) => {
 
     // ✅ Find Matching Purchased Class
     let purchasedClass = user.purchasedClasses.find((cls) => {
-      return normalizeUrl(cls.bookingLink) === normalizedEventUri;
+      return normalizeUrl(cls.bookingLink) === normalizedEventUri && cls.status === "Active";
     });
 
-    // ✅ If no match, update the booking link and proceed with booking
+    // ✅ If no match, try updating the first available class
     if (!purchasedClass) {
       console.warn(`⚠️ No valid purchased class found for user: ${inviteeEmail}`);
 
@@ -97,13 +97,13 @@ exports.calendlyWebhook = async (req, res) => {
       }
     }
 
-    // ✅ Check if User Has Remaining Sessions
+    // ✅ Ensure User Has Remaining Sessions
     if (purchasedClass.remainingSessions <= 0) {
       console.warn(`⚠️ User ${user.username} has no remaining sessions.`);
       return res.status(403).json({ error: "You have no remaining sessions left." });
     }
 
-    // ✅ Deduct 1 Session (Only If Not Already Stored)
+    // ✅ Deduct 1 Session
     purchasedClass.remainingSessions -= 1;
     user.markModified('purchasedClasses');
 
@@ -132,6 +132,40 @@ exports.calendlyWebhook = async (req, res) => {
 
     console.log(`✅ Successfully Stored Calendly Booking for ${inviteeEmail}`);
     console.log(`✅ Session Booked: Remaining ${purchasedClass.remainingSessions} sessions.`);
+
+    // ✅ **Send Confirmation Email to Billing & Scheduling Emails**
+    let recipients = [user.billingEmail];
+
+    if (user.schedulingEmails) {
+      if (Array.isArray(user.schedulingEmails)) {
+        recipients = recipients.concat(user.schedulingEmails);
+      } else {
+        recipients.push(user.schedulingEmails);
+      }
+    }
+
+    recipients = recipients.filter((email) => email); // Remove null/undefined values
+    const recipientEmails = recipients.join(',');
+
+    // ✅ Email Content
+    const emailSubject = `📅 Your RockstarMath Booking Confirmation`;
+    const emailHtml = `
+      <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
+          <h2 style="color: #2C3E50;">📅 Your Session is Booked!</h2>
+          <p>Hi <b>${user.username}</b>,</p>
+          <p>Your session "<b>${eventName}</b>" has been successfully booked.</p>
+          <p><b>Start Time:</b> ${startTime.toLocaleString()}</p>
+          <p><b>End Time:</b> ${endTime.toLocaleString()}</p>
+          <p><b>Time Zone:</b> ${timezone}</p>
+          <p><b>Event Link:</b> <a href="${eventUri}" target="_blank">${eventUri}</a></p>
+          <p>You have <b>${purchasedClass.remainingSessions}</b> sessions remaining.</p>
+          <p>If you have any questions, contact us at <b>rockstarmathtutoring@gmail.com</b></p>
+          <p>Best Regards,<br>Rockstar Math Tutoring</p>
+      </div>
+    `;
+
+    await sendEmail(recipientEmails, emailSubject, '', emailHtml);
+    console.log(`✅ Booking confirmation email sent to ${recipientEmails}`);
 
     res.status(200).json({ message: 'Booking stored successfully', updatedUser: user });
   } catch (error) {

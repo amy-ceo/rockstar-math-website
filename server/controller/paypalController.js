@@ -28,7 +28,7 @@ const zoomCourseMapping = [
   },
 ]
 const COMMONCORE_ZOOM_LINK = {
-  name: '📚  Common Core for Parents',
+  name: 'Common Core- Parents',
   link: 'https://us06web.zoom.us/meeting/register/XsYhADVmQcK8BIT3Sfbpyg#/registration',
 }
 
@@ -319,10 +319,18 @@ exports.captureOrder = async (req, res) => {
       zoomLinks = zoomCourseMapping
     }
 
-    // ✅ Step 4: Check if "Common Core for Parents" Course is Purchased
+    // ✅ Normalize the product names for a better match
+    const normalizeString = (str) =>
+      str
+        .toLowerCase()
+        .replace(/[^a-zA-Z0-9 ]/g, '')
+        .trim()
+
+    // ✅ Check if "Common Core for Parents" was purchased
     const hasCommonCore = user.cartItems.some(
-      (item) => item.name.toLowerCase() === 'Common Core- Parents',
+      (item) => normalizeString(item.name) === normalizeString(COMMONCORE_ZOOM_LINK.name),
     )
+
     if (hasCommonCore) {
       zoomLinks.push(COMMONCORE_ZOOM_LINK)
     }
