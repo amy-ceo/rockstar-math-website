@@ -167,7 +167,7 @@ exports.captureOrder = async (req, res) => {
       console.error('❌ Missing required fields:', { orderId, user })
       return res.status(400).json({ error: 'Missing required fields or empty cart items' })
     }
-    const users = await Register.findById(user._id).exec(); // Fetch user from DB
+    const users = await Register.findById(user._id).exec() // Fetch user from DB
 
     console.log('🛒 Capturing PayPal Order:', orderId)
     const captureRequest = new paypal.orders.OrdersCaptureRequest(orderId)
@@ -289,9 +289,9 @@ exports.captureOrder = async (req, res) => {
     `
 
     await sendEmail(recipientEmails, welcomeSubject, '', welcomeHtml)
-    
+
     console.log('✅ Welcome email sent successfully!')
-    console.log('✅ Emails sent to:', recipientEmails);
+    console.log('✅ Emails sent to:', recipientEmails)
     // ✅ Step 1: Fetch Active Coupons from Stripe
     const activeCoupons = await getActiveCoupons()
     console.log('🎟 Active Coupons from Stripe:', activeCoupons)
@@ -321,7 +321,7 @@ exports.captureOrder = async (req, res) => {
 
     // ✅ Step 4: Check if "Common Core for Parents" Course is Purchased
     const hasCommonCore = user.cartItems.some(
-      (item) => item.name.toLowerCase() === 'common core for parents',
+      (item) => item.name.toLowerCase() === 'Common Core- Parents',
     )
     if (hasCommonCore) {
       zoomLinks.push(COMMONCORE_ZOOM_LINK)
@@ -420,20 +420,29 @@ exports.captureOrder = async (req, res) => {
     console.log('📅 Final Calendly Links for User:', calendlyLinks)
 
     // ✅ **Generate Email Content & Send**
-    const emailHtml = generateEmailHtml(user, zoomLinks, appliedCoupons, calendlyLinks)
+    const emailHtml = generateEmailHtml(
+      user,
+      zoomLinks,
+      appliedCoupons,
+      calendlyLinks,
+      hasCommonCore,
+    )
 
     // ✅ **Call `addPurchasedClass` API**
     try {
       console.log('📡 Calling addPurchasedClass API...')
-      const purchaseResponse = await fetch(`https://backend-production-cbe2.up.railway.app/api/add-purchased-class`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: user._id,
-          purchasedItems: purchasedItems,
-          userEmail: user.billingEmail,
-        }),
-      })
+      const purchaseResponse = await fetch(
+        `https://backend-production-cbe2.up.railway.app/api/add-purchased-class`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user._id,
+            purchasedItems: purchasedItems,
+            userEmail: user.billingEmail,
+          }),
+        },
+      )
 
       const purchaseResult = await purchaseResponse.json()
       console.log('✅ Purchased Classes API Response:', purchaseResult)
@@ -525,8 +534,6 @@ exports.captureOrder = async (req, res) => {
           </div>
           `,
       )
-
-     
 
       console.log('✅ Confirmation Email Sent')
     } catch (emailError) {
