@@ -290,6 +290,9 @@ const RegisterBeforeCheckout = () => {
         localStorage.setItem("token", response.data.token);
         localStorage.setItem("savedUsername", formData.username);
         localStorage.setItem("savedPassword", formData.password);
+        localStorage.setItem("billingEmail", formData.billingEmail);  // ✅ Store billing email
+        localStorage.setItem("schedulingEmails", formData.schedulingEmails);  // ✅ Store scheduling email
+        
         setShowConfirmation(true);
   
         setTimeout(() => {

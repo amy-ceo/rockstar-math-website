@@ -193,19 +193,21 @@ const CheckoutPage = () => {
         const updatedUser = await userResponse.json()
         console.log('✅ Updated User Data:', updatedUser)
 
-        // ✅ Update User in `localStorage` to ensure session is maintained
+        // ✅ Update user session in localStorage
         localStorage.setItem('user', JSON.stringify(updatedUser))
       }
-      // ✅ **Clear Cart After Successful PayPal Payment**
+
+      // ✅ Clear Cart After Successful PayPal Payment
       console.log('🛒 Clearing Cart after Successful Payment...')
-      localStorage.removeItem('cartItems') // ✅ Remove from localStorage
-      setCartItems([]) // ✅ Update State
-      window.dispatchEvent(new Event('storage')) // ✅ Trigger update in all tabs
+      localStorage.removeItem('cartItems')
+      setCartItems([])
+      window.dispatchEvent(new Event('storage'))
 
       toast.success('🎉 Payment Successful! Redirecting...')
-      // ✅ Redirect Using React Router
+
+      // ✅ **Ensure Redirection to Dashboard**
       setTimeout(() => {
-        navigate('/dashboard') // ✅ React router ke navigate() function ka use karein
+        navigate('/dashboard') // ✅ Redirecting to Dashboard instead of Login
       }, 1000)
     } catch (error) {
       console.error('❌ Error in Payment Process:', error)

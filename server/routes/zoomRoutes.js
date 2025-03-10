@@ -5,6 +5,6 @@ const router = express.Router();
 
 // ✅ Zoom Webhook Route
 router.post('/webhook', zoomWebhook);
-router.get("/bookings", getUserZoomBookings);
+router.get("/bookings/:userId", getUserZoomBookings);
 
 module.exports = router;

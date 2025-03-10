@@ -95,30 +95,27 @@ exports.zoomWebhook = async (req, res) => {
 
 exports.getUserZoomBookings = async (req, res) => {
   try {
-    const { email } = req.query
+    const { userId } = req.params;  // ✅ Get userId from request parameters
 
-    // ✅ If an email is provided, filter by user
-    if (email) {
-      const user = await Register.findOne({ billingEmail: new RegExp(`^${email}$`, 'i') }).exec()
-      if (!user) {
-        return res.status(404).json({ error: 'User not found' })
-      }
-      return res.status(200).json({
-        message: 'Zoom bookings fetched successfully',
-        zoomBookings: user.zoomBookings || [],
-      })
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID is required' });
     }
 
-    // ✅ If NO email is provided, fetch ALL users' Zoom bookings
-    const allUsers = await Register.find({}, { zoomBookings: 1, _id: 0 }).exec()
-    const allBookings = allUsers.flatMap((user) => user.zoomBookings || [])
+    // ✅ Find user by ID and fetch their zoomBookings only
+    const user = await Register.findById(userId).select('zoomBookings').exec();
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
 
     return res.status(200).json({
-      message: 'All Zoom bookings fetched successfully',
-      zoomBookings: allBookings,
-    })
+      message: 'Zoom bookings fetched successfully',
+      zoomBookings: user.zoomBookings || [], // ✅ Ensure empty array if no bookings
+    });
+
   } catch (error) {
-    console.error('❌ Error fetching Zoom bookings:', error)
-    res.status(500).json({ error: 'Internal Server Error' })
+    console.error('❌ Error fetching Zoom bookings:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
-}
+};
+

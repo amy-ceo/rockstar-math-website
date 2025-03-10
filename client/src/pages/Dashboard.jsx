@@ -110,22 +110,27 @@ const Dashboard = () => {
     }
 
     const fetchZoomBookings = async () => {
-      try {
-        // ✅ Make the request WITHOUT the email filter
-        const response = await fetch(
-          `https://backend-production-cbe2.up.railway.app/api/zoom/bookings`,
-        )
-
-        const data = await response.json()
-
-        if (!response.ok) throw new Error(data.error || 'Failed to fetch Zoom bookings.')
-
-        setZoomBookings(data.zoomBookings || [])
-      } catch (error) {
-        console.error('❌ Error fetching Zoom bookings:', error)
-        setZoomBookings([])
+      if (!user || !user._id) {
+        console.warn('⚠️ User ID is missing. Skipping Zoom booking fetch.');
+        return;
       }
-    }
+    
+      try {
+        const response = await fetch(
+          `https://backend-production-cbe2.up.railway.app/api/zoom/bookings/${user._id}` // ✅ Pass user ID in API URL
+        );
+    
+        const data = await response.json();
+    
+        if (!response.ok) throw new Error(data.error || 'Failed to fetch Zoom bookings.');
+    
+        setZoomBookings(data.zoomBookings || []); // ✅ Store only this user's bookings
+      } catch (error) {
+        console.error('❌ Error fetching Zoom bookings:', error);
+        setZoomBookings([]); // Prevent UI from breaking
+      }
+    };
+    
 
     // Fetch Coupons
     const fetchCoupons = async () => {
