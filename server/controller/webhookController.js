@@ -1,6 +1,9 @@
 const Register = require('../models/registerModel')
 const sendEmail = require('../utils/emailSender')
 
+const Register = require('../models/registerModel');
+const sendEmail = require('../utils/emailSender');
+
 exports.calendlyWebhook = async (req, res) => {
   try {
     console.log('📢 FULL Webhook Payload:', JSON.stringify(req.body, null, 2));
@@ -17,7 +20,7 @@ exports.calendlyWebhook = async (req, res) => {
     const eventName = payload?.name || payload?.event?.name || '❌ Missing';
     const eventUri = payload?.event?.uri || payload?.event?.invitee?.uri || payload?.scheduled_event?.uri || '❌ Missing';
 
-    // ✅ Normalize the URL for consistent matching
+    // ✅ Normalize URL for consistency
     const normalizeUrl = (url) => url?.split('?')[0].trim().toLowerCase();
     const normalizedEventUri = eventUri !== '❌ Missing' ? normalizeUrl(eventUri) : null;
 
@@ -67,7 +70,7 @@ exports.calendlyWebhook = async (req, res) => {
 
     // ✅ Check if Event Already Exists in User's bookedSessions (Avoid Duplicates)
     const eventAlreadyExists = user.bookedSessions.some(
-      (session) => session.calendlyEventUri === eventUri
+      (session) => session.calendlyEventUri === normalizedEventUri
     );
 
     if (eventAlreadyExists) {
@@ -80,19 +83,21 @@ exports.calendlyWebhook = async (req, res) => {
       return normalizeUrl(cls.bookingLink) === normalizedEventUri;
     });
 
+    // ✅ If No Matching Class, Assign First Available One
     if (!purchasedClass) {
       console.warn(`⚠️ No valid purchased class found for user: ${inviteeEmail}`);
 
       if (user.purchasedClasses.length > 0) {
-        user.purchasedClasses[0].bookingLink = normalizedEventUri;
-        user.purchasedClasses[0].description = user.purchasedClasses[0].description || "Calendly Booking";
-        user.purchasedClasses[0].status = "Active"; // Reactivating Expired Classes
-        user.purchasedClasses[0].remainingSessions = user.purchasedClasses[0].sessionCount; // Reset Remaining Sessions
+        purchasedClass = user.purchasedClasses.find((cls) => cls.status === "Active") || user.purchasedClasses[0];
+
+        // ✅ If Class was Expired, Reactivate it
+        purchasedClass.bookingLink = normalizedEventUri;
+        purchasedClass.status = "Active";
+        purchasedClass.remainingSessions = purchasedClass.sessionCount; // ✅ Reset Remaining Sessions
+
         user.markModified('purchasedClasses'); 
         await user.save();
         console.log(`🔄 Updated booking link & reactivated class for: ${normalizedEventUri}`);
-
-        purchasedClass = user.purchasedClasses[0]; 
       } else {
         return res.status(400).json({ error: "No valid purchased class for this booking." });
       }
@@ -115,7 +120,7 @@ exports.calendlyWebhook = async (req, res) => {
     // ✅ Create New Booking Object
     const newBooking = {
       eventName,
-      calendlyEventUri: eventUri,
+      calendlyEventUri: normalizedEventUri,
       startTime,
       endTime,
       timezone,
@@ -160,7 +165,6 @@ exports.calendlyWebhook = async (req, res) => {
           <p><b>Time Zone:</b> ${timezone}</p>
           <p><b>Event Link:</b> <a href="${eventUri}" target="_blank">${eventUri}</a></p>
           <p>You have <b>${purchasedClass.remainingSessions}</b> sessions remaining.</p>
-          <p>If you have any questions, contact us at <b>rockstarmathtutoring@gmail.com</b></p>
           <p>Best Regards,<br>Rockstar Math Tutoring</p>
       </div>
     `;
@@ -174,6 +178,7 @@ exports.calendlyWebhook = async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
 
 exports.getCalendlyBookings = async (req, res) => {
   try {
