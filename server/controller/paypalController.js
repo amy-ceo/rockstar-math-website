@@ -497,30 +497,30 @@ exports.captureOrder = async (req, res) => {
         
             <div style="text-align: center; padding-bottom: 20px;">
             <h2 style="color: #2C3E50;">Home tab</h2>
-              <img src="https://backend-production-cbe2.up.railway.app/image1.webp" alt="Rockstar Math" style="width: 500px; margin-bottom: 10px;">
+              <img src="https://backend-production-cbe2.up.railway.app/image1.jpg" alt="Rockstar Math" style="width: 500px; margin-bottom: 10px;">
             </div>
         <br/>
             <div style="text-align: center; padding-bottom: 20px;">
             <h2 style="color: #2C3E50;">My Classes</h2>
-              <img src="https://backend-production-cbe2.up.railway.app/image2.webp" alt="Rockstar Math" style="width: 500px; margin-bottom: 10px;">
+              <img src="https://backend-production-cbe2.up.railway.app/image2.jpg" alt="Rockstar Math" style="width: 500px; margin-bottom: 10px;">
             </div>
         
             <br/>
             <div style="text-align: center; padding-bottom: 20px;">
             <h2 style="color: #2C3E50;">Schedule</h2>
-              <img src="https://backend-production-cbe2.up.railway.app/image3.webp" alt="Rockstar Math" style="width: 500px; margin-bottom: 10px;">
+              <img src="https://backend-production-cbe2.up.railway.app/image3.jpg" alt="Rockstar Math" style="width: 500px; margin-bottom: 10px;">
             </div>
         
               <br/>
             <div style="text-align: center; padding-bottom: 20px;">
             <h2 style="color: #2C3E50;">Archive</h2>
-              <img src="https://backend-production-cbe2.up.railway.app/image4.webp" alt="Rockstar Math" style="width: 500px; margin-bottom: 10px;">
+              <img src="https://backend-production-cbe2.up.railway.app/image4.jpg" alt="Rockstar Math" style="width: 500px; margin-bottom: 10px;">
             </div>
         
               <br/>
             <div style="text-align: center; padding-bottom: 20px;">
             <h2 style="color: #2C3E50;">Profile</h2>
-              <img src="https://backend-production-cbe2.up.railway.app/image5.webp" alt="Rockstar Math" style="width: 500px; margin-bottom: 10px;">
+              <img src="https://backend-production-cbe2.up.railway.app/image5.jpg" alt="Rockstar Math" style="width: 500px; margin-bottom: 10px;">
             </div>
 
             <h3 style="color: #007bff;">📞 Need Assistance?</h3>

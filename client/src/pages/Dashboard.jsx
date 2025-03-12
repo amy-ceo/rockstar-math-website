@@ -52,29 +52,28 @@ const Dashboard = () => {
 
   console.log(allowedTimes)
   // ❌ Courses that should NOT appear in "Remaining Sessions"
-  const excludedPlans = ['Learn', 'Achieve', 'Excel','Common Core- Parents']
+  const excludedPlans = ['Learn', 'Achieve', 'Excel', 'Common Core- Parents']
 
   useEffect(() => {
-    const storedUser = JSON.parse(localStorage.getItem('user'));
+    const storedUser = JSON.parse(localStorage.getItem('user'))
     if (!storedUser || !storedUser._id) {
-      console.warn('⚠️ User not logged in, redirecting to login...');
-      navigate('/login'); // ✅ Redirect if user is not logged in
+      console.warn('⚠️ User not logged in, redirecting to login...')
+      navigate('/login') // ✅ Redirect if user is not logged in
     } else {
-      setUser(storedUser); // ✅ Store user in state
+      setUser(storedUser) // ✅ Store user in state
     }
-  }, [navigate]);
-  
+  }, [navigate])
 
   // ✅ Fetch all user data when component mounts
   useEffect(() => {
     if (!user || !user._id) {
-      console.warn('⚠️ User ID not found, skipping API calls.');
-      setLoading(false);
-      return;
+      console.warn('⚠️ User ID not found, skipping API calls.')
+      setLoading(false)
+      return
     }
-  
-    console.log('📡 Fetching data for User ID:', user._id);
-    setLoading(true);
+
+    console.log('📡 Fetching data for User ID:', user._id)
+    setLoading(true)
 
     // Fetch Purchased Classes
     const fetchPurchasedClasses = async () => {
@@ -111,26 +110,25 @@ const Dashboard = () => {
 
     const fetchZoomBookings = async () => {
       if (!user || !user._id) {
-        console.warn('⚠️ User ID is missing. Skipping Zoom booking fetch.');
-        return;
+        console.warn('⚠️ User ID is missing. Skipping Zoom booking fetch.')
+        return
       }
-    
+
       try {
         const response = await fetch(
-          `https://backend-production-cbe2.up.railway.app/api/zoom/bookings/${user._id}` // ✅ Pass user ID in API URL
-        );
-    
-        const data = await response.json();
-    
-        if (!response.ok) throw new Error(data.error || 'Failed to fetch Zoom bookings.');
-    
-        setZoomBookings(data.zoomBookings || []); // ✅ Store only this user's bookings
+          `https://backend-production-cbe2.up.railway.app/api/zoom/bookings/${user._id}`, // ✅ Pass user ID in API URL
+        )
+
+        const data = await response.json()
+
+        if (!response.ok) throw new Error(data.error || 'Failed to fetch Zoom bookings.')
+
+        setZoomBookings(data.zoomBookings || []) // ✅ Store only this user's bookings
       } catch (error) {
-        console.error('❌ Error fetching Zoom bookings:', error);
-        setZoomBookings([]); // Prevent UI from breaking
+        console.error('❌ Error fetching Zoom bookings:', error)
+        setZoomBookings([]) // Prevent UI from breaking
       }
-    };
-    
+    }
 
     // Fetch Coupons
     const fetchCoupons = async () => {
@@ -446,16 +444,19 @@ const Dashboard = () => {
                     key={index}
                     className="p-5 bg-white rounded-xl shadow-lg border border-gray-200"
                   >
-                    {/* Session Title */}
                     <h4 className="text-xl font-semibold text-blue-700 mb-2">
                       {session.eventName || 'Unnamed Session'}
                     </h4>
 
-                    {/* Session Start Time */}
+                    {/* ✅ Display All Dates */}
                     <p className="text-gray-600">
-                      <strong>📅 Start Time:</strong>{' '}
-                      {session.startTime ? new Date(session.startTime).toLocaleString() : 'TBA'}
+                      <strong>📅 Dates & Times:</strong>
                     </p>
+                    <ul className="list-disc pl-5 text-gray-600">
+                      {session.sessionDates.map((date, i) => (
+                        <li key={i}>{date}</li>
+                      ))}
+                    </ul>
 
                     {/* Zoom Meeting Link */}
                     {session.zoomMeetingLink ? (
@@ -491,6 +492,17 @@ const Dashboard = () => {
                     <p>
                       <strong>🕒 Remaining Sessions:</strong> {session.remainingSessions}
                     </p>
+
+                    {session.bookingLink && (
+                      <a
+                        href={session.bookingLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-2 block text-center bg-green-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-green-600"
+                      >
+                        📅 Book Now
+                      </a>
+                    )}
                   </div>
                 ))}
               </div>
