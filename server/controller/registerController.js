@@ -484,6 +484,7 @@ exports.getRemainingSession = async (req, res) => {
     const sessionData = user.purchasedClasses.map((item) => ({
       name: item.name,
       remainingSessions: item.remainingSessions,
+      bookingLink: item.bookingLink || null, // ✅ Ensure bookingLink is included
     }))
 
     res.json({ remainingSessions: sessionData })

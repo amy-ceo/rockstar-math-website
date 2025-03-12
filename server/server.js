@@ -33,16 +33,16 @@ bcrypt.setRandomFallback((len) => global.crypto.randomBytes(len)); // ✅ Fixes 
 connectDB();
 const app = express();
 
-app.use((req, res, next) => {
-  const allowedOrigin = ["https://zoom.us", undefined]; // ✅ Zoom Webhooks can have undefined origin
-  if (allowedOrigin.includes(req.headers.origin)) {
-      res.setHeader("Access-Control-Allow-Origin", req.headers.origin || "*");
-      res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-      res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-      res.setHeader("Access-Control-Allow-Credentials", "true");
-  }
-  next();
-});
+// app.use((req, res, next) => {
+//   const allowedOrigin = ["https://zoom.us", undefined]; // ✅ Zoom Webhooks can have undefined origin
+//   if (allowedOrigin.includes(req.headers.origin)) {
+//       res.setHeader("Access-Control-Allow-Origin", req.headers.origin || "*");
+//       res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+//       res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+//       res.setHeader("Access-Control-Allow-Credentials", "true");
+//   }
+//   next();
+// });
 
 
 // ✅ JSON Middleware for Other Routes (Not Webhook)
@@ -57,12 +57,11 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: function (origin, callback) {
-      // ✅ Always allow requests WITHOUT an origin (Zoom Webhooks)
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
         console.error(`❌ CORS Blocked: ${origin}`);
-        callback(null, false); // ✅ Instead of throwing an error, just deny access
+        callback(new Error("Not allowed by CORS"));
       }
     },
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -87,14 +86,14 @@ app.use("/api/zoom/webhook", (req, res, next) => {
 app.use(express.json()); // ✅ Load this first
 app.use(express.urlencoded({ extended: true }));
 
-app.use((req, res, next) => {
-  if (req.headers["x-forwarded-proto"] !== "https") {
-      return res.status(403).send("❌ HTTPS Required");
-  }
-  next();
-});
+// app.use((req, res, next) => {
+//   if (req.headers["x-forwarded-proto"] !== "https") {
+//       return res.status(403).send("❌ HTTPS Required");
+//   }
+//   next();
+// });
 
-app.set('trust proxy', true);
+// app.set('trust proxy', true);
 
 
 
