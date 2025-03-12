@@ -105,7 +105,7 @@ function BlogPage() {
 
       {/* ✅ Dynamic Blog Section */}
       <Suspense fallback={<div className="text-center py-10 text-gray-500">Loading...</div>}>
-        <AnimatedSection direction="top">
+      <AnimatedSection direction="top">
           <div className="py-10 bg-gray-50">
             <h2 className="text-gray-800 text-3xl font-bold text-center mb-10">
               <span className="border-b-4 border-deepBlue pb-1">Our Blogs</span>
@@ -113,32 +113,30 @@ function BlogPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 px-6 md:px-12 xl:px-20">
               {blogs.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 px-6 md:px-12 xl:px-20">
-                  {blogs.map((item, index) => (
-                    <div
-                      key={index}
-                      className="flex flex-col cursor-pointer bg-white shadow-md border border-gray-200 rounded-lg hover:shadow-2xl transform hover:scale-105 transition-transform duration-300 overflow-hidden"
-                      onClick={() => handleOpenModal(item)}
-                    >
-                      <div className="relative w-full h-56 overflow-hidden rounded-t-lg">
-                        <img
-                          src={`https://backend-production-cbe2.up.railway.app${item.image}`}
-                          loading="lazy"
-                          alt={item.title}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div className="p-6 flex flex-col justify-between h-auto">
-                        <h6 className="mb-3 text-gray-900 text-lg font-bold hover:text-blue-600 transition-colors duration-300">
-                          {item.title}
-                        </h6>
-                        <p className="text-gray-600 text-sm leading-relaxed">
-                          {item.description.substring(0, 100)}...
-                        </p>
-                      </div>
+                blogs.map((item, index) => (
+                  <div
+                    key={index}
+                    className="bg-white shadow-md border border-gray-200 rounded-lg hover:shadow-lg transform hover:scale-105 transition-transform duration-300 overflow-hidden"
+                    onClick={() => handleOpenModal(item)}
+                  >
+                    <div className="relative w-full h-48 sm:h-56 overflow-hidden rounded-t-lg">
+                      <img
+                        src={`https://backend-production-cbe2.up.railway.app${item.image}`}
+                        loading="lazy"
+                        alt={item.title}
+                        className="w-full h-full object-cover"
+                      />
                     </div>
-                  ))}
-                </div>
+                    <div className="p-5">
+                      <h6 className="mb-3 text-gray-900 text-lg font-bold hover:text-blue-600 transition-colors duration-300">
+                        {item.title}
+                      </h6>
+                      <p className="text-gray-600 text-sm leading-relaxed">
+                        {item.description.substring(0, 100)}...
+                      </p>
+                    </div>
+                  </div>
+                ))
               ) : (
                 <p className="text-center text-gray-500 py-6">No blogs available.</p>
               )}
