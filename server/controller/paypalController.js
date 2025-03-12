@@ -185,9 +185,9 @@ exports.captureOrder = async (req, res) => {
     if (!captureResponse.result || captureResponse.result.status !== 'COMPLETED') {
       console.error('❌ PayPal Capture Failed - Status:', captureResponse.result.status)
       return res
-        .status(400)
-        .json({ error: 'Payment capture failed', details: captureResponse.result })
-    }
+          .status(400)
+          .json({ error: 'Payment capture failed', details: captureResponse.result })
+  }
 
     const captureDetails = captureResponse.result.purchase_units[0].payments?.captures?.[0]
 
@@ -554,12 +554,11 @@ exports.captureOrder = async (req, res) => {
     await sendEmail(recipientEmails, '📚 Your Rockstar Math Purchase Details', '', emailHtml)
 
     console.log('✅ Purchase confirmation email sent success')
-
     res.json({
-      message: 'Payment captured & records updated successfully.',
+      message: 'Payment captured successfully!',
       payment: captureResponse.result,
-      clearCart: true, // ✅ Ensure frontend knows to clear the cart
-    })
+      redirectTo: '/dashboard' // ✅ Ensure this is included
+  })
   } catch (error) {
     console.error('❌ Error Capturing PayPal Payment:', error)
     res.status(500).json({ error: 'Internal Server Error', details: error.message || error })
