@@ -32,17 +32,17 @@ bcrypt.setRandomFallback((len) => global.crypto.randomBytes(len)); // ✅ Fixes 
 
 connectDB();
 const app = express();
-
-// app.use((req, res, next) => {
-//   const allowedOrigin = ["https://zoom.us", undefined]; // ✅ Zoom Webhooks can have undefined origin
-//   if (allowedOrigin.includes(req.headers.origin)) {
-//       res.setHeader("Access-Control-Allow-Origin", req.headers.origin || "*");
-//       res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-//       res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-//       res.setHeader("Access-Control-Allow-Credentials", "true");
-//   }
-//   next();
-// });
+app.use(express.json()); // ✅ Load this first
+app.use(express.urlencoded({ extended: true }));
+app.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  next();
+});
+app.options('*', (req, res) => {
+  res.sendStatus(200);
+});
 
 
 // ✅ JSON Middleware for Other Routes (Not Webhook)
@@ -83,8 +83,7 @@ app.use("/api/zoom/webhook", (req, res, next) => {
       express.json()(req, res, next);
   }
 });
-app.use(express.json()); // ✅ Load this first
-app.use(express.urlencoded({ extended: true }));
+
 
 // app.use((req, res, next) => {
 //   if (req.headers["x-forwarded-proto"] !== "https") {
