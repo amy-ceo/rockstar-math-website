@@ -33,7 +33,10 @@ exports.zoomWebhook = async (req, res) => {
     const meetingTopic = payload.topic || "Unknown Topic";
     const meetingId = payload.id || "Unknown ID";
     const joinUrl = registrant.join_url || "No Join URL Provided";
-    const startTime = payload.start_time ? new Date(payload.start_time) : null;
+    const startTime = payload.start_time
+  ? new Date(payload.start_time).toISOString() // Ensure UTC format
+  : null;
+
 
     if (!inviteeEmail || !startTime) {
       return res.status(400).json({ error: "Missing required fields" });
@@ -49,24 +52,17 @@ exports.zoomWebhook = async (req, res) => {
     let existingMeeting = user.zoomBookings.find(booking => booking.zoomMeetingId === meetingId);
 
     if (existingMeeting) {
-      console.log(`⚠️ Existing Zoom Meeting Found. Adding Date: ${startTime}`);
+  if (!existingMeeting.sessionDates) {
+    existingMeeting.sessionDates = []; // Ensure sessionDates array exists
+  }
 
-      if (!existingMeeting.sessionDates) {
-        existingMeeting.sessionDates = []; // Ensure sessionDates array exists
-      }
-
-      // ✅ Add New Date if Not Already Present
-      if (!existingMeeting.sessionDates.some(date => new Date(date).getTime() === startTime.getTime())) {
-        existingMeeting.sessionDates.push(startTime);
-        user.markModified("zoomBookings");
-        await user.save();
-        console.log("✅ Added new session date.");
-      } else {
-        console.log("⚠️ Session date already exists. Skipping update.");
-      }
-
-      return res.status(200).json({ message: "Updated existing Zoom booking with a new session date." });
-    }
+  // ✅ Ensure we're storing correct dates
+  if (!existingMeeting.sessionDates.some(date => new Date(date).getTime() === new Date(startTime).getTime())) {
+    existingMeeting.sessionDates.push(new Date(startTime)); // ✅ Store correct date
+    user.markModified("zoomBookings");
+    await user.save();
+  }
+}
 
     // ✅ Create New Zoom Booking
     const newZoomBooking = {
@@ -104,13 +100,13 @@ exports.getUserZoomBookings = async (req, res) => {
     }
 
     // ✅ Ensure sessionDates array is properly formatted
-    const zoomBookings = user.zoomBookings.map(booking => ({
+    const zoomBookings = user.zoomBookings.map((booking) => ({
       ...booking.toObject(),
       sessionDates: booking.sessionDates
-        ? booking.sessionDates.map(date => new Date(date).toLocaleString()) 
-        : [], 
+        ? booking.sessionDates.map(date => new Date(date).toISOString()) // ✅ Store in ISO format (always UTC)
+        : [],
     }));
-
+    
     return res.status(200).json({ message: "Zoom bookings fetched successfully", zoomBookings });
 
   } catch (error) {

@@ -299,6 +299,18 @@ const Dashboard = () => {
     setShowReschedulePopup(true)
   }
 
+  const formatDateTime = (date) => {
+    return new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/Los_Angeles", // ✅ Convert to correct timezone
+      year: "numeric",
+      month: "long",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    }).format(new Date(date));
+  };
+
   if (loading) return <p>Loading dashboard...</p>
   if (error) return <p className="text-red-600">{error}</p>
 
@@ -449,21 +461,14 @@ const Dashboard = () => {
                     </h4>
 
                     {/* Display Multiple Session Dates */}
-                    <p className="text-gray-600">
-                      <strong>📅 Dates & Times:</strong>
-                    </p>
-                    {session.sessionDates.length > 0 ? (
-                      <ul className="mt-2">
-                        {session.sessionDates.map((date, i) => (
-                          <li key={i} className="text-gray-500">
-                            📆 {date}
-                          </li>
-                        ))}
-                      </ul>
+                    <p>📅 Dates & Times:</p>
+                    {sessionDates.length > 0 ? (
+                      sessionDates.map((date, index) => (
+                        <p key={index}>🕒 {formatDateTime(date)}</p> // ✅ Properly formatted
+                      ))
                     ) : (
-                      <p className="text-red-500">⚠️ No scheduled dates found</p>
+                      <p>⚠️ No scheduled dates found</p>
                     )}
-
                     {/* Zoom Meeting Link */}
                     {session.zoomMeetingLink && (
                       <div className="mt-3">

@@ -40,18 +40,13 @@ const zoomBookingSchema = new mongoose.Schema({
   eventName: { type: String, required: true },
   firstName: { type: String, required: true },
   lastName: { type: String, required: true },
-  zoomMeetingId: { type: String, required: true, unique: true ,sparse: true },
+  zoomMeetingId: { type: String, required: true, unique: true, sparse: true },
   zoomMeetingLink: { type: String, required: true },
-  sessionDates: [{ type: Date, required: true }], // ✅ Store multiple session dates
-  endTime: { type: Date },
-  timezone: { type: String, default: 'UTC' },
-  status: {
-    type: String,
-    enum: ['Booked', 'Completed', 'Cancelled'],
-    default: 'Booked',
-  },
+  sessionDates: [{ type: Date, required: true }], // ✅ Array of session dates
+  timezone: { type: String, default: "UTC" }, 
+  status: { type: String, enum: ["Booked", "Completed", "Cancelled"], default: "Booked" },
   createdAt: { type: Date, default: Date.now },
-})
+});
 
 // ✅ Coupon Schema Inside Register Model
 const couponSchema = new mongoose.Schema({
