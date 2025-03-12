@@ -385,6 +385,7 @@ exports.captureOrder = async (req, res) => {
 
     console.log('📧 Sending Email with Zoom Links:', zoomLinks)
     console.log('🎟 Sending Email with Coupons:', appliedCoupons)
+    const proxyBaseUrl = 'https://backend-production-cbe2.up.railway.app/api/proxy-calendly';
 
     // ✅ Extract Purchased Items & Apply Session Mapping
     const purchasedItems = user.cartItems.map((item) => {
@@ -394,14 +395,16 @@ exports.captureOrder = async (req, res) => {
       const sessionCount = sessionMapping[formattedItemName] ?? 0
       const remainingSessions = sessionMapping[formattedItemName] ?? 0
 
-      // ✅ Fetch Calendly Booking Link (Ensure Defaults)
-      const bookingLink = calendlyMapping[formattedItemName] || null
+        // ✅ Generate Proxy Booking Link
+  const proxyBookingLink = calendlyMapping[formattedItemName]
+  ? `${proxyBaseUrl}?userId=${user._id}&session=${encodeURIComponent(item.name)}`
+  : null;
 
       return {
         name: item.name,
         sessionCount,
         remainingSessions,
-        bookingLink,
+        bookingLink: proxyBookingLink, // ✅ Store Proxy Calendly Link!
         status: 'Active',
       }
     })

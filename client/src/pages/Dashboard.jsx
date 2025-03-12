@@ -83,7 +83,14 @@ const Dashboard = () => {
         )
         const data = await response.json()
         if (!response.ok) throw new Error(data.message || 'Failed to fetch purchased classes.')
-        setPurchasedClasses(data.purchasedClasses || [])
+
+        // ✅ Ensure bookingLink is included
+        const updatedClasses = (data.purchasedClasses || []).map((cls) => ({
+          ...cls,
+          bookingLink: cls.bookingLink || null,
+        }))
+
+        setPurchasedClasses(updatedClasses)
       } catch (error) {
         console.error('❌ Error fetching classes:', error)
         setError('Failed to load classes. Try again.')
@@ -110,32 +117,31 @@ const Dashboard = () => {
 
     const fetchZoomBookings = async () => {
       if (!user || !user._id) {
-        console.warn("⚠️ User ID is missing. Skipping Zoom booking fetch.");
-        return;
+        console.warn('⚠️ User ID is missing. Skipping Zoom booking fetch.')
+        return
       }
-    
+
       try {
         const response = await fetch(
-          `https://backend-production-cbe2.up.railway.app/api/zoom/bookings/${user._id}`
-        );
-    
-        const data = await response.json();
-    
-        if (!response.ok) throw new Error(data.error || "Failed to fetch Zoom bookings.");
-    
+          `https://backend-production-cbe2.up.railway.app/api/zoom/bookings/${user._id}`,
+        )
+
+        const data = await response.json()
+
+        if (!response.ok) throw new Error(data.error || 'Failed to fetch Zoom bookings.')
+
         // ✅ Ensure sessionDates is always an array
         const processedBookings = data.zoomBookings.map((booking) => ({
           ...booking,
           sessionDates: Array.isArray(booking.sessionDates) ? booking.sessionDates : [], // ✅ Ensure it is an array
-        }));
-    
-        setZoomBookings(processedBookings);
+        }))
+
+        setZoomBookings(processedBookings)
       } catch (error) {
-        console.error("❌ Error fetching Zoom bookings:", error);
-        setZoomBookings([]); // Prevent UI from breaking
+        console.error('❌ Error fetching Zoom bookings:', error)
+        setZoomBookings([]) // Prevent UI from breaking
       }
-    };
-    
+    }
 
     // Fetch Coupons
     const fetchCoupons = async () => {
@@ -161,12 +167,16 @@ const Dashboard = () => {
           `https://backend-production-cbe2.up.railway.app/api/user/${user._id}/remaining-sessions`,
         )
         const data = await response.json()
+
         if (!response.ok) throw new Error(data.message || 'Failed to fetch remaining sessions.')
 
-        // ✅ Filter out only the excluded plans
-        const filteredSessions = (data.remainingSessions || []).filter(
-          (session) => !excludedPlans.includes(session.name),
-        )
+        // ✅ Filter out only the excluded plans & ensure bookingLink exists
+        const filteredSessions = (data.remainingSessions || [])
+          .filter((session) => !excludedPlans.includes(session.name))
+          .map((session) => ({
+            ...session,
+            bookingLink: session.bookingLink || null, // ✅ Ensure bookingLink is present
+          }))
 
         setRemainingSessions(filteredSessions)
       } catch (error) {
@@ -176,6 +186,7 @@ const Dashboard = () => {
         setLoading(false)
       }
     }
+
     if (users?._id) {
       fetchZoomBookings()
     }
@@ -307,16 +318,16 @@ const Dashboard = () => {
   }
 
   const formatDateTime = (date) => {
-    return new Intl.DateTimeFormat("en-US", {
-      timeZone: "America/Los_Angeles", // ✅ Convert to correct timezone
-      year: "numeric",
-      month: "long",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
+    return new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Los_Angeles', // ✅ Convert to correct timezone
+      year: 'numeric',
+      month: 'long',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
       hour12: true,
-    }).format(new Date(date));
-  };
+    }).format(new Date(date))
+  }
 
   if (loading) return <p>Loading dashboard...</p>
   if (error) return <p className="text-red-600">{error}</p>
@@ -450,52 +461,84 @@ const Dashboard = () => {
               </div>
             </section>
           )}
-       {zoomBookings.length > 0 && (
-  <section className="mt-6 p-6 bg-white shadow-lg rounded-lg">
-    <h3 className="text-2xl font-bold mb-4 text-gray-800">
-      🎥 Your Registered Zoom Sessions
-    </h3>
+          {zoomBookings.length > 0 && (
+            <section className="mt-6 p-6 bg-white shadow-lg rounded-lg">
+              <h3 className="text-2xl font-bold mb-4 text-gray-800">
+                🎥 Your Registered Zoom Sessions
+              </h3>
 
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-      {zoomBookings.map((session, index) => (
-        <div
-          key={index}
-          className="p-5 bg-white rounded-xl shadow-lg border border-gray-200"
-        >
-          {/* Session Title */}
-          <h4 className="text-xl font-semibold text-blue-700 mb-2">
-            {session.eventName || "Unnamed Session"}
-          </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                {zoomBookings.map((session, index) => (
+                  <div
+                    key={index}
+                    className="p-5 bg-white rounded-xl shadow-lg border border-gray-200"
+                  >
+                    {/* Session Title */}
+                    <h4 className="text-xl font-semibold text-blue-700 mb-2">
+                      {session.eventName || 'Unnamed Session'}
+                    </h4>
 
-          {/* ✅ Fix: Ensure sessionDates is accessed correctly */}
-          <p>📅 Dates & Times:</p>
-          {session.sessionDates && session.sessionDates.length > 0 ? (
-            session.sessionDates.map((date, index) => (
-              <p key={index}>🕒 {formatDateTime(date)}</p> // ✅ Properly formatted
-            ))
-          ) : (
-            <p>⚠️ No scheduled dates found</p>
+                    {/* ✅ Fix: Ensure sessionDates is accessed correctly */}
+                    <p>📅 Dates & Times:</p>
+                    {session.sessionDates && session.sessionDates.length > 0 ? (
+                      session.sessionDates.map((date, index) => (
+                        <p key={index}>🕒 {formatDateTime(date)}</p> // ✅ Properly formatted
+                      ))
+                    ) : (
+                      <p>⚠️ No scheduled dates found</p>
+                    )}
+
+                    {/* Zoom Meeting Link */}
+                    {session.zoomMeetingLink && (
+                      <div className="mt-3">
+                        <a
+                          href={session.zoomMeetingLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 font-medium hover:underline"
+                        >
+                          🔗 Join Zoom Session
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
           )}
 
-          {/* Zoom Meeting Link */}
-          {session.zoomMeetingLink && (
-            <div className="mt-3">
-              <a
-                href={session.zoomMeetingLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 font-medium hover:underline"
-              >
-                🔗 Join Zoom Session
-              </a>
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
-  </section>
-)}
+          {/* ✅ Show Remaining Sessions - Hide "Learn", but display other sessions */}
+          {remainingSessions.length > 0 && (
+            <section className="mt-6 p-4 bg-white shadow-md rounded-lg">
+              <h3 className="text-lg font-bold mb-2">🕒 Your Remaining Sessions</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {remainingSessions.map((session, index) => (
+                  <div key={index} className="p-4 bg-blue-200 rounded-lg shadow">
+                    <p>
+                      <strong>📚 Plan:</strong> {session.name}
+                    </p>
+                    <p>
+                      <strong>🕒 Remaining Sessions:</strong> {session.remainingSessions}
+                    </p>
 
+                    {/* ✅ Show "Book Now" Button if bookingLink Exists */}
+                    {session.bookingLink && (
+                      <div className="mt-3">
+                        <a
+                          href={session.bookingLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-white bg-blue-600 hover:bg-blue-700 font-medium px-4 py-2 rounded-lg block text-center"
+                        >
+                          📅 Book Now
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
         </AnimatedSection>
       </div>
 
