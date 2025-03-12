@@ -34,25 +34,12 @@ connectDB();
 const app = express();
 app.use(express.json()); // ✅ Load this first
 app.use(express.urlencoded({ extended: true }));
-app.use((req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  next();
-});
-app.options('*', (req, res) => {
-  res.sendStatus(200);
-});
 
 
-// ✅ JSON Middleware for Other Routes (Not Webhook)
-// ✅ **Place Webhook Route BEFORE express.json()**
-app.use("/api/stripe/webhook", bodyParser.raw({ type: "application/json" }));
 
-const allowedOrigins = [
-  "http://localhost:8080",
-  "https://www.rockstarmath.com",
-];
+
+// ✅ CORS Configuration - Allow Calendly Webhooks
+const allowedOrigins = ['https://calendly.com', 'http://localhost:8080', 'https://www.rockstarmath.com'];
 
 app.use(
   cors({
@@ -64,12 +51,19 @@ app.use(
         callback(new Error("Not allowed by CORS"));
       }
     },
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "OPTIONS"],
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
+// ✅ Handle Preflight Requests Properly (for Calendly & others)
+app.options('*', (req, res) => {
+  res.sendStatus(200); // Respond to OPTIONS preflight request
+});
+
+
+app.use("/api/stripe/webhook", bodyParser.raw({ type: "application/json" }));
 
 
 
