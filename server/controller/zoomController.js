@@ -116,10 +116,21 @@ exports.getUserZoomBookings = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
+    // ✅ Ensure zoomBookings is always an array
+    if (!user.zoomBookings || !Array.isArray(user.zoomBookings)) {
+      console.warn(`⚠️ No zoomBookings found for user ${userId}. Returning empty array.`);
+      return res.status(200).json({
+        message: "No Zoom bookings found",
+        zoomBookings: [], // ✅ Return an empty array if zoomBookings is missing
+      });
+    }
+
     // ✅ Format session dates properly
     const zoomBookings = user.zoomBookings.map((booking) => ({
       ...booking.toObject(),
-      sessionDates: booking.sessionDates.map(date => new Date(date).toLocaleString()), // Format Dates
+      sessionDates: booking.sessionDates
+        ? booking.sessionDates.map(date => new Date(date).toLocaleString())
+        : [], // ✅ Ensure sessionDates is always an array
     }));
 
     return res.status(200).json({
@@ -131,3 +142,4 @@ exports.getUserZoomBookings = async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
