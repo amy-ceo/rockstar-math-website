@@ -38,7 +38,6 @@ app.use(express.urlencoded({ extended: true }));
 
 
 
-// ✅ CORS Configuration - Allow Calendly Webhooks
 const allowedOrigins = ['https://calendly.com', 'http://localhost:8080', 'https://www.rockstarmath.com'];
 
 app.use(
@@ -57,10 +56,12 @@ app.use(
   })
 );
 
-// ✅ Handle Preflight Requests Properly (for Calendly & others)
+
 app.options('*', (req, res) => {
+  console.log("📢 Preflight Request:", req.headers);
   res.sendStatus(200); // Respond to OPTIONS preflight request
 });
+
 
 
 app.use("/api/stripe/webhook", bodyParser.raw({ type: "application/json" }));
@@ -75,6 +76,14 @@ app.use("/api/zoom/webhook", (req, res, next) => {
       bodyParser.raw({ type: "application/json" })(req, res, next);
   } else {
       express.json()(req, res, next);
+  }
+});
+
+app.use("/api/webhook/calendly", (req, res, next) => {
+  if (req.headers["content-type"] === "application/json") {
+    express.json()(req, res, next);  // Use express.json() to parse incoming JSON payload
+  } else {
+    res.status(400).send("Invalid Content-Type. Expected application/json.");
   }
 });
 

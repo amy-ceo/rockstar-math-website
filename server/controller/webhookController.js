@@ -5,14 +5,18 @@ const crypto = require('crypto');
 const verifyWebhookSignature = (req, signingKey) => {
   const signature = req.headers['X-Cal-Signature']; // Incoming signature from Calendly
   const payload = JSON.stringify(req.body);
-  
+
   const computedSignature = crypto
     .createHmac('sha256', signingKey)
     .update(payload)
     .digest('base64');
   
+  console.log("📢 Computed Signature:", computedSignature);
+  console.log("📢 Incoming Signature:", signature);
+  
   return signature === computedSignature;
 };
+
 
 exports.calendlyWebhook = async (req, res) => {
   try {
