@@ -42,7 +42,7 @@ const zoomBookingSchema = new mongoose.Schema({
   lastName: { type: String, required: true },
   zoomMeetingId: { type: String, required: true, unique: true ,sparse: true },
   zoomMeetingLink: { type: String, required: true },
-  startTime: { type: Date, required: true },
+  sessionDates: [{ type: Date, required: true }], // ✅ Store multiple session dates
   endTime: { type: Date },
   timezone: { type: String, default: 'UTC' },
   status: {

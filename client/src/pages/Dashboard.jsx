@@ -448,17 +448,21 @@ const Dashboard = () => {
                       {session.eventName || 'Unnamed Session'}
                     </h4>
 
-                    {/* Display Multiple Dates */}
+                    {/* Display Multiple Session Dates */}
                     <p className="text-gray-600">
                       <strong>📅 Dates & Times:</strong>
                     </p>
-                    <ul className="text-gray-600 ml-4">
-                      {session.sessionDates && session.sessionDates.length > 0 ? (
-                        session.sessionDates.map((date, i) => <li key={i}>📆 {date}</li>)
-                      ) : (
-                        <li>⚠️ No scheduled dates found</li>
-                      )}
-                    </ul>
+                    {session.sessionDates.length > 0 ? (
+                      <ul className="mt-2">
+                        {session.sessionDates.map((date, i) => (
+                          <li key={i} className="text-gray-500">
+                            📆 {date}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-red-500">⚠️ No scheduled dates found</p>
+                    )}
 
                     {/* Zoom Meeting Link */}
                     {session.zoomMeetingLink && (
