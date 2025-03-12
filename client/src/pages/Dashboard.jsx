@@ -431,7 +431,6 @@ const Dashboard = () => {
               </div>
             </section>
           )}
-          {/* ✅ Zoom Sessions Section */}
           {zoomBookings.length > 0 && (
             <section className="mt-6 p-6 bg-white shadow-lg rounded-lg">
               <h3 className="text-2xl font-bold mb-4 text-gray-800">
@@ -444,22 +443,25 @@ const Dashboard = () => {
                     key={index}
                     className="p-5 bg-white rounded-xl shadow-lg border border-gray-200"
                   >
+                    {/* Session Title */}
                     <h4 className="text-xl font-semibold text-blue-700 mb-2">
                       {session.eventName || 'Unnamed Session'}
                     </h4>
 
-                    {/* ✅ Display All Dates */}
+                    {/* Display Multiple Dates */}
                     <p className="text-gray-600">
                       <strong>📅 Dates & Times:</strong>
                     </p>
-                    <ul className="list-disc pl-5 text-gray-600">
-                      {session.sessionDates.map((date, i) => (
-                        <li key={i}>{date}</li>
-                      ))}
+                    <ul className="text-gray-600 ml-4">
+                      {session.sessionDates && session.sessionDates.length > 0 ? (
+                        session.sessionDates.map((date, i) => <li key={i}>📆 {date}</li>)
+                      ) : (
+                        <li>⚠️ No scheduled dates found</li>
+                      )}
                     </ul>
 
                     {/* Zoom Meeting Link */}
-                    {session.zoomMeetingLink ? (
+                    {session.zoomMeetingLink && (
                       <div className="mt-3">
                         <a
                           href={session.zoomMeetingLink}
@@ -470,38 +472,6 @@ const Dashboard = () => {
                           🔗 Join Zoom Session
                         </a>
                       </div>
-                    ) : (
-                      <p className="text-gray-500 mt-2">⚠️ Meeting link not available</p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* ✅ Show Remaining Sessions - Hide "Learn", but display other sessions */}
-          {remainingSessions.length > 0 && (
-            <section className="mt-6 p-4 bg-white shadow-md rounded-lg">
-              <h3 className="text-lg font-bold mb-2">🕒 Your Remaining Sessions</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {remainingSessions.map((session, index) => (
-                  <div key={index} className="p-4 bg-blue-200 rounded-lg shadow">
-                    <p>
-                      <strong>📚 Plan:</strong> {session.name}
-                    </p>
-                    <p>
-                      <strong>🕒 Remaining Sessions:</strong> {session.remainingSessions}
-                    </p>
-
-                    {session.bookingLink && (
-                      <a
-                        href={session.bookingLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-2 block text-center bg-green-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-green-600"
-                      >
-                        📅 Book Now
-                      </a>
                     )}
                   </div>
                 ))}
