@@ -1,8 +1,29 @@
 const Register = require('../models/registerModel')
 const sendEmail = require('../utils/emailSender')
+const crypto = require('crypto');
+
+const verifyWebhookSignature = (req, signingKey) => {
+  const signature = req.headers['X-Cal-Signature']; // Incoming signature from Calendly
+  const payload = JSON.stringify(req.body);
+  
+  const computedSignature = crypto
+    .createHmac('sha256', signingKey)
+    .update(payload)
+    .digest('base64');
+  
+  return signature === computedSignature;
+};
 
 exports.calendlyWebhook = async (req, res) => {
   try {
+
+    const signingKey = "p5kGuYS2gJkb-wz5RLeQhHLAIWYPIqF4a1wVEew_lE4"; // Use your Webhook Signing Key
+
+    if (!verifyWebhookSignature(req, signingKey)) {
+      console.error("❌ Invalid webhook signature");
+      return res.status(400).json({ error: 'Invalid signature' });
+    }
+
     console.log('📢 FULL Webhook Payload:', JSON.stringify(req.body, null, 2));
 
     if (!req.body || !req.body.payload) {
