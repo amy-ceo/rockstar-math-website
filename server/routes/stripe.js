@@ -468,50 +468,45 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
       // ✅ **Send Welcome Email**
       console.log(`📧 Sending Welcome Email to: ${userEmail}`)
       let welcomeSubject = `🎉 Welcome to Rockstar Math, ${user.username}!`
-      let welcomeHtml = `
-   <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
+      let welcomeHtml =  `
+      <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
+        
+        <div style="text-align: center; padding-bottom: 20px;">
+          <img src="https://your-logo-url.com/logo.png" alt="Rockstar Math" style="width: 150px; margin-bottom: 10px;">
+          <h2 style="color: #2C3E50;">🎉 Thank You for Your Purchase – Welcome to RockstarMath!</h2>
+        </div>
     
-    <div style="text-align: center; padding-bottom: 20px;">
-      <img src="https://your-logo-url.com/logo.png" alt="Rockstar Math" style="width: 150px; margin-bottom: 10px;">
-     <h2 style="color: #2C3E50;">🎉 Welcome, ${user.username}!</h2>
-     <p style="font-size: 16px;">We're thrilled to have you join <b>Rockstar Math</b>! 🚀</p>
-   </div>
-
-   <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-     <h3 style="color: #007bff;">📢 Your Account is Ready!</h3>
-     <p>Congratulations! Your account has been successfully created. You now have access to personalized math tutoring, expert guidance, and interactive learning resources.</p>
-     <p><b>Username:</b> ${user.username}</p>
-     <p><b>Email:</b> ${user.email}</p>
-   </div>
-
-   <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-     <h3 style="color: #007bff;">📌 What's Next?</h3>
-     <p>Start your learning journey today by logging into your dashboard, exploring available sessions, and scheduling your first class!</p>
-     <p><b>Access your dashboard here:</b> <a href="https://your-website.com/login" target="_blank" style="color: #007bff;">Go to Dashboard</a></p>
-   </div>
-
-   <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-     <h3 style="color: #007bff;">💡 Need Help?</h3>
-     <p>Our team is always here to assist you! If you have any questions, reach out to us at <b>support@rockstarmath.com</b>.</p>
-   </div>
-
-   <p style="text-align: center; font-size: 16px;">Let's make math learning fun and exciting! We can't wait to see you in class. 🚀</p>
-
-   <div style="text-align: center; margin-top: 20px;">
-     <a href="https://calendly.com/rockstarmathtutoring" target="_blank"
-       style="display:inline-block; padding:12px 24px; background-color:#007bff; color:#fff; text-decoration:none; border-radius:6px; font-weight:bold; font-size:16px;">
-       📅 Schedule Your First Session
-     </a>
-   </div>
-
-   <p style="text-align: center; font-size: 14px; color: #555; margin-top: 20px;">
-     Best regards,<br>
-     <b>Amy Gemme</b><br>
-     Rockstar Math Tutoring<br>
-     📞 510-410-4963
-   </p>
- </div>
- `
+        <p>Hi <b>${user.username}</b>,</p>
+        
+        <p>Thank you for your purchase! 🎉 We’re thrilled to have you as part of the RockstarMath community and are excited to help you achieve your math goals.</p>
+    
+        <h3 style="color: #007bff;">🚀 Get Started Now!</h3>
+        <p>To begin, log in to your dashboard:</p>
+        <p style="text-align: center;">
+          <a href="https://www.rockstarmath.com/login" target="_blank" style="background: #007bff; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px; font-weight: bold;">Go to Dashboard</a>
+        </p>
+        
+        <p>Use the username and password you created during registration to log in.</p>
+    
+        
+        <h3 style="color: #007bff;">📞 Need Assistance?</h3>
+        <p>If you have any questions or need help, feel free to reach out to us:</p>
+        <ul>
+          <li>📧 Reply to this email</li>
+          <li>📞 Call us at <b>510-410-4963</b></li>
+        </ul>
+    
+        <p>Thank you again for choosing RockstarMath! We can’t wait to see you excel! 🚀</p>
+    
+        <p style="text-align: center; font-size: 14px; color: #555; margin-top: 20px;">
+          Best regards,<br>
+          <b>Amy Gemme</b><br>
+          Founder, RockstarMath<br>
+          📞 510-410-4963 | 🌍 <a href="https://www.rockstarmath.com" target="_blank">www.rockstarmath.com</a>
+        </p>
+    
+      </div>
+      `
       await sendEmail(userEmail, welcomeSubject, '', welcomeHtml)
       console.log('✅ Welcome email sent successfully!')
       // ✅ Track existing purchased classes to prevent duplicates
@@ -577,42 +572,6 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
           
           <p>Use the username and password you created during registration to log in.</p>
       
-          <h3 style="color: #007bff;">📌 What You Can Do in Your Dashboard:</h3>
-          <ul>
-            <li>🔹 <b>Update your Profile</b> to personalize your experience.</li>
-            <li>📅 <b>View and manage your scheduled sessions.</b></li>
-            <li>🎟 <b>Explore available coupons</b> and purchase additional classes.</li>
-            <li>📚 <b>Access your classes, schedule, and archived sessions.</b></li>
-          </ul>
-      
-          <div style="text-align: center; padding-bottom: 20px;">
-          <h2 style="color: #2C3E50;">Home tab</h2>
-            <img src="https://backend-production-cbe2.up.railway.app/image1.jpg" alt="Rockstar Math" style="width: 500px; margin-bottom: 10px;">
-          </div>
-      <br/>
-          <div style="text-align: center; padding-bottom: 20px;">
-          <h2 style="color: #2C3E50;">My Classes</h2>
-            <img src="https://backend-production-cbe2.up.railway.app/image2.jpg" alt="Rockstar Math" style="width: 500px; margin-bottom: 10px;">
-          </div>
-      
-           <br/>
-          <div style="text-align: center; padding-bottom: 20px;">
-          <h2 style="color: #2C3E50;">Schedule</h2>
-            <img src="https://backend-production-cbe2.up.railway.app/image3.jpg" alt="Rockstar Math" style="width: 500px; margin-bottom: 10px;">
-          </div>
-      
-            <br/>
-          <div style="text-align: center; padding-bottom: 20px;">
-          <h2 style="color: #2C3E50;">Archive</h2>
-            <img src="https://backend-production-cbe2.up.railway.app/image4.jpg" alt="Rockstar Math" style="width: 500px; margin-bottom: 10px;">
-          </div>
-      
-            <br/>
-          <div style="text-align: center; padding-bottom: 20px;">
-          <h2 style="color: #2C3E50;">Profile</h2>
-            <img src="https://backend-production-cbe2.up.railway.app/image5.jpg" alt="Rockstar Math" style="width: 500px; margin-bottom: 10px;">
-          </div>
-
           <h3 style="color: #007bff;">📞 Need Assistance?</h3>
           <p>If you have any questions or need help, feel free to reach out to us:</p>
           <ul>
