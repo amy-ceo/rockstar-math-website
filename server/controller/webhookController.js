@@ -2,31 +2,32 @@ const Register = require('../models/registerModel')
 const sendEmail = require('../utils/emailSender')
 const crypto = require('crypto');
 
+
+// Webhook Signature Verification
 const verifyWebhookSignature = (req, signingKey) => {
   const signature = req.headers['X-Cal-Signature']; // Incoming signature from Calendly
-  const payload = JSON.stringify(req.body);
+  const payload = JSON.stringify(req.body); // Body ko JSON mein convert karke stringify karna zaroori hai
 
   const computedSignature = crypto
-    .createHmac('sha256', signingKey)
-    .update(payload)
-    .digest('base64');
+    .createHmac('sha256', signingKey)  // HMAC sha256 signature calculate karna
+    .update(payload)  // Payload ko update karte hue hash karna
+    .digest('base64');  // Base64 encoded signature generate karna
   
-  console.log("📢 Computed Signature:", computedSignature);
-  console.log("📢 Incoming Signature:", signature);
+  console.log("📢 Computed Signature:", computedSignature); // Debugging: Computed Signature ko print karo
+  console.log("📢 Incoming Signature:", signature); // Debugging: Incoming Signature ko print karo
   
-  return signature === computedSignature;
+  return signature === computedSignature; // Compare karna incoming aur computed signature
 };
-
 
 exports.calendlyWebhook = async (req, res) => {
   try {
 
-    const signingKey = "p5kGuYS2gJkb-wz5RLeQhHLAIWYPIqF4a1wVEew_lE4"; // Use your Webhook Signing Key
-
+    const signingKey = process.env.CALENDLY_SIGNING_KEY; // Webhook Signing Key ko environment variable se load karna
     if (!verifyWebhookSignature(req, signingKey)) {
-      console.error("❌ Invalid webhook signature");
+      console.error("❌ Invalid webhook signature"); // Signature mismatch hone par error
       return res.status(400).json({ error: 'Invalid signature' });
     }
+
 
     console.log('📢 FULL Webhook Payload:', JSON.stringify(req.body, null, 2));
 
