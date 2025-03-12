@@ -170,13 +170,15 @@ const Dashboard = () => {
 
         if (!response.ok) throw new Error(data.message || 'Failed to fetch remaining sessions.')
 
-        // ✅ Filter out only the excluded plans & ensure bookingLink exists
-        const filteredSessions = (data.remainingSessions || [])
-          .filter((session) => !excludedPlans.includes(session.name))
-          .map((session) => ({
-            ...session,
-            bookingLink: session.bookingLink || null, // ✅ Ensure bookingLink is present
-          }))
+        // ✅ Debugging: Check what is inside remaining sessions
+        console.log('🎯 Raw Remaining Sessions Data:', data.remainingSessions)
+
+        const filteredSessions = (data.remainingSessions || []).map((session) => ({
+          ...session,
+          bookingLink: session.bookingLink || null, // ✅ Ensure `bookingLink` is assigned
+        }))
+
+        console.log('✅ Processed Remaining Sessions:', filteredSessions)
 
         setRemainingSessions(filteredSessions)
       } catch (error) {
@@ -507,38 +509,35 @@ const Dashboard = () => {
             </section>
           )}
 
-          {/* ✅ Show Remaining Sessions - Hide "Learn", but display other sessions */}
-          {remainingSessions.length > 0 && (
-            <section className="mt-6 p-4 bg-white shadow-md rounded-lg">
-              <h3 className="text-lg font-bold mb-2">🕒 Your Remaining Sessions</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {remainingSessions.map((session, index) => (
-                  <div key={index} className="p-4 bg-blue-200 rounded-lg shadow">
-                    <p>
-                      <strong>📚 Plan:</strong> {session.name}
-                    </p>
-                    <p>
-                      <strong>🕒 Remaining Sessions:</strong> {session.remainingSessions}
-                    </p>
+          {remainingSessions.map((session, index) => (
+            <div key={index} className="p-4 bg-blue-200 rounded-lg shadow">
+              <p>
+                <strong>📚 Plan:</strong> {session.name}
+              </p>
+              <p>
+                <strong>🕒 Remaining Sessions:</strong> {session.remainingSessions}
+              </p>
 
-                    {/* ✅ Show "Book Now" Button if bookingLink Exists */}
-                    {session.bookingLink && (
-                      <div className="mt-3">
-                        <a
-                          href={session.bookingLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-white bg-blue-600 hover:bg-blue-700 font-medium px-4 py-2 rounded-lg block text-center"
-                        >
-                          📅 Book Now
-                        </a>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
+              {/* ✅ Debugging: Log bookingLink */}
+              {console.log('🔍 Checking bookingLink:', session.bookingLink)}
+
+              {/* ✅ Show "Book Now" Button only if bookingLink exists */}
+              {session.bookingLink ? (
+                <div className="mt-3">
+                  <a
+                    href={session.bookingLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-white bg-blue-600 hover:bg-blue-700 font-medium px-4 py-2 rounded-lg block text-center"
+                  >
+                    📅 Book Now
+                  </a>
+                </div>
+              ) : (
+                <p className="text-red-500">⚠️ No Booking Link Available</p> // ✅ Show this if bookingLink is missing
+              )}
+            </div>
+          ))}
         </AnimatedSection>
       </div>
 
