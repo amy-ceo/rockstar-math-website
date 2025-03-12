@@ -110,25 +110,32 @@ const Dashboard = () => {
 
     const fetchZoomBookings = async () => {
       if (!user || !user._id) {
-        console.warn('⚠️ User ID is missing. Skipping Zoom booking fetch.')
-        return
+        console.warn("⚠️ User ID is missing. Skipping Zoom booking fetch.");
+        return;
       }
-
+    
       try {
         const response = await fetch(
-          `https://backend-production-cbe2.up.railway.app/api/zoom/bookings/${user._id}`, // ✅ Pass user ID in API URL
-        )
-
-        const data = await response.json()
-
-        if (!response.ok) throw new Error(data.error || 'Failed to fetch Zoom bookings.')
-
-        setZoomBookings(data.zoomBookings || []) // ✅ Store only this user's bookings
+          `https://backend-production-cbe2.up.railway.app/api/zoom/bookings/${user._id}`
+        );
+    
+        const data = await response.json();
+    
+        if (!response.ok) throw new Error(data.error || "Failed to fetch Zoom bookings.");
+    
+        // ✅ Ensure sessionDates is always an array
+        const processedBookings = data.zoomBookings.map((booking) => ({
+          ...booking,
+          sessionDates: Array.isArray(booking.sessionDates) ? booking.sessionDates : [], // ✅ Ensure it is an array
+        }));
+    
+        setZoomBookings(processedBookings);
       } catch (error) {
-        console.error('❌ Error fetching Zoom bookings:', error)
-        setZoomBookings([]) // Prevent UI from breaking
+        console.error("❌ Error fetching Zoom bookings:", error);
+        setZoomBookings([]); // Prevent UI from breaking
       }
-    }
+    };
+    
 
     // Fetch Coupons
     const fetchCoupons = async () => {
@@ -443,50 +450,52 @@ const Dashboard = () => {
               </div>
             </section>
           )}
-          {zoomBookings.length > 0 && (
-            <section className="mt-6 p-6 bg-white shadow-lg rounded-lg">
-              <h3 className="text-2xl font-bold mb-4 text-gray-800">
-                🎥 Your Registered Zoom Sessions
-              </h3>
+       {zoomBookings.length > 0 && (
+  <section className="mt-6 p-6 bg-white shadow-lg rounded-lg">
+    <h3 className="text-2xl font-bold mb-4 text-gray-800">
+      🎥 Your Registered Zoom Sessions
+    </h3>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                {zoomBookings.map((session, index) => (
-                  <div
-                    key={index}
-                    className="p-5 bg-white rounded-xl shadow-lg border border-gray-200"
-                  >
-                    {/* Session Title */}
-                    <h4 className="text-xl font-semibold text-blue-700 mb-2">
-                      {session.eventName || 'Unnamed Session'}
-                    </h4>
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+      {zoomBookings.map((session, index) => (
+        <div
+          key={index}
+          className="p-5 bg-white rounded-xl shadow-lg border border-gray-200"
+        >
+          {/* Session Title */}
+          <h4 className="text-xl font-semibold text-blue-700 mb-2">
+            {session.eventName || "Unnamed Session"}
+          </h4>
 
-                    {/* Display Multiple Session Dates */}
-                    <p>📅 Dates & Times:</p>
-                    {sessionDates.length > 0 ? (
-                      sessionDates.map((date, index) => (
-                        <p key={index}>🕒 {formatDateTime(date)}</p> // ✅ Properly formatted
-                      ))
-                    ) : (
-                      <p>⚠️ No scheduled dates found</p>
-                    )}
-                    {/* Zoom Meeting Link */}
-                    {session.zoomMeetingLink && (
-                      <div className="mt-3">
-                        <a
-                          href={session.zoomMeetingLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 font-medium hover:underline"
-                        >
-                          🔗 Join Zoom Session
-                        </a>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </section>
+          {/* ✅ Fix: Ensure sessionDates is accessed correctly */}
+          <p>📅 Dates & Times:</p>
+          {session.sessionDates && session.sessionDates.length > 0 ? (
+            session.sessionDates.map((date, index) => (
+              <p key={index}>🕒 {formatDateTime(date)}</p> // ✅ Properly formatted
+            ))
+          ) : (
+            <p>⚠️ No scheduled dates found</p>
           )}
+
+          {/* Zoom Meeting Link */}
+          {session.zoomMeetingLink && (
+            <div className="mt-3">
+              <a
+                href={session.zoomMeetingLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 font-medium hover:underline"
+              >
+                🔗 Join Zoom Session
+              </a>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  </section>
+)}
+
         </AnimatedSection>
       </div>
 

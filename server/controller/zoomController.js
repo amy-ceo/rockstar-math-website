@@ -102,9 +102,7 @@ exports.getUserZoomBookings = async (req, res) => {
     // ✅ Ensure sessionDates array is properly formatted
     const zoomBookings = user.zoomBookings.map((booking) => ({
       ...booking.toObject(),
-      sessionDates: booking.sessionDates
-        ? booking.sessionDates.map(date => new Date(date).toISOString()) // ✅ Store in ISO format (always UTC)
-        : [],
+      sessionDates: Array.isArray(booking.sessionDates) ? booking.sessionDates : [], // ✅ Ensure it is an array
     }));
     
     return res.status(200).json({ message: "Zoom bookings fetched successfully", zoomBookings });
