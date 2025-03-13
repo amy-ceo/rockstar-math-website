@@ -442,11 +442,14 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
         console.error('❌ Error: User not found in database!')
         return res.status(404).json({ error: 'User not found' })
       }
-
-      // Check if `cartItems` exists and is an array before proceeding
+      // AFTER (FIXED):
       if (!user.cartItems || !Array.isArray(user.cartItems)) {
-        console.error('Error: user.cartItems is not defined or not an array')
-        return res.status(400).json({ error: 'Invalid cart data' })
+          console.warn('⚠️ user.cartItems not found. Initializing as empty array.');
+          user.cartItems = []; // Initialize empty array
+      }
+      // ✅ Fixed Code (Initialize cartItems as empty array)
+      if (!user.cartItems || !Array.isArray(user.cartItems)) {
+        user.cartItems = [] // Initialize as empty array
       }
       // ✅ Save Payment Record in `StripePayment` Model
       const newStripePayment = new StripePayment({
@@ -617,14 +620,10 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
           .trim()
 
       // ✅ Check if "Common Core for Parents" was purchased
-      let hasCommonCore = false
-      if (user.cartItems && Array.isArray(user.cartItems)) {
-        hasCommonCore = user.cartItems.some(
-          (item) => normalizeString(item.name) === normalizeString(COMMONCORE_ZOOM_LINK.name),
-        )
-      } else {
-        console.error('Error: user.cartItems is not defined or not an array')
-      }
+      // ✅ Fixed Code (Use cartSummary from Stripe metadata)
+      const hasCommonCore = cartSummary.some(
+        (item) => item.trim().toLowerCase() === COMMONCORE_ZOOM_LINK.name.toLowerCase(),
+      )
 
       if (hasCommonCore) {
         zoomLinks.push(COMMONCORE_ZOOM_LINK)
