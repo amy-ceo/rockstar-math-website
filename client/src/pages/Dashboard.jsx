@@ -319,7 +319,7 @@ const Dashboard = () => {
 
   const formatDateTime = (date) => {
     return new Intl.DateTimeFormat('en-US', {
-      timeZone: 'America/Los_Angeles', // ✅ Convert to correct timezone
+      timeZone: 'Asia/Karachi', // Aapke timezone ke hisaab se update karein
       year: 'numeric',
       month: 'long',
       day: '2-digit',
@@ -478,11 +478,11 @@ const Dashboard = () => {
                       {session.eventName || 'Unnamed Session'}
                     </h4>
 
-                    {/* ✅ Fix: Ensure sessionDates is accessed correctly */}
+                    {/* Show all session dates */}
                     <p>📅 Dates & Times:</p>
                     {session.sessionDates && session.sessionDates.length > 0 ? (
                       session.sessionDates.map((date, index) => (
-                        <p key={index}>🕒 {formatDateTime(date)}</p> // ✅ Properly formatted
+                        <p key={index}>🕒 {formatDateTime(date)}</p>
                       ))
                     ) : (
                       <p>⚠️ No scheduled dates found</p>

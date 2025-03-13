@@ -38,7 +38,7 @@ app.use(express.urlencoded({ extended: true }));
 
 
 
-const allowedOrigins = ['https://calendly.com', 'http://localhost:8080', 'https://www.rockstarmath.com'];
+const allowedOrigins = [ 'http://localhost:8080', 'https://www.rockstarmath.com'];
 
 app.use(
   cors({

@@ -87,6 +87,7 @@ exports.zoomWebhook = async (req, res) => {
   }
 };
 
+
 exports.getUserZoomBookings = async (req, res) => {
   try {
     const { userId } = req.params;

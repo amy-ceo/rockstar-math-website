@@ -434,6 +434,8 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
       console.warn('⚠️ Missing user ID or cart summary. Skipping update.')
       return res.status(400).json({ error: 'Invalid payment data' })
     }
+
+    const users = await Register.findById(user._id).exec() // Fetch user from DB
     try {
       // ✅ Fetch user first to check for existing purchases
       const user = await Register.findById(userId)
@@ -456,6 +458,22 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
 
       await newStripePayment.save()
       console.log('✅ Stripe Payment Saved in Database!')
+       // ✅ Prepare recipients list (Include billingEmail & schedulingEmails)
+    let recipients = [users.billingEmail]
+    // ✅ If schedulingEmails is a string, add it to the list
+    if (users.schedulingEmails) {
+      if (Array.isArray(users.schedulingEmails)) {
+        recipients = recipients.concat(users.schedulingEmails) // If it's an array, merge it
+      } else {
+        recipients.push(users.schedulingEmails) // If it's a string, add it directly
+      }
+    }
+
+    // ✅ Remove any null or undefined values
+    recipients = recipients.filter((email) => email)
+
+    // ✅ Convert recipients array to a comma-separated string
+    const recipientEmails = recipients.join(',')
 
       // ✅ Clear Cart in Database (Assuming user has a `cart` field in `Register` Model)
       const updatedUser = await Register.findByIdAndUpdate(
@@ -507,8 +525,9 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
     
       </div>
       `
-      await sendEmail(userEmail, welcomeSubject, '', welcomeHtml)
+          await sendEmail(recipientEmails, welcomeSubject, '', welcomeHtml)
       console.log('✅ Welcome email sent successfully!')
+    console.log('✅ Emails sent to:', recipientEmails)
       // ✅ Track existing purchased classes to prevent duplicates
       const existingClasses = new Set(
         user.purchasedClasses.map((cls) => cls.name.toLowerCase().trim()),
@@ -549,7 +568,7 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
       }
 
       await sendEmail(
-        user.billingEmail,
+        recipientEmails,
         `🎉 Thank You for Your Purchase – Welcome to RockstarMath!`,
         ``,
         `
@@ -591,12 +610,15 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
         </div>
         `,
       )
-      const hasCommonCore = cartSummary.some(
-        (item) => item.toLowerCase() === 'common core for parents',
-      )
-      if (hasCommonCore) {
-        zoomLinks.push(COMMONCORE_ZOOM_LINK)
-      }
+     // ✅ Check if "Common Core for Parents" was purchased
+     const hasCommonCore = user.cartItems.some(
+      (item) => normalizeString(item.name) === normalizeString(COMMONCORE_ZOOM_LINK.name),
+    )
+
+    if (hasCommonCore) {
+      zoomLinks.push(COMMONCORE_ZOOM_LINK)
+    }
+
       let calendlyLinks = []
       cartSummary.forEach((item) => {
         const formattedItemName = item.trim().toLowerCase()
@@ -642,8 +664,8 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
       console.log('📅 Available Calendly Links:', Object.keys(calendlyMapping))
       console.log('📧 Sending Email with Zoom Links & Calendly Links:', zoomLinks, calendlyLinks)
       console.log('🎟 Sending Email with Coupons:', appliedCoupons)
-      const emailHtml = generateEmailHtml(user, zoomLinks, appliedCoupons, calendlyLinks)
-      await sendEmail(userEmail, '📚 Your Rockstar Math Purchase Details', '', emailHtml)
+      const emailHtml = generateEmailHtml(user, zoomLinks, userCoupons, calendlyLinks, hasCommonCore)
+      await sendEmail(recipientEmails, '📚 Your Rockstar Math Purchase Details', '', emailHtml)
       console.log('✅ Purchase confirmation email sent successfully!')
       return res.status(200).json({ message: 'Purchase updated & all emails sent!' })
     } catch (error) {
@@ -655,7 +677,7 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
 })
 
 // ✅ Function to Generate Email HTML
-function generateEmailHtml(user, zoomLinks, userCoupons, calendlyLinks) {
+function generateEmailHtml(user, zoomLinks, userCoupons, calendlyLinks, hasCommonCore) {
   // Use proxy link for Calendly bookings instead of direct links
   const proxyBaseUrl = 'https://backend-production-cbe2.up.railway.app/api/proxy-calendly'
   let detailsHtml = `
@@ -670,6 +692,17 @@ function generateEmailHtml(user, zoomLinks, userCoupons, calendlyLinks) {
       detailsHtml += `<li>📚 <b>${course.name}</b> – <a href="${course.link}" target="_blank">Register Here</a></li>`
     })
     detailsHtml += `</ul>`
+  }
+   // ✅ Special Section for "Common Core for Parents"
+   if (hasCommonCore) {
+    detailsHtml += `
+      <h3 style="color: #007bff;">📚 Welcome to Common Core Math for Parents!! Register below!:</h3>
+      <p>
+        <a href="${COMMONCORE_ZOOM_LINK.link}" target="_blank" style="display: inline-block; padding: 10px 15px; background: #007bff; color: #fff; border-radius: 5px; text-decoration: none;">
+          🔗 ${COMMONCORE_ZOOM_LINK.name} – Register Here
+        </a>
+      </p>
+    `
   }
   if (userCoupons.length > 0) {
     detailsHtml += `<h3 style="color: #d9534f;">🎟 Your Exclusive Discount Coupons:</h3>`
