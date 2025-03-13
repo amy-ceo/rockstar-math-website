@@ -33,6 +33,18 @@ bcrypt.setRandomFallback((len) => global.crypto.randomBytes(len)); // ✅ Fixes 
 connectDB();
 const app = express();
 
+// ✅ Middleware Order Fixes
+// ======================== Stripe Webhook Middleware ========================
+app.use(
+  "/api/stripe/webhook", 
+  bodyParser.raw({ type: "application/json" }),
+  (req, res, next) => {
+    console.log('🔔 Stripe Webhook Received');
+    next();
+  }
+);
+
+
 // app.use((req, res, next) => {
 //   const allowedOrigin = ["https://zoom.us", undefined]; // ✅ Zoom Webhooks can have undefined origin
 //   if (allowedOrigin.includes(req.headers.origin)) {
@@ -44,14 +56,16 @@ const app = express();
 //   next();
 // });
 
+// ========================= General Middleware ==============================
+app.use(bodyParser.json({ limit: '50mb' }));
+app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
 
-// ✅ JSON Middleware for Other Routes (Not Webhook)
-// ✅ **Place Webhook Route BEFORE express.json()**
-app.use("/api/stripe/webhook", bodyParser.raw({ type: "application/json" }));
-
+// ✅ CORS Configuration
 const allowedOrigins = [
+  "http://localhost:3000",
   "http://localhost:8080",
   "https://www.rockstarmath.com",
+  "https://rockstarmath.com"
 ];
 
 app.use(
@@ -64,12 +78,17 @@ app.use(
         callback(new Error("Not allowed by CORS"));
       }
     },
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     credentials: true,
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization", "Stripe-Signature"]
   })
 );
 
+// ✅ Trust Proxy for HTTPS
+app.set('trust proxy', true);
+
+// ✅ Static Files
+app.use('/uploads', express.static('uploads'));
 
 
 
@@ -85,18 +104,17 @@ app.use("/api/zoom/webhook", (req, res, next) => {
 });
 
 
-// app.use((req, res, next) => {
-//   if (req.headers["x-forwarded-proto"] !== "https") {
-//       return res.status(403).send("❌ HTTPS Required");
-//   }
-//   next();
-// });
+// ========================= Error Handling Middleware =======================
+app.use((err, req, res, next) => {
+  console.error('❌ Global Error Handler:', err);
+  res.status(err.status || 500).json({
+    error: {
+      message: err.message || 'Internal Server Error',
+      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    }
+  });
+});
 
-// app.set('trust proxy', true);
-
-
-
-app.use('/uploads', express.static('uploads')); // Serve uploaded images
 
 
 
