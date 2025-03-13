@@ -32,13 +32,27 @@ bcrypt.setRandomFallback((len) => global.crypto.randomBytes(len)); // ✅ Fixes 
 
 connectDB();
 const app = express();
-app.use(express.json()); // ✅ Load this first
-app.use(express.urlencoded({ extended: true }));
+
+// app.use((req, res, next) => {
+//   const allowedOrigin = ["https://zoom.us", undefined]; // ✅ Zoom Webhooks can have undefined origin
+//   if (allowedOrigin.includes(req.headers.origin)) {
+//       res.setHeader("Access-Control-Allow-Origin", req.headers.origin || "*");
+//       res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+//       res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+//       res.setHeader("Access-Control-Allow-Credentials", "true");
+//   }
+//   next();
+// });
 
 
+// ✅ JSON Middleware for Other Routes (Not Webhook)
+// ✅ **Place Webhook Route BEFORE express.json()**
+app.use("/api/stripe/webhook", bodyParser.raw({ type: "application/json" }));
 
-
-const allowedOrigins = [ 'http://localhost:8080', 'https://www.rockstarmath.com'];
+const allowedOrigins = [
+  "http://localhost:8080",
+  "https://www.rockstarmath.com",
+];
 
 app.use(
   cors({
@@ -50,21 +64,12 @@ app.use(
         callback(new Error("Not allowed by CORS"));
       }
     },
-    methods: ["GET", "POST", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
-
-app.options('*', (req, res) => {
-  console.log("📢 Preflight Request:", req.headers);
-  res.sendStatus(200); // Respond to OPTIONS preflight request
-});
-
-
-
-app.use("/api/stripe/webhook", bodyParser.raw({ type: "application/json" }));
 
 
 
@@ -76,14 +81,6 @@ app.use("/api/zoom/webhook", (req, res, next) => {
       bodyParser.raw({ type: "application/json" })(req, res, next);
   } else {
       express.json()(req, res, next);
-  }
-});
-
-app.use("/api/webhook/calendly", (req, res, next) => {
-  if (req.headers["content-type"] === "application/json") {
-    express.json()(req, res, next);  // Use express.json() to parse incoming JSON payload
-  } else {
-    res.status(400).send("Invalid Content-Type. Expected application/json.");
   }
 });
 
