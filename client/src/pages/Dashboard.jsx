@@ -56,6 +56,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem('user'))
+    console.log("STORED USER:  ",storedUser)
     if (!storedUser || !storedUser._id) {
       console.warn('⚠️ User not logged in, redirecting to login...')
       navigate('/login') // ✅ Redirect if user is not logged in
