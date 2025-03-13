@@ -200,6 +200,7 @@ const CheckoutPage = () => {
 
       // ✅ Clear Cart After Successful PayPal Payment
       console.log('🛒 Clearing Cart after Successful Payment...')
+      localStorage.removeItem('cartItems')
       setTimeout(() => {
         const user = JSON.parse(localStorage.getItem('user'))
         if (user && user._id) {
@@ -210,7 +211,6 @@ const CheckoutPage = () => {
         }
     }, 1000)
     
-      localStorage.removeItem('cartItems')
       setCartItems([])
       window.dispatchEvent(new Event('storage'))
 
