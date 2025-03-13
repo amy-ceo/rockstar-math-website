@@ -120,15 +120,15 @@ const CheckoutPage = () => {
   }
 
   const handlePayPalSuccess = async (data) => {
-    const user = JSON.parse(localStorage.getItem('user'))
-
+    const user = JSON.parse(localStorage.getItem('user'));
+  
     if (!user || !user._id) {
-      toast.error('User authentication required.')
-      throw new Error('User authentication required.')
+      toast.error('User authentication required.');
+      throw new Error('User authentication required.');
     }
-
+  
     try {
-      console.log('📡 Capturing PayPal Order...')
+      console.log('📡 Capturing PayPal Order...');
       const response = await fetch(
         'https://backend-production-cbe2.up.railway.app/api/paypal/capture-order',
         {
@@ -149,76 +149,56 @@ const CheckoutPage = () => {
             },
           }),
         },
-      )
-
-      const result = await response.json()
-      console.log('📡 PayPal Capture Response:', result)
-
+      );
+  
+      const result = await response.json();
+      console.log('📡 PayPal Capture Response:', result);
+  
       if (!response.ok) {
-        console.warn("⚠️ Payment capture failed, but still redirecting to dashboard.");
-        return navigate('/dashboard') // ✅ Redirect user to dashboard even if there's a minor error
-    }
-
-      console.log('📡 Calling addPurchasedClass API...')
-      const purchaseResponse = await fetch(
-        'https://backend-production-cbe2.up.railway.app/api/add-purchased-class',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId: user._id,
-            purchasedItems: cartItems.map((item) => ({
-              name: item.name,
-              description: item.description || 'No description available',
-            })),
-            userEmail: user.billingEmail || 'No email',
-          }),
-        },
-      )
-
-      const purchaseResult = await purchaseResponse.json()
-      console.log('✅ Purchased Classes API Response:', purchaseResult)
-
-      if (!purchaseResponse.ok) {
-        console.warn('⚠️ Issue updating purchased classes:', purchaseResult.message)
+        console.warn('⚠️ Payment capture failed, but still redirecting to dashboard.');
+        return navigate('/dashboard'); // ✅ Redirect user to dashboard even if there's a minor error
       }
-
-      console.log('📡 Fetching updated user data...')
+  
+      console.log('📡 Fetching updated user data...');
       const userResponse = await fetch(
         `https://backend-production-cbe2.up.railway.app/api/user/${user._id}`,
-      )
-
+      );
+  
       if (!userResponse.ok) {
-        console.warn('⚠️ Failed to fetch updated user data.')
+        console.warn('⚠️ Failed to fetch updated user data.');
       } else {
-        const updatedUser = await userResponse.json()
-        console.log('✅ Updated User Data:', updatedUser)
-
+        const updatedUser = await userResponse.json();
+        console.log('✅ Updated User Data:', updatedUser);
+  
         // ✅ Update user session in localStorage
-        localStorage.setItem('user', JSON.stringify(updatedUser))
-      }
-      setTimeout(() => {
-        const user = JSON.parse(localStorage.getItem('user'))
-        if (user && user._id) {
-            navigate('/dashboard') // ✅ Redirect to Dashboard
-        } else {
-            console.warn("⚠️ User not found in localStorage. Redirecting to login.")
-            navigate('/login')
+        try {
+          localStorage.setItem('user', JSON.stringify(updatedUser));
+        } catch (error) {
+          console.error('❌ Error updating localStorage:', error);
         }
-    }, 1000)
+      }
+  
       // ✅ Clear Cart After Successful PayPal Payment
-      console.log('🛒 Clearing Cart after Successful Payment...')
-      localStorage.removeItem('cartItems')
-      setCartItems([])
-      window.dispatchEvent(new Event('storage'))
-
-      toast.success('🎉 Payment Successful! Redirecting...')
-
+      console.log('🛒 Clearing Cart after Successful Payment...');
+      localStorage.removeItem('cartItems');
+      setCartItems([]);
+      window.dispatchEvent(new Event('storage'));
+  
+      toast.success('🎉 Payment Successful! Redirecting...');
+  
+      // ✅ Redirect to Dashboard
+      const updatedUser = JSON.parse(localStorage.getItem('user'));
+      if (updatedUser && updatedUser._id) {
+        navigate('/dashboard');
+      } else {
+        console.warn('⚠️ User not found in localStorage. Redirecting to login.');
+        navigate('/login');
+      }
     } catch (error) {
-      console.error('❌ Error in Payment Process:', error)
-      toast.error(error.message || 'Payment processing error.')
+      console.error('❌ Error in Payment Process:', error);
+      toast.error(error.message || 'Payment processing error.');
     }
-  }
+  };
 
   const applyCoupon = () => {
     console.log('🔍 Entered Coupon Code:', couponCode)
