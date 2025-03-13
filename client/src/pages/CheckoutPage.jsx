@@ -120,7 +120,9 @@ const CheckoutPage = () => {
   }
 
   const handlePayPalSuccess = async (data) => {
+    // Step 1: Check if user exists in localStorage
     const user = JSON.parse(localStorage.getItem('user'));
+    console.log('🔍 Initial user in localStorage:', user);
   
     if (!user || !user._id) {
       toast.error('User authentication required.');
@@ -156,9 +158,10 @@ const CheckoutPage = () => {
   
       if (!response.ok) {
         console.warn('⚠️ Payment capture failed, but still redirecting to dashboard.');
-        return navigate('/dashboard'); // ✅ Redirect user to dashboard even if there's a minor error
+        return navigate('/dashboard'); // Redirect even if there's a minor error
       }
   
+      // Step 2: Fetch updated user data from the backend
       console.log('📡 Fetching updated user data...');
       const userResponse = await fetch(
         `https://backend-production-cbe2.up.railway.app/api/user/${user._id}`,
@@ -168,17 +171,18 @@ const CheckoutPage = () => {
         console.warn('⚠️ Failed to fetch updated user data.');
       } else {
         const updatedUser = await userResponse.json();
-        console.log('✅ Updated User Data:', updatedUser);
+        console.log('✅ Updated User Data from Backend:', updatedUser);
   
-        // ✅ Update user session in localStorage
+        // Step 3: Update user session in localStorage
         try {
           localStorage.setItem('user', JSON.stringify(updatedUser));
+          console.log('✅ User data updated in localStorage:', JSON.parse(localStorage.getItem('user')));
         } catch (error) {
           console.error('❌ Error updating localStorage:', error);
         }
       }
   
-      // ✅ Clear Cart After Successful PayPal Payment
+      // Step 4: Clear Cart After Successful PayPal Payment
       console.log('🛒 Clearing Cart after Successful Payment...');
       localStorage.removeItem('cartItems');
       setCartItems([]);
@@ -186,9 +190,18 @@ const CheckoutPage = () => {
   
       toast.success('🎉 Payment Successful! Redirecting...');
   
-      // ✅ Redirect to Dashboard
+      // Step 5: Verify localStorage state before redirect
+      console.log('🔍 Checking localStorage state before redirect...');
+      const currentLocalStorage = {
+        user: JSON.parse(localStorage.getItem('user')),
+        cartItems: JSON.parse(localStorage.getItem('cartItems')),
+      };
+      console.log('🔍 Current localStorage:', currentLocalStorage);
+  
+      // Step 6: Redirect to Dashboard or Login
       const updatedUser = JSON.parse(localStorage.getItem('user'));
       if (updatedUser && updatedUser._id) {
+        console.log('✅ User found in localStorage. Redirecting to dashboard.');
         navigate('/dashboard');
       } else {
         console.warn('⚠️ User not found in localStorage. Redirecting to login.');
@@ -199,7 +212,6 @@ const CheckoutPage = () => {
       toast.error(error.message || 'Payment processing error.');
     }
   };
-
   const applyCoupon = () => {
     console.log('🔍 Entered Coupon Code:', couponCode)
     console.log('✅ Available Coupons from Backend:', validCoupons)
