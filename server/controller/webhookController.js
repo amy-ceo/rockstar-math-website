@@ -3,30 +3,30 @@ const sendEmail = require('../utils/emailSender')
 const crypto = require('crypto');
 
 
-// Webhook Signature Verification
-const verifyWebhookSignature = (req, signingKey) => {
-  const signature = req.headers['x-cal-signature-256']; // Updated header key
-  const payload = JSON.stringify(req.body);
+// // Webhook Signature Verification
+// const verifyWebhookSignature = (req, signingKey) => {
+//   const signature = req.headers['x-cal-signature-256']; // Updated header key
+//   const payload = JSON.stringify(req.body);
 
-  const computedSignature = crypto
-    .createHmac('sha256', signingKey)
-    .update(payload)
-    .digest('base64');
+//   const computedSignature = crypto
+//     .createHmac('sha256', signingKey)
+//     .update(payload)
+//     .digest('base64');
 
-  console.log("📢 Computed Signature:", computedSignature);
-  console.log("📢 Incoming Signature:", signature);
+//   console.log("📢 Computed Signature:", computedSignature);
+//   console.log("📢 Incoming Signature:", signature);
 
-  return signature === computedSignature;
-};
+//   return signature === computedSignature;
+// };
 
 exports.calendlyWebhook = async (req, res) => {
   try {
 
-    const signingKey = process.env.CALENDLY_SIGNING_KEY; // Webhook Signing Key ko environment variable se load karna
-    if (!verifyWebhookSignature(req, signingKey)) {
-      console.error("❌ Invalid webhook signature"); // Signature mismatch hone par error
-      return res.status(400).json({ error: 'Invalid signature' });
-    }
+    // const signingKey = process.env.CALENDLY_SIGNING_KEY; // Webhook Signing Key ko environment variable se load karna
+    // if (!verifyWebhookSignature(req, signingKey)) {
+    //   console.error("❌ Invalid webhook signature"); // Signature mismatch hone par error
+    //   return res.status(400).json({ error: 'Invalid signature' });
+    // }
 
 
     console.log('📢 FULL Webhook Payload:', JSON.stringify(req.body, null, 2));
