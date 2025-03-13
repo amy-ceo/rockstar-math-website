@@ -206,11 +206,11 @@ router.get('/get-products', async (req, res) => {
 
 router.post('/create-payment-intent', async (req, res) => {
   try {
-    let { amount, currency, userId, orderId, cartItems, userEmail } = req.body;
+    let { amount, currency, userId, orderId, cartItems, userEmail } = req.body
     // Add checks if any required field is missing
     if (!amount || !currency || !userId || !orderId || !cartItems) {
-      console.error('❌ Missing required fields:', req.body);
-      return res.status(400).json({ error: 'Missing required fields' });
+      console.error('❌ Missing required fields:', req.body)
+      return res.status(400).json({ error: 'Missing required fields' })
     }
     if (!userId || !orderId || !cartItems || cartItems.length === 0) {
       console.error('❌ Missing required fields:', { userId, orderId, cartItems })
@@ -434,16 +434,21 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
 
     try {
       // ✅ Fetch user first to check for existing purchases
-      const user = await Register.findById(userId).catch(error => {
-        console.error('❌ Database Error:', error)
-        throw new Error('Failed to fetch user')
-      })
+      const user = await Register.findById(userId)
+
+      // 1. Prepare recipients
+      let recipients = [user.billingEmail]
+      if (user.schedulingEmails) {
+        recipients = recipients.concat(
+          Array.isArray(user.schedulingEmails) ? user.schedulingEmails : [user.schedulingEmails],
+        )
+      }
+
       if (!user) {
         console.error('❌ Error: User not found in database!')
         return res.status(404).json({ error: 'User not found' })
       }
-      
-      const users = await Register.findById(user._id).exec() // Fetch user from DB
+
       // ✅ Save Payment Record in `StripePayment` Model
       const newStripePayment = new StripePayment({
         orderId: `stripe_${Date.now()}`,
@@ -460,15 +465,6 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
       await newStripePayment.save()
       console.log('✅ Stripe Payment Saved in Database!')
       // ✅ Prepare recipients list (Include billingEmail & schedulingEmails)
-      let recipients = [users.billingEmail]
-      // ✅ If schedulingEmails is a string, add it to the list
-      if (users.schedulingEmails) {
-        if (Array.isArray(users.schedulingEmails)) {
-          recipients = recipients.concat(users.schedulingEmails) // If it's an array, merge it
-        } else {
-          recipients.push(users.schedulingEmails) // If it's a string, add it directly
-        }
-      }
 
       // ✅ Remove any null or undefined values
       recipients = recipients.filter((email) => email)
@@ -488,44 +484,44 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
       console.log(`📧 Sending Welcome Email to: ${userEmail}`)
       let welcomeSubject = `🎉 Welcome to Rockstar Math, ${user.username}!`
       let welcomeHtml = `
-      <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
-        
-        <div style="text-align: center; padding-bottom: 20px;">
-          <img src="https://your-logo-url.com/logo.png" alt="Rockstar Math" style="width: 150px; margin-bottom: 10px;">
-          <h2 style="color: #2C3E50;">🎉 Thank You for Your Purchase – Welcome to RockstarMath!</h2>
+        <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
+          
+          <div style="text-align: center; padding-bottom: 20px;">
+            <img src="https://your-logo-url.com/logo.png" alt="Rockstar Math" style="width: 150px; margin-bottom: 10px;">
+            <h2 style="color: #2C3E50;">🎉 Thank You for Your Purchase – Welcome to RockstarMath!</h2>
+          </div>
+      
+          <p>Hi <b>${user.username}</b>,</p>
+          
+          <p>Thank you for your purchase! 🎉 We’re thrilled to have you as part of the RockstarMath community and are excited to help you achieve your math goals.</p>
+      
+          <h3 style="color: #007bff;">🚀 Get Started Now!</h3>
+          <p>To begin, log in to your dashboard:</p>
+          <p style="text-align: center;">
+            <a href="https://www.rockstarmath.com/login" target="_blank" style="background: #007bff; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px; font-weight: bold;">Go to Dashboard</a>
+          </p>
+          
+          <p>Use the username and password you created during registration to log in.</p>
+      
+          
+          <h3 style="color: #007bff;">📞 Need Assistance?</h3>
+          <p>If you have any questions or need help, feel free to reach out to us:</p>
+          <ul>
+            <li>📧 Reply to this email</li>
+            <li>📞 Call us at <b>510-410-4963</b></li>
+          </ul>
+      
+          <p>Thank you again for choosing RockstarMath! We can’t wait to see you excel! 🚀</p>
+      
+          <p style="text-align: center; font-size: 14px; color: #555; margin-top: 20px;">
+            Best regards,<br>
+            <b>Amy Gemme</b><br>
+            Founder, RockstarMath<br>
+            📞 510-410-4963 | 🌍 <a href="https://www.rockstarmath.com" target="_blank">www.rockstarmath.com</a>
+          </p>
+      
         </div>
-    
-        <p>Hi <b>${user.username}</b>,</p>
-        
-        <p>Thank you for your purchase! 🎉 We’re thrilled to have you as part of the RockstarMath community and are excited to help you achieve your math goals.</p>
-    
-        <h3 style="color: #007bff;">🚀 Get Started Now!</h3>
-        <p>To begin, log in to your dashboard:</p>
-        <p style="text-align: center;">
-          <a href="https://www.rockstarmath.com/login" target="_blank" style="background: #007bff; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px; font-weight: bold;">Go to Dashboard</a>
-        </p>
-        
-        <p>Use the username and password you created during registration to log in.</p>
-    
-        
-        <h3 style="color: #007bff;">📞 Need Assistance?</h3>
-        <p>If you have any questions or need help, feel free to reach out to us:</p>
-        <ul>
-          <li>📧 Reply to this email</li>
-          <li>📞 Call us at <b>510-410-4963</b></li>
-        </ul>
-    
-        <p>Thank you again for choosing RockstarMath! We can’t wait to see you excel! 🚀</p>
-    
-        <p style="text-align: center; font-size: 14px; color: #555; margin-top: 20px;">
-          Best regards,<br>
-          <b>Amy Gemme</b><br>
-          Founder, RockstarMath<br>
-          📞 510-410-4963 | 🌍 <a href="https://www.rockstarmath.com" target="_blank">www.rockstarmath.com</a>
-        </p>
-    
-      </div>
-      `
+        `
       await sendEmail(recipientEmails, welcomeSubject, '', welcomeHtml)
       console.log('✅ Welcome email sent successfully!')
       console.log('✅ Emails sent to:', recipientEmails)
@@ -573,44 +569,50 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
         `🎉 Thank You for Your Purchase – Welcome to RockstarMath!`,
         ``,
         `
-        <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
-          
-          <div style="text-align: center; padding-bottom: 20px;">
-            <img src="https://your-logo-url.com/logo.png" alt="Rockstar Math" style="width: 150px; margin-bottom: 10px;">
-            <h2 style="color: #2C3E50;">🎉 Thank You for Your Purchase – Welcome to RockstarMath!</h2>
+          <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
+            
+            <div style="text-align: center; padding-bottom: 20px;">
+              <img src="https://your-logo-url.com/logo.png" alt="Rockstar Math" style="width: 150px; margin-bottom: 10px;">
+              <h2 style="color: #2C3E50;">🎉 Thank You for Your Purchase – Welcome to RockstarMath!</h2>
+            </div>
+        
+            <p>Hi <b>${user.username}</b>,</p>
+            
+            <p>Thank you for your purchase! 🎉 We’re thrilled to have you as part of the RockstarMath community and are excited to help you achieve your math goals.</p>
+        
+            <h3 style="color: #007bff;">🚀 Get Started Now!</h3>
+            <p>To begin, log in to your dashboard:</p>
+            <p style="text-align: center;">
+              <a href="https://www.rockstarmath.com/login" target="_blank" style="background: #007bff; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px; font-weight: bold;">Go to Dashboard</a>
+            </p>
+            
+            <p>Use the username and password you created during registration to log in.</p>
+        
+            <h3 style="color: #007bff;">📞 Need Assistance?</h3>
+            <p>If you have any questions or need help, feel free to reach out to us:</p>
+            <ul>
+              <li>📧 Reply to this email</li>
+              <li>📞 Call us at <b>510-410-4963</b></li>
+            </ul>
+        
+            <p>Thank you again for choosing RockstarMath! We can’t wait to see you excel! 🚀</p>
+        
+            <p style="text-align: center; font-size: 14px; color: #555; margin-top: 20px;">
+              Best regards,<br>
+              <b>Amy Gemme</b><br>
+              Founder, RockstarMath<br>
+              📞 510-410-4963 | 🌍 <a href="https://www.rockstarmath.com" target="_blank">www.rockstarmath.com</a>
+            </p>
+        
           </div>
-      
-          <p>Hi <b>${user.username}</b>,</p>
-          
-          <p>Thank you for your purchase! 🎉 We’re thrilled to have you as part of the RockstarMath community and are excited to help you achieve your math goals.</p>
-      
-          <h3 style="color: #007bff;">🚀 Get Started Now!</h3>
-          <p>To begin, log in to your dashboard:</p>
-          <p style="text-align: center;">
-            <a href="https://www.rockstarmath.com/login" target="_blank" style="background: #007bff; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px; font-weight: bold;">Go to Dashboard</a>
-          </p>
-          
-          <p>Use the username and password you created during registration to log in.</p>
-      
-          <h3 style="color: #007bff;">📞 Need Assistance?</h3>
-          <p>If you have any questions or need help, feel free to reach out to us:</p>
-          <ul>
-            <li>📧 Reply to this email</li>
-            <li>📞 Call us at <b>510-410-4963</b></li>
-          </ul>
-      
-          <p>Thank you again for choosing RockstarMath! We can’t wait to see you excel! 🚀</p>
-      
-          <p style="text-align: center; font-size: 14px; color: #555; margin-top: 20px;">
-            Best regards,<br>
-            <b>Amy Gemme</b><br>
-            Founder, RockstarMath<br>
-            📞 510-410-4963 | 🌍 <a href="https://www.rockstarmath.com" target="_blank">www.rockstarmath.com</a>
-          </p>
-      
-        </div>
-        `,
+          `,
       )
+      // Add normalization function
+      const normalizeString = (str) =>
+        str
+          .toLowerCase()
+          .replace(/[^a-z0-9 ]/g, '')
+          .trim()
       // ✅ Check if "Common Core for Parents" was purchased
       const hasCommonCore = user.cartItems.some(
         (item) => normalizeString(item.name) === normalizeString(COMMONCORE_ZOOM_LINK.name),
@@ -688,11 +690,11 @@ function generateEmailHtml(user, zoomLinks, userCoupons, calendlyLinks, hasCommo
   // Use proxy link for Calendly bookings instead of direct links
   const proxyBaseUrl = 'https://backend-production-cbe2.up.railway.app/api/proxy-calendly'
   let detailsHtml = `
-      <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
-          <h2 style="color: #2C3E50;">🎉 Hello ${user.username}!</h2>
-          <p>We're excited to have you on board! 🚀 Below are your registration details.</p>
-          <h3 style="color: #007bff;">🔗 Available Courses & Registration Links:</h3>
-          <ul style="list-style-type: none; padding: 0;">`
+        <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
+            <h2 style="color: #2C3E50;">🎉 Hello ${user.username}!</h2>
+            <p>We're excited to have you on board! 🚀 Below are your registration details.</p>
+            <h3 style="color: #007bff;">🔗 Available Courses & Registration Links:</h3>
+            <ul style="list-style-type: none; padding: 0;">`
   if (zoomLinks.length > 0) {
     detailsHtml += `<h3>🔗 Your Course Zoom Links:</h3><ul>`
     zoomLinks.forEach((course) => {
@@ -703,13 +705,13 @@ function generateEmailHtml(user, zoomLinks, userCoupons, calendlyLinks, hasCommo
   // ✅ Special Section for "Common Core for Parents"
   if (hasCommonCore) {
     detailsHtml += `
-      <h3 style="color: #007bff;">📚 Welcome to Common Core Math for Parents!! Register below!:</h3>
-      <p>
-        <a href="${COMMONCORE_ZOOM_LINK.link}" target="_blank" style="display: inline-block; padding: 10px 15px; background: #007bff; color: #fff; border-radius: 5px; text-decoration: none;">
-          🔗 ${COMMONCORE_ZOOM_LINK.name} – Register Here
-        </a>
-      </p>
-    `
+        <h3 style="color: #007bff;">📚 Welcome to Common Core Math for Parents!! Register below!:</h3>
+        <p>
+          <a href="${COMMONCORE_ZOOM_LINK.link}" target="_blank" style="display: inline-block; padding: 10px 15px; background: #007bff; color: #fff; border-radius: 5px; text-decoration: none;">
+            🔗 ${COMMONCORE_ZOOM_LINK.name} – Register Here
+          </a>
+        </p>
+      `
   }
   if (userCoupons.length > 0) {
     detailsHtml += `<h3 style="color: #d9534f;">🎟 Your Exclusive Discount Coupons:</h3>`
@@ -720,9 +722,9 @@ function generateEmailHtml(user, zoomLinks, userCoupons, calendlyLinks, hasCommo
   if (calendlyLinks.length > 0) {
     // ✅ Add structured heading
     detailsHtml += `<h3>📅 Your Scheduled Calendly Sessions:</h3>
-    <p>Thank you for purchasing! Below is your registration link and important instructions on how to book your sessions:</p>
-    
-    <ul>`
+      <p>Thank you for purchasing! Below is your registration link and important instructions on how to book your sessions:</p>
+      
+      <ul>`
 
     calendlyLinks.forEach((session) => {
       // ✅ Create the proxy link with user ID and session name parameters
@@ -740,21 +742,21 @@ function generateEmailHtml(user, zoomLinks, userCoupons, calendlyLinks, hasCommo
       0,
     )
     detailsHtml += `</ul>
-    <p>Please click the "BOOK NOW" link <b>${totalSessions}</b> times to book all of your sessions and get started.</p>
-    <ul>`
+      <p>Please click the "BOOK NOW" link <b>${totalSessions}</b> times to book all of your sessions and get started.</p>
+      <ul>`
 
     detailsHtml += `</ul>
-      <p>📌Once you have booked all of your sessions, head over to your RockstarMath Dashboard where you can:</p>
-      <ul>
-          <li>📅 View all your scheduled sessions</li>
-          <li>✏️ Reschedule sessions if needed</li>
-          <li>❌ Cancel any session</li>
-          <li>🛒 Purchase additional sessions</li>
-      </ul>
-`
+        <p>📌Once you have booked all of your sessions, head over to your RockstarMath Dashboard where you can:</p>
+        <ul>
+            <li>📅 View all your scheduled sessions</li>
+            <li>✏️ Reschedule sessions if needed</li>
+            <li>❌ Cancel any session</li>
+            <li>🛒 Purchase additional sessions</li>
+        </ul>
+  `
     detailsHtml += `</ul>
-<p>📌If you have any questions please feel free to contact us at: rockstartmathtutoring@gmail.com or (510) 410-4963</p>
-`
+  <p>📌If you have any questions please feel free to contact us at: rockstartmathtutoring@gmail.com or (510) 410-4963</p>
+  `
   }
 
   detailsHtml += `</div>`
