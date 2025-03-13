@@ -609,14 +609,17 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
         .replace(/[^a-zA-Z0-9 ]/g, '')
         .trim()
 
-    // ✅ Check if "Common Core for Parents" was purchased
-    const hasCommonCore = user.cartItems.some(
-      (item) => normalizeString(item.name) === normalizeString(COMMONCORE_ZOOM_LINK.name),
-    )
-
-    if (hasCommonCore) {
-      zoomLinks.push(COMMONCORE_ZOOM_LINK)
-    }
+        if (user.cartItems && Array.isArray(user.cartItems)) {
+          const hasCommonCore = user.cartItems.some(
+            (item) => normalizeString(item.name) === normalizeString(COMMONCORE_ZOOM_LINK.name),
+          )
+          if (hasCommonCore) {
+            zoomLinks.push(COMMONCORE_ZOOM_LINK)
+          }
+        } else {
+          console.error("Error: user.cartItems is not defined or not an array");
+        }
+        console.log('user.cartItems:', user.cartItems); // Check if cartItems is an array and contains data.
 
       let calendlyLinks = []
       cartSummary.forEach((item) => {
