@@ -50,7 +50,7 @@ const zoomCourseMapping = [
   },
 ]
 const COMMONCORE_ZOOM_LINK = {
-  name: '📚  Common Core for Parents',
+  name: 'Common Core- Parents',
   link: 'https://us06web.zoom.us/meeting/register/XsYhADVmQcK8BIT3Sfbpyg#/registration',
 }
 
@@ -698,7 +698,6 @@ function generateEmailHtml(user, zoomLinks, userCoupons, calendlyLinks, hasCommo
     })
     detailsHtml += `</ul>`
   }
-  // ✅ Special Section for "Common Core for Parents"
   if (hasCommonCore) {
     detailsHtml += `
       <h3 style="color: #007bff;">📚 Welcome to Common Core Math for Parents!! Register below!:</h3>
@@ -708,7 +707,8 @@ function generateEmailHtml(user, zoomLinks, userCoupons, calendlyLinks, hasCommo
         </a>
       </p>
     `
-  }
+}
+
   if (userCoupons.length > 0) {
     detailsHtml += `<h3 style="color: #d9534f;">🎟 Your Exclusive Discount Coupons:</h3>`
     userCoupons.forEach((coupon) => {
