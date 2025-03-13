@@ -43,6 +43,7 @@ app.use(
     next();
   }
 );
+app.use('/api/webhook', bodyParser.raw({ type: 'application/json' }));
 
 
 // app.use((req, res, next) => {
@@ -68,21 +69,7 @@ const allowedOrigins = [
   "https://rockstarmath.com"
 ];
 
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        console.error(`❌ CORS Blocked: ${origin}`);
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    credentials: true,
-    allowedHeaders: ["Content-Type", "Authorization", "Stripe-Signature"]
-  })
-);
+app.use(cors({ origin: '*' }));
 
 // ✅ Trust Proxy for HTTPS
 app.set('trust proxy', true);
