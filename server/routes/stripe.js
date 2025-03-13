@@ -743,7 +743,6 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
  })
  
  // ✅ Function to Generate Email HTML
-// ✅ Function to Generate Email HTML
 function generateEmailHtml(user, zoomLinks, userCoupons, calendlyLinks, hasCommonCore) {
   // Use proxy link for Calendly bookings instead of direct links
   const proxyBaseUrl = 'https://backend-production-cbe2.up.railway.app/api/proxy-calendly'
