@@ -432,14 +432,18 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
       return res.status(400).json({ error: 'Invalid payment data' })
     }
 
-    const users = await Register.findById(user._id).exec() // Fetch user from DB
     try {
       // ✅ Fetch user first to check for existing purchases
-      const user = await Register.findById(userId)
+      const user = await Register.findById(userId).catch(error => {
+        console.error('❌ Database Error:', error)
+        throw new Error('Failed to fetch user')
+      })
       if (!user) {
         console.error('❌ Error: User not found in database!')
         return res.status(404).json({ error: 'User not found' })
       }
+      
+      const users = await Register.findById(user._id).exec() // Fetch user from DB
       // ✅ Save Payment Record in `StripePayment` Model
       const newStripePayment = new StripePayment({
         orderId: `stripe_${Date.now()}`,
