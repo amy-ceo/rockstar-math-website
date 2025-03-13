@@ -434,12 +434,20 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
       console.warn('⚠️ Missing user ID or cart summary. Skipping update.')
       return res.status(400).json({ error: 'Invalid payment data' })
     }
+
+
     try {
       // ✅ Fetch user first to check for existing purchases
       const user = await Register.findById(userId)
       if (!user) {
         console.error('❌ Error: User not found in database!')
         return res.status(404).json({ error: 'User not found' })
+      }
+
+      // Check if `cartItems` exists and is an array before proceeding
+      if (!user.cartItems || !Array.isArray(user.cartItems)) {
+        console.error('Error: user.cartItems is not defined or not an array')
+        return res.status(400).json({ error: 'Invalid cart data' })
       }
       // ✅ Save Payment Record in `StripePayment` Model
       const newStripePayment = new StripePayment({
