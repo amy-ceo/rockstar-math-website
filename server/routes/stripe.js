@@ -550,16 +550,16 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
         console.log('⚠️ No new purchased classes to add.')
       }
       const activeCoupons = await getActiveCoupons()
-    console.log('🎟 Active Coupons from Stripe:', activeCoupons)
+      console.log('🎟 Active Coupons from Stripe:', activeCoupons)
 
-    // ✅ Step 2: Match Coupons Based on Purchased Course Names
-    let userCoupons = activeCoupons.filter((coupon) => {
-      return user.cartItems.some((item) => {
-        return item.name.toLowerCase().includes(coupon.code.toLowerCase())
+      // ✅ Step 2: Match Coupons Based on Purchased Course Names
+      let userCoupons = activeCoupons.filter((coupon) => {
+        return user.cartItems.some((item) => {
+          return item.name.toLowerCase().includes(coupon.code.toLowerCase())
+        })
       })
-    })
 
-    console.log('🎟 Matched Coupons for User:', userCoupons)
+      console.log('🎟 Matched Coupons for User:', userCoupons)
       console.log('🛒 Purchased Items from Metadata:', cartSummary)
       let zoomLinks = []
       if (['Learn', 'Achieve', 'Excel'].some((course) => cartSummary.includes(course))) {
@@ -639,55 +639,55 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
         })
       })
       // ✅ Apply Discount Coupons Based on Course Name (Ensure all relevant coupons are applied)
-          let appliedCoupons = []
-      
-          user.cartItems.forEach((item) => {
-            let matchedCoupons = activeCoupons.filter((coupon) => {
-              if (item.name === 'Learn' && coupon.percent_off === 10) return true
-              if (item.name === 'Achieve' && (coupon.percent_off === 30 || coupon.percent_off === 100))
-                return true
-              if (item.name === 'Excel' && coupon.percent_off === 20) return true
-              return false
+      let appliedCoupons = []
+
+      user.cartItems.forEach((item) => {
+        let matchedCoupons = activeCoupons.filter((coupon) => {
+          if (item.name === 'Learn' && coupon.percent_off === 10) return true
+          if (item.name === 'Achieve' && (coupon.percent_off === 30 || coupon.percent_off === 100))
+            return true
+          if (item.name === 'Excel' && coupon.percent_off === 20) return true
+          return false
+        })
+
+        if (matchedCoupons.length > 0) {
+          matchedCoupons.forEach((coupon) => {
+            appliedCoupons.push({
+              code: coupon.code,
+              percent_off: coupon.percent_off,
+              expires: coupon.expires,
             })
-      
-            if (matchedCoupons.length > 0) {
-              matchedCoupons.forEach((coupon) => {
-                appliedCoupons.push({
-                  code: coupon.code,
-                  percent_off: coupon.percent_off,
-                  expires: coupon.expires,
-                })
-              })
-            }
-      
-            // ✅ **Ensure both 30% and 100% Achieve coupons are applied**
-            if (item.name === 'Achieve') {
-              appliedCoupons.push(
-                { code: 'fs4n9tti', percent_off: 100 }, // ✅ 100% Off Coupon
-                { code: 'qRBcEmgS', percent_off: 30 }, // ✅ 30% Off Coupon
-              )
-            }
           })
-      
-          // ✅ Ensure duplicates are removed (if any)
-          appliedCoupons = appliedCoupons.filter(
-            (coupon, index, self) => index === self.findIndex((c) => c.code === coupon.code),
+        }
+
+        // ✅ **Ensure both 30% and 100% Achieve coupons are applied**
+        if (item.name === 'Achieve') {
+          appliedCoupons.push(
+            { code: 'fs4n9tti', percent_off: 100 }, // ✅ 100% Off Coupon
+            { code: 'qRBcEmgS', percent_off: 30 }, // ✅ 30% Off Coupon
           )
-      
-          console.log('🎟 Final Applied Coupons:', appliedCoupons)
-          if (appliedCoupons.length > 0) {
-            appliedCoupons = appliedCoupons.filter((coupon) => coupon.code && coupon.code.trim() !== '')
-      
-            // ✅ Step 7: Save Coupons in User's Database
-            if (appliedCoupons.length > 0) {
-              await Register.findByIdAndUpdate(user._id, {
-                $push: { coupons: { $each: appliedCoupons } },
-              })
-            }
-          }
-      
-          console.log('📧 Sending Email with Zoom Links:', zoomLinks)
-          console.log('🎟 Sending Email with Coupons:', appliedCoupons)
+        }
+      })
+
+      // ✅ Ensure duplicates are removed (if any)
+      appliedCoupons = appliedCoupons.filter(
+        (coupon, index, self) => index === self.findIndex((c) => c.code === coupon.code),
+      )
+
+      console.log('🎟 Final Applied Coupons:', appliedCoupons)
+      if (appliedCoupons.length > 0) {
+        appliedCoupons = appliedCoupons.filter((coupon) => coupon.code && coupon.code.trim() !== '')
+
+        // ✅ Step 7: Save Coupons in User's Database
+        if (appliedCoupons.length > 0) {
+          await Register.findByIdAndUpdate(user._id, {
+            $push: { coupons: { $each: appliedCoupons } },
+          })
+        }
+      }
+
+      console.log('📧 Sending Email with Zoom Links:', zoomLinks)
+      console.log('🎟 Sending Email with Coupons:', appliedCoupons)
       if (calendlyLinks.length > 0) {
         await Register.findByIdAndUpdate(userId, {
           $push: { calendlyBookings: { $each: calendlyLinks } },
