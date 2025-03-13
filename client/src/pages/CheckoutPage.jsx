@@ -190,23 +190,9 @@ const CheckoutPage = () => {
   
       toast.success('🎉 Payment Successful! Redirecting...');
   
-      // Step 5: Verify localStorage state before redirect
-      console.log('🔍 Checking localStorage state before redirect...');
-      const currentLocalStorage = {
-        user: JSON.parse(localStorage.getItem('user')),
-        cartItems: JSON.parse(localStorage.getItem('cartItems')),
-      };
-      console.log('🔍 Current localStorage:', currentLocalStorage);
-  
-      // Step 6: Redirect to Dashboard or Login
-      const updatedUser = JSON.parse(localStorage.getItem('user'));
-      if (updatedUser && updatedUser._id) {
-        console.log('✅ User found in localStorage. Redirecting to dashboard.');
+      // Step 5: Redirect to Dashboard or Login
         navigate('/dashboard');
-      } else {
-        console.warn('⚠️ User not found in localStorage. Redirecting to login.');
-        navigate('/login');
-      }
+      
     } catch (error) {
       console.error('❌ Error in Payment Process:', error);
       toast.error(error.message || 'Payment processing error.');
