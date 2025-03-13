@@ -120,11 +120,10 @@ const CheckoutPage = () => {
   }
 
   const handlePayPalSuccess = async (data) => {
-    // Step 1: Check if user exists in localStorage
-    const user = JSON.parse(localStorage.getItem('user'));
-    console.log('🔍 Initial user in localStorage:', user);
+    const { users, updateUser } = useAuth(); // ✅ Use updateUser from AuthContext
+    const navigate = useNavigate();
 
-    if (!user || !user._id) {
+    if (!users || !users._id) {
       toast.error('User authentication required.');
       throw new Error('User authentication required.');
     }
@@ -139,10 +138,10 @@ const CheckoutPage = () => {
           body: JSON.stringify({
             orderId: data.orderID,
             user: {
-              _id: user._id,
-              username: user.username || 'Unknown User',
-              billingEmail: user.billingEmail || 'No email',
-              phone: user.phone || 'No phone',
+              _id: users._id,
+              username: users.username || 'Unknown User',
+              billingEmail: users.billingEmail || 'No email',
+              phone: users.phone || 'No phone',
               cartItems: cartItems.map((item) => ({
                 name: item.name,
                 price: Number(item.price) || 0,
@@ -158,13 +157,13 @@ const CheckoutPage = () => {
 
       if (!response.ok) {
         console.warn('⚠️ Payment capture failed, but still redirecting to dashboard.');
-        return navigate('/dashboard'); // Redirect even if there's a minor error
+        return navigate('/dashboard'); // ✅ Redirect even if there's a minor error
       }
 
       // Step 2: Fetch updated user data from the backend
       console.log('📡 Fetching updated user data...');
       const userResponse = await fetch(
-        `https://backend-production-cbe2.up.railway.app/api/user/${user._id}`,
+        `https://backend-production-cbe2.up.railway.app/api/user/${users._id}`,
       );
 
       if (!userResponse.ok) {
@@ -173,12 +172,13 @@ const CheckoutPage = () => {
         const updatedUser = await userResponse.json();
         console.log('✅ Updated User Data from Backend:', updatedUser);
 
-        // Step 3: Update user session in localStorage
+        // Step 3: Update user session in localStorage and global state
         try {
           localStorage.setItem('user', JSON.stringify(updatedUser));
-          console.log('✅ User data updated in localStorage:', JSON.parse(localStorage.getItem('user')));
+          updateUser(updatedUser); // ✅ Update global state
+          console.log('✅ User data updated in localStorage and AuthContext:', updatedUser);
         } catch (error) {
-          console.error('❌ Error updating localStorage:', error);
+          console.error('❌ Error updating localStorage or AuthContext:', error);
         }
       }
 
@@ -190,22 +190,14 @@ const CheckoutPage = () => {
 
       toast.success('🎉 Payment Successful! Redirecting...');
 
-      // Step 5: Verify localStorage state before redirect
-      console.log('🔍 Checking localStorage state before redirect...');
-      const currentLocalStorage = {
-        user: JSON.parse(localStorage.getItem('user')),
-        cartItems: JSON.parse(localStorage.getItem('cartItems')),
-      };
-      console.log(currentLocalStorage)
-      // Step 6: Redirect to Dashboard or Login
-      console.log('✅ User found in localStorage. Redirecting to dashboard.');
+      // Step 5: Redirect to Dashboard
       navigate('/dashboard');
-
     } catch (error) {
       console.error('❌ Error in Payment Process:', error);
       toast.error(error.message || 'Payment processing error.');
     }
   };
+
   const applyCoupon = () => {
     console.log('🔍 Entered Coupon Code:', couponCode)
     console.log('✅ Available Coupons from Backend:', validCoupons)
