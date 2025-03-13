@@ -1,31 +1,32 @@
-import React, { useEffect, useState } from 'react';
-import Sidebar from '../components/Sidebar';
-import AnimatedSection from '../components/AnimatedSection.jsx';
-import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import ClassCard from '../components/ClassCard.jsx';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
-import toast, { Toaster } from 'react-hot-toast';
+import React, { useEffect, useState } from 'react'
+import Sidebar from '../components/Sidebar'
+import AnimatedSection from '../components/AnimatedSection.jsx'
+import { useAuth } from '../context/AuthContext'
+import { useNavigate } from 'react-router-dom'
+import ClassCard from '../components/ClassCard.jsx'
+import DatePicker from 'react-datepicker'
+import 'react-datepicker/dist/react-datepicker.css'
+import toast, { Toaster } from 'react-hot-toast'
 
 const Dashboard = () => {
-  const { users } = useAuth(); // ✅ Use global state from AuthContext
-  const navigate = useNavigate();
-  const [purchasedClasses, setPurchasedClasses] = useState([]);
-  const [remainingSessions, setRemainingSessions] = useState([]);
-  const [calendlyBookings, setCalendlyBookings] = useState([]);
-  const [coupons, setCoupons] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [archivedClasses, setArchivedClasses] = useState([]);
-  const [showCancelPopup, setShowCancelPopup] = useState(false);
-  const [selectedEventUri, setSelectedEventUri] = useState(null);
-  const [selectedStartTime, setSelectedStartTime] = useState(null);
-  const [showReschedulePopup, setShowReschedulePopup] = useState(false);
-  const [selectedRescheduleEvent, setSelectedRescheduleEvent] = useState(null);
-  const [newDateTime, setNewDateTime] = useState(null);
-  const [zoomBookings, setZoomBookings] = useState([]);
-  const [popupKey, setPopupKey] = useState(0);
+  const { users } = useAuth() // ✅ Get user from AuthContext
+  const navigate = useNavigate()
+  const [purchasedClasses, setPurchasedClasses] = useState([])
+  const [remainingSessions, setRemainingSessions] = useState([]) // ✅ Fix: Add missing state
+  const [calendlyBookings, setCalendlyBookings] = useState([]) // ✅ State for Calendly Bookings
+  const [coupons, setCoupons] = useState([]) // ✅ State for Coupons
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [archivedClasses, setArchivedClasses] = useState([]) // ✅ New State for Archive
+  const [showCancelPopup, setShowCancelPopup] = useState(false)
+  const [user, setUser] = useState(null) // ✅ Fix: Store user locally
+  const [selectedEventUri, setSelectedEventUri] = useState(null)
+  const [selectedStartTime, setSelectedStartTime] = useState(null)
+  const [showReschedulePopup, setShowReschedulePopup] = useState(false)
+  const [selectedRescheduleEvent, setSelectedRescheduleEvent] = useState(null)
+  const [newDateTime, setNewDateTime] = useState(null)
+  const [zoomBookings, setZoomBookings] = useState([])
+  const [popupKey, setPopupKey] = useState(0)
 
   // ✅ Allowed Time Slots (3-6 PM, 7-8 PM, 8-9 PM with breaks)
   const allowedTimes = [
@@ -36,131 +37,138 @@ const Dashboard = () => {
     new Date().setHours(17, 0, 0, 0), // 5:00 PM
     new Date().setHours(17, 30, 0, 0), // 5:30 PM
     new Date().setHours(18, 0, 0, 0), // 6:00 PM
+
+    // Break from 6:00 PM - 7:00 PM ❌ (No slots here)
+
     new Date().setHours(19, 0, 0, 0), // 7:00 PM
     new Date().setHours(19, 30, 0, 0), // 7:30 PM
     new Date().setHours(20, 0, 0, 0), // 8:00 PM
-    new Date().setHours(20, 30, 0, 0), // 8:30 PM
+    new Date().setHours(20, 30, 0, 0), // 8:00 PM
+
+    // Break from 8:00 PM - 9:00 PM ❌ (No slots here)
+
     new Date().setHours(21, 0, 0, 0), // 9:00 PM
-  ];
+  ]
 
-  console.log(allowedTimes);
-
+  console.log(allowedTimes)
   // ❌ Courses that should NOT appear in "Remaining Sessions"
-  const excludedPlans = ['Learn', 'Achieve', 'Excel', 'Common Core- Parents'];
+  const excludedPlans = ['Learn', 'Achieve', 'Excel', 'Common Core- Parents']
 
-  // ✅ Check if user is authenticated
   useEffect(() => {
-    if (!users || !users._id) {
-      console.warn('⚠️ User not logged in, redirecting to login...');
-      navigate('/login'); // ✅ Redirect if user is not logged in
+    const storedUser = JSON.parse(localStorage.getItem('user'))
+    if (!storedUser || !storedUser._id) {
+      console.warn('⚠️ User not logged in, redirecting to login...')
+      navigate('/login') // ✅ Redirect if user is not logged in
+    } else {
+      setUser(storedUser) // ✅ Store user in state
     }
-  }, [users, navigate]);
+  }, [navigate])
 
   // ✅ Fetch all user data when component mounts
   useEffect(() => {
-    if (!users || !users._id) {
-      console.warn('⚠️ User ID not found, skipping API calls.');
-      setLoading(false);
-      return;
+    if (!user || !user._id) {
+      console.warn('⚠️ User ID not found, skipping API calls.')
+      setLoading(false)
+      return
     }
 
-    console.log('📡 Fetching data for User ID:', users._id);
-    setLoading(true);
+    console.log('📡 Fetching data for User ID:', user._id)
+    setLoading(true)
 
     // Fetch Purchased Classes
     const fetchPurchasedClasses = async () => {
       try {
         const response = await fetch(
-          `https://backend-production-cbe2.up.railway.app/api/${users._id}/purchased-classes`,
-        );
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.message || 'Failed to fetch purchased classes.');
+          `https://backend-production-cbe2.up.railway.app/api/${user._id}/purchased-classes`,
+        )
+        const data = await response.json()
+        if (!response.ok) throw new Error(data.message || 'Failed to fetch purchased classes.')
 
         // ✅ Ensure bookingLink is included
         const updatedClasses = (data.purchasedClasses || []).map((cls) => ({
           ...cls,
           bookingLink: cls.bookingLink || null,
-        }));
+        }))
 
-        setPurchasedClasses(updatedClasses);
+        setPurchasedClasses(updatedClasses)
       } catch (error) {
-        console.error('❌ Error fetching classes:', error);
-        setError('Failed to load classes. Try again.');
+        console.error('❌ Error fetching classes:', error)
+        setError('Failed to load classes. Try again.')
       }
-    };
+    }
 
     const fetchCalendlyBookings = async () => {
       try {
         const response = await fetch(
-          `https://backend-production-cbe2.up.railway.app/api/webhook/${users._id}/calendly-bookings`,
-        );
-        const data = await response.json();
+          `https://backend-production-cbe2.up.railway.app/api/webhook/${user._id}/calendly-bookings`,
+        )
+        const data = await response.json()
 
-        console.log('✅ Fetched Calendly Bookings:', data); // Debugging log
+        console.log('✅ Fetched Calendly Bookings:', data) // Debugging log
 
-        if (!response.ok) throw new Error(data.message || 'No Calendly bookings found.');
+        if (!response.ok) throw new Error(data.message || 'No Calendly bookings found.')
 
-        setCalendlyBookings(data.bookings || []);
+        setCalendlyBookings(data.bookings || [])
       } catch (error) {
-        console.error('❌ Error fetching Calendly bookings:', error);
-        setCalendlyBookings([]); // Ensures UI doesn't break
+        console.error('❌ Error fetching Calendly bookings:', error)
+        setCalendlyBookings([]) // Ensures UI doesn't break
       }
-    };
+    }
 
     const fetchZoomBookings = async () => {
-      if (!users || !users._id) {
-        console.warn('⚠️ User ID is missing. Skipping Zoom booking fetch.');
-        return;
+      if (!user || !user._id) {
+        console.warn('⚠️ User ID is missing. Skipping Zoom booking fetch.')
+        return
       }
 
       try {
         const response = await fetch(
-          `https://backend-production-cbe2.up.railway.app/api/zoom/bookings/${users._id}`,
-        );
+          `https://backend-production-cbe2.up.railway.app/api/zoom/bookings/${user._id}`,
+        )
 
-        const data = await response.json();
+        const data = await response.json()
 
-        if (!response.ok) throw new Error(data.error || 'Failed to fetch Zoom bookings.');
+        if (!response.ok) throw new Error(data.error || 'Failed to fetch Zoom bookings.')
 
         // ✅ Ensure sessionDates is always an array
         const processedBookings = data.zoomBookings.map((booking) => ({
           ...booking,
           sessionDates: Array.isArray(booking.sessionDates) ? booking.sessionDates : [], // ✅ Ensure it is an array
-        }));
+        }))
 
-        setZoomBookings(processedBookings);
+        setZoomBookings(processedBookings)
       } catch (error) {
-        console.error('❌ Error fetching Zoom bookings:', error);
-        setZoomBookings([]); // Prevent UI from breaking
+        console.error('❌ Error fetching Zoom bookings:', error)
+        setZoomBookings([]) // Prevent UI from breaking
       }
-    };
+    }
 
     // Fetch Coupons
     const fetchCoupons = async () => {
       try {
         const response = await fetch(
-          `https://backend-production-cbe2.up.railway.app/api/user-coupons/${users._id}`,
-        );
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.message || 'No Coupons found.');
-        setCoupons(data.coupons);
+          `https://backend-production-cbe2.up.railway.app/api/user-coupons/${user._id}`,
+        )
+        const data = await response.json()
+        if (!response.ok) throw new Error(data.message || 'No Coupons found.')
+        setCoupons(data.coupons)
       } catch (error) {
-        console.error('❌ Error fetching Coupons:', error);
-        setCoupons([]);
+        console.error('❌ Error fetching Coupons:', error)
+        setCoupons([])
       }
-    };
+    }
 
     // ✅ Fetch Remaining Sessions
     const fetchRemainingSessions = async () => {
       try {
-        setLoading(true);
+        setLoading(true)
 
         const response = await fetch(
-          `https://backend-production-cbe2.up.railway.app/api/user/${users._id}/remaining-sessions`,
-        );
-        const data = await response.json();
+          `https://backend-production-cbe2.up.railway.app/api/user/${user._id}/remaining-sessions`,
+        )
+        const data = await response.json()
 
-        if (!response.ok) throw new Error(data.message || 'Failed to fetch remaining sessions.');
+        if (!response.ok) throw new Error(data.message || 'Failed to fetch remaining sessions.')
 
         // ✅ Filter out only the excluded plans & ensure bookingLink exists
         const filteredSessions = (data.remainingSessions || [])
@@ -168,26 +176,29 @@ const Dashboard = () => {
           .map((session) => ({
             ...session,
             bookingLink: session.bookingLink || null, // ✅ Ensure bookingLink is present
-          }));
+          }))
 
-        setRemainingSessions(filteredSessions);
+        setRemainingSessions(filteredSessions)
       } catch (error) {
-        console.error('❌ Error fetching remaining sessions:', error);
-        setRemainingSessions([]);
+        console.error('❌ Error fetching remaining sessions:', error)
+        setRemainingSessions([])
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
+    }
 
+    if (users?._id) {
+      fetchZoomBookings()
+    }
     // ✅ Run all API calls in parallel
     Promise.allSettled([
       fetchPurchasedClasses(),
       fetchCalendlyBookings(),
-      fetchRemainingSessions(),
+      fetchRemainingSessions(), // ✅ Fetch remaining sessions
+
       fetchCoupons(),
-      fetchZoomBookings(),
-    ]).finally(() => setLoading(false));
-  }, [users]); // ✅ Depend only on `users`
+    ]).finally(() => setLoading(false))
+  }, [user]) // ✅ Depend only on `users`
 
   const handleReschedule = async () => {
     if (!selectedRescheduleEvent || !newDateTime) {
