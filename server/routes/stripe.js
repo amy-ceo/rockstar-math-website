@@ -206,15 +206,12 @@ router.get('/get-products', async (req, res) => {
 
 router.post('/create-payment-intent', async (req, res) => {
   try {
-    let { amount, currency, userId, orderId, cartItems, userEmail } = req.body
-    console.log('🔹 Received Payment Request:', {
-      amount,
-      currency,
-      userId,
-      orderId,
-      cartItems,
-      userEmail,
-    })
+    let { amount, currency, userId, orderId, cartItems, userEmail } = req.body;
+    // Add checks if any required field is missing
+    if (!amount || !currency || !userId || !orderId || !cartItems) {
+      console.error('❌ Missing required fields:', req.body);
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
     if (!userId || !orderId || !cartItems || cartItems.length === 0) {
       console.error('❌ Missing required fields:', { userId, orderId, cartItems })
       return res.status(400).json({ error: 'Missing required fields: userId, orderId, cartItems.' })
@@ -458,35 +455,35 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
 
       await newStripePayment.save()
       console.log('✅ Stripe Payment Saved in Database!')
-       // ✅ Prepare recipients list (Include billingEmail & schedulingEmails)
-    let recipients = [users.billingEmail]
-    // ✅ If schedulingEmails is a string, add it to the list
-    if (users.schedulingEmails) {
-      if (Array.isArray(users.schedulingEmails)) {
-        recipients = recipients.concat(users.schedulingEmails) // If it's an array, merge it
-      } else {
-        recipients.push(users.schedulingEmails) // If it's a string, add it directly
+      // ✅ Prepare recipients list (Include billingEmail & schedulingEmails)
+      let recipients = [users.billingEmail]
+      // ✅ If schedulingEmails is a string, add it to the list
+      if (users.schedulingEmails) {
+        if (Array.isArray(users.schedulingEmails)) {
+          recipients = recipients.concat(users.schedulingEmails) // If it's an array, merge it
+        } else {
+          recipients.push(users.schedulingEmails) // If it's a string, add it directly
+        }
       }
-    }
 
-    // ✅ Remove any null or undefined values
-    recipients = recipients.filter((email) => email)
+      // ✅ Remove any null or undefined values
+      recipients = recipients.filter((email) => email)
 
-    // ✅ Convert recipients array to a comma-separated string
-    const recipientEmails = recipients.join(',')
+      // ✅ Convert recipients array to a comma-separated string
+      const recipientEmails = recipients.join(',')
 
       // ✅ Clear Cart in Database (Assuming user has a `cart` field in `Register` Model)
       const updatedUser = await Register.findByIdAndUpdate(
-        userId, 
-        { $set: { cart: [] } }, 
-        { new: true }
-      );
+        userId,
+        { $set: { cart: [] } },
+        { new: true },
+      )
       console.log('🔍 Cart After Clearing:', updatedUser.cart)
 
       // ✅ **Send Welcome Email**
       console.log(`📧 Sending Welcome Email to: ${userEmail}`)
       let welcomeSubject = `🎉 Welcome to Rockstar Math, ${user.username}!`
-      let welcomeHtml =  `
+      let welcomeHtml = `
       <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
         
         <div style="text-align: center; padding-bottom: 20px;">
@@ -525,9 +522,9 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
     
       </div>
       `
-          await sendEmail(recipientEmails, welcomeSubject, '', welcomeHtml)
+      await sendEmail(recipientEmails, welcomeSubject, '', welcomeHtml)
       console.log('✅ Welcome email sent successfully!')
-    console.log('✅ Emails sent to:', recipientEmails)
+      console.log('✅ Emails sent to:', recipientEmails)
       // ✅ Track existing purchased classes to prevent duplicates
       const existingClasses = new Set(
         user.purchasedClasses.map((cls) => cls.name.toLowerCase().trim()),
@@ -610,14 +607,14 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
         </div>
         `,
       )
-     // ✅ Check if "Common Core for Parents" was purchased
-     const hasCommonCore = user.cartItems.some(
-      (item) => normalizeString(item.name) === normalizeString(COMMONCORE_ZOOM_LINK.name),
-    )
+      // ✅ Check if "Common Core for Parents" was purchased
+      const hasCommonCore = user.cartItems.some(
+        (item) => normalizeString(item.name) === normalizeString(COMMONCORE_ZOOM_LINK.name),
+      )
 
-    if (hasCommonCore) {
-      zoomLinks.push(COMMONCORE_ZOOM_LINK)
-    }
+      if (hasCommonCore) {
+        zoomLinks.push(COMMONCORE_ZOOM_LINK)
+      }
 
       let calendlyLinks = []
       cartSummary.forEach((item) => {
@@ -664,7 +661,13 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
       console.log('📅 Available Calendly Links:', Object.keys(calendlyMapping))
       console.log('📧 Sending Email with Zoom Links & Calendly Links:', zoomLinks, calendlyLinks)
       console.log('🎟 Sending Email with Coupons:', appliedCoupons)
-      const emailHtml = generateEmailHtml(user, zoomLinks, userCoupons, calendlyLinks, hasCommonCore)
+      const emailHtml = generateEmailHtml(
+        user,
+        zoomLinks,
+        userCoupons,
+        calendlyLinks,
+        hasCommonCore,
+      )
       await sendEmail(recipientEmails, '📚 Your Rockstar Math Purchase Details', '', emailHtml)
       console.log('✅ Purchase confirmation email sent successfully!')
       return res.status(200).json({ message: 'Purchase updated & all emails sent!' })
@@ -693,8 +696,8 @@ function generateEmailHtml(user, zoomLinks, userCoupons, calendlyLinks, hasCommo
     })
     detailsHtml += `</ul>`
   }
-   // ✅ Special Section for "Common Core for Parents"
-   if (hasCommonCore) {
+  // ✅ Special Section for "Common Core for Parents"
+  if (hasCommonCore) {
     detailsHtml += `
       <h3 style="color: #007bff;">📚 Welcome to Common Core Math for Parents!! Register below!:</h3>
       <p>

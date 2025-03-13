@@ -292,36 +292,36 @@ const CheckoutPage = () => {
       handleZeroAmount()
       return null
     }
-
+  
     try {
       const user = JSON.parse(localStorage.getItem('user'))
       if (!user || !user._id) {
         toast.error('User authentication required!')
         return
       }
-
+  
       const orderId = `order_${Date.now()}`
       const currency = 'usd'
-
-      // ✅ Fix: Ensure cart items are properly formatted before sending
+  
+      // Ensure cart items are properly formatted before sending
       const formattedCartItems = cartItems.map((item) => ({
-        id: item.id || `prod_${Math.random().toString(36).substring(7)}`, // 🔹 Ensure each item has a valid ID
+        id: item.id || `prod_${Math.random().toString(36).substring(7)}`,
         name: item.name,
         description: item.description || 'No description available',
-        price: String(item.price), // 🔥 Convert price to string to avoid serialization issues
+        price: String(item.price),
         currency: item.currency || 'USD',
-        quantity: item.quantity || 1, // ✅ Ensure quantity is present
+        quantity: item.quantity || 1,
       }))
-
+  
       console.log('🔹 Sending Payment Request:', {
         amount: total,
         currency,
         userId: user._id,
         orderId,
-        userEmail: user.billingEmail || 'no-email@example.com', // ✅ Ensure user email is included
-        cartItems: formattedCartItems, // ✅ Fix: Send formatted cart items
+        userEmail: user.billingEmail || 'no-email@example.com',
+        cartItems: formattedCartItems,
       })
-
+  
       const response = await fetch(
         'https://backend-production-cbe2.up.railway.app/api/stripe/create-payment-intent',
         {
@@ -332,23 +332,23 @@ const CheckoutPage = () => {
             currency,
             userId: user._id,
             orderId,
-            userEmail: user.billingEmail || 'no-email@example.com', // ✅ Ensure user email is included
-            cartItems: formattedCartItems, // ✅ Fix: Send full cart items array
+            userEmail: user.billingEmail || 'no-email@example.com',
+            cartItems: formattedCartItems,
           }),
         },
       )
-
+  
       if (!response.ok) {
         console.error('❌ Failed to create payment intent. Status:', response.status)
         throw new Error(`Payment Intent creation failed. Server responded with ${response.status}`)
       }
-
+  
       const data = await response.json()
       console.log('✅ Payment Intent Created:', data)
-
+  
       setPaymentIntentId(data.id)
       setClientSecret(data.clientSecret)
-
+  
       return data.clientSecret
     } catch (error) {
       console.error('❌ Payment Intent Error:', error)
@@ -356,13 +356,7 @@ const CheckoutPage = () => {
       return null
     }
   }
-
-  const clearCartAfterPayment = () => {
-    console.log('🛒 Clearing Cart from LocalStorage...')
-    localStorage.setItem('cartItems', JSON.stringify([])) // 🛑 Ensure it's empty
-    setCartItems([])
-    window.dispatchEvent(new Event('storage'))
-  }
+  
 
   const handlePaymentSuccess = async () => {
     try {
