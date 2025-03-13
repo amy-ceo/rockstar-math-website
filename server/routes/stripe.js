@@ -483,7 +483,7 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
       <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
         
         <div style="text-align: center; padding-bottom: 20px;">
-          <img src="https://your-logo-url.com/logo.png" alt="Rockstar Math" style="width: 150px; margin-bottom: 10px;">
+          <img src="https://www.rockstarmath.com/images/logo.png" alt="Rockstar Math" style="width: 150px; margin-bottom: 10px;">
         <h2 style="color: #2C3E50;">🎉 Welcome, ${user.username}!</h2>
         <p style="font-size: 16px;">We're thrilled to have you join <b>Rockstar Math</b>! 🚀</p>
       </div>
@@ -517,7 +517,7 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
     </div>
     `
       await sendEmail(recipientEmails, welcomeSubject, '', welcomeHtml)
-      console.log('📧 Sending Confirmation Email to:', recipientEmails.join(', '));
+      console.log('📧 Sending Confirmation Email to:', recipientEmails.join(', '))
       console.log('✅ Welcome email sent successfully!')
       // ✅ Track existing purchased classes to prevent duplicates
       const existingClasses = new Set(
@@ -566,7 +566,7 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
           <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
             
             <div style="text-align: center; padding-bottom: 20px;">
-              <img src="https://your-logo-url.com/logo.png" alt="Rockstar Math" style="width: 150px; margin-bottom: 10px;">
+              <img src="https://www.rockstarmath.com/images/logo.png" alt="Rockstar Math" style="width: 150px; margin-bottom: 10px;">
               <h2 style="color: #2C3E50;">🎉 Thank You for Your Purchase – Welcome to RockstarMath!</h2>
             </div>
         
@@ -602,24 +602,30 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
           </div>
           `,
       )
-       // ✅ Normalize the product names for a better match
-    const normalizeString = (str) =>
-      str
-        .toLowerCase()
-        .replace(/[^a-zA-Z0-9 ]/g, '')
-        .trim()
+      // ✅ Normalize the product names for a better match
+      // ✅ Normalize the product names for a better match
+      const normalizeString = (str) =>
+        str
+          .toLowerCase()
+          .replace(/[^a-zA-Z0-9 ]/g, '')
+          .trim()
 
-        if (user.cartItems && Array.isArray(user.cartItems)) {
-          const hasCommonCore = user.cartItems.some(
-            (item) => normalizeString(item.name) === normalizeString(COMMONCORE_ZOOM_LINK.name),
-          )
-          if (hasCommonCore) {
-            zoomLinks.push(COMMONCORE_ZOOM_LINK)
-          }
-        } else {
-          console.error("Error: user.cartItems is not defined or not an array");
-        }
-        console.log('user.cartItems:', user.cartItems); // Check if cartItems is an array and contains data.
+      // ✅ Check if "Common Core for Parents" was purchased
+      let hasCommonCore = false
+      if (user.cartItems && Array.isArray(user.cartItems)) {
+        hasCommonCore = user.cartItems.some(
+          (item) => normalizeString(item.name) === normalizeString(COMMONCORE_ZOOM_LINK.name),
+        )
+      } else {
+        console.error('Error: user.cartItems is not defined or not an array')
+      }
+
+      if (hasCommonCore) {
+        zoomLinks.push(COMMONCORE_ZOOM_LINK)
+      }
+
+      // ✅ Proceed with email generation (after `hasCommonCore` has been set)
+      console.log('user.cartItems:', user.cartItems) // Check if cartItems is an array and contains data.
 
       let calendlyLinks = []
       cartSummary.forEach((item) => {
@@ -710,7 +716,7 @@ function generateEmailHtml(user, zoomLinks, userCoupons, calendlyLinks, hasCommo
         </a>
       </p>
     `
-}
+  }
 
   if (userCoupons.length > 0) {
     detailsHtml += `<h3 style="color: #d9534f;">🎟 Your Exclusive Discount Coupons:</h3>`

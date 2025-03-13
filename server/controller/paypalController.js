@@ -254,7 +254,7 @@ exports.captureOrder = async (req, res) => {
       <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
         
         <div style="text-align: center; padding-bottom: 20px;">
-          <img src="https://your-logo-url.com/logo.png" alt="Rockstar Math" style="width: 150px; margin-bottom: 10px;">
+          <img src="https://www.rockstarmath.com/images/logo.png" alt="Rockstar Math" style="width: 150px; margin-bottom: 10px;">
         <h2 style="color: #2C3E50;">🎉 Welcome, ${user.username}!</h2>
         <p style="font-size: 16px;">We're thrilled to have you join <b>Rockstar Math</b>! 🚀</p>
       </div>
@@ -474,7 +474,7 @@ exports.captureOrder = async (req, res) => {
           <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
             
             <div style="text-align: center; padding-bottom: 20px;">
-              <img src="https://your-logo-url.com/logo.png" alt="Rockstar Math" style="width: 150px; margin-bottom: 10px;">
+              <img src="https://www.rockstarmath.com/images/logo.png" alt="Rockstar Math" style="width: 150px; margin-bottom: 10px;">
               <h2 style="color: #2C3E50;">🎉 Thank You for Your Purchase – Welcome to RockstarMath!</h2>
             </div>
         
