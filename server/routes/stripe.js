@@ -517,17 +517,12 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
     </div>
     `
       await sendEmail(recipientEmails, welcomeSubject, '', welcomeHtml)
-      console.log('📧 Sending Confirmation Email to:', recipientEmails.join(', '))
+      console.log('📧 Sending Confirmation Email to:', recipientEmails.join(', '));
       console.log('✅ Welcome email sent successfully!')
       // ✅ Track existing purchased classes to prevent duplicates
       const existingClasses = new Set(
         user.purchasedClasses.map((cls) => cls.name.toLowerCase().trim()),
       )
-      const proxyBaseUrl = 'https://backend-production-cbe2.up.railway.app/api/proxy-calendly'
-      // ✅ Generate Proxy Booking Link
-      const proxyBookingLink = calendlyMapping[formattedItemName]
-        ? `${proxyBaseUrl}?userId=${user._id}&session=${encodeURIComponent(item.name)}`
-        : null
       // ✅ Filter new purchases to avoid duplicate entries
       const purchasedItems = cartSummary
         .filter((item) => !existingClasses.has(item.toLowerCase().trim()))
@@ -535,7 +530,7 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
           name: item,
           sessionCount: sessionMapping[item] || 0,
           remainingSessions: sessionMapping[item] || 0,
-          bookingLink: proxyBookingLink, // ✅ Store Proxy Calendly Link!
+          bookingLink: calendlyMapping[item] || null,
           status: 'Active',
         }))
       if (purchasedItems.length > 0) {
@@ -549,17 +544,14 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
       } else {
         console.log('⚠️ No new purchased classes to add.')
       }
+      // ✅ Continue with Zoom links, Calendly, Coupons, and Emails
       const activeCoupons = await getActiveCoupons()
       console.log('🎟 Active Coupons from Stripe:', activeCoupons)
-
-      // ✅ Step 2: Match Coupons Based on Purchased Course Names
       let userCoupons = activeCoupons.filter((coupon) => {
-        return user.cartItems.some((item) => {
-          return item.name.toLowerCase().includes(coupon.code.toLowerCase())
+        return cartSummary.some((item) => {
+          return item.toLowerCase().includes(coupon.code.toLowerCase())
         })
       })
-
-      console.log('🎟 Matched Coupons for User:', userCoupons)
       console.log('🛒 Purchased Items from Metadata:', cartSummary)
       let zoomLinks = []
       if (['Learn', 'Achieve', 'Excel'].some((course) => cartSummary.includes(course))) {
@@ -610,22 +602,22 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
           </div>
           `,
       )
+     
+    // ✅ Normalize the product names for a better match
+    const normalizeString = (str) =>
+      str
+        .toLowerCase()
+        .replace(/[^a-zA-Z0-9 ]/g, '')
+        .trim()
 
-      // ✅ Normalize the product names for a better match
-      const normalizeString = (str) =>
-        str
-          .toLowerCase()
-          .replace(/[^a-zA-Z0-9 ]/g, '')
-          .trim()
+    // ✅ Check if "Common Core for Parents" was purchased
+    const hasCommonCore = user.cartItems.some(
+      (item) => normalizeString(item.name) === normalizeString(COMMONCORE_ZOOM_LINK.name),
+    )
 
-      // ✅ Check if "Common Core for Parents" was purchased
-      const hasCommonCore = user.cartItems.some(
-        (item) => normalizeString(item.name) === normalizeString(COMMONCORE_ZOOM_LINK.name),
-      )
-
-      if (hasCommonCore) {
-        zoomLinks.push(COMMONCORE_ZOOM_LINK)
-      }
+    if (hasCommonCore) {
+      zoomLinks.push(COMMONCORE_ZOOM_LINK)
+    }
       let calendlyLinks = []
       cartSummary.forEach((item) => {
         const formattedItemName = item.trim().toLowerCase()
@@ -638,56 +630,30 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
           }
         })
       })
-      // ✅ Apply Discount Coupons Based on Course Name (Ensure all relevant coupons are applied)
       let appliedCoupons = []
-
-      user.cartItems.forEach((item) => {
-        let matchedCoupons = activeCoupons.filter((coupon) => {
-          if (item.name === 'Learn' && coupon.percent_off === 10) return true
-          if (item.name === 'Achieve' && (coupon.percent_off === 30 || coupon.percent_off === 100))
-            return true
-          if (item.name === 'Excel' && coupon.percent_off === 20) return true
+      cartSummary.forEach((item) => {
+        let matchedCoupon = activeCoupons.find((coupon) => {
+          if (item === 'Learn' && coupon.percent_off === 10) return true
+          if (item === 'Achieve' && coupon.percent_off === 30) return true
+          if (item === 'Excel' && coupon.percent_off === 20) return true
           return false
         })
-
-        if (matchedCoupons.length > 0) {
-          matchedCoupons.forEach((coupon) => {
-            appliedCoupons.push({
-              code: coupon.code,
-              percent_off: coupon.percent_off,
-              expires: coupon.expires,
-            })
+        if (matchedCoupon && matchedCoupon.code) {
+          appliedCoupons.push({
+            code: matchedCoupon.code,
+            percent_off: matchedCoupon.percent_off,
+            expires: matchedCoupon.expires,
           })
         }
-
-        // ✅ **Ensure both 30% and 100% Achieve coupons are applied**
-        if (item.name === 'Achieve') {
-          appliedCoupons.push(
-            { code: 'fs4n9tti', percent_off: 100 }, // ✅ 100% Off Coupon
-            { code: 'qRBcEmgS', percent_off: 30 }, // ✅ 30% Off Coupon
-          )
-        }
       })
-
-      // ✅ Ensure duplicates are removed (if any)
-      appliedCoupons = appliedCoupons.filter(
-        (coupon, index, self) => index === self.findIndex((c) => c.code === coupon.code),
-      )
-
-      console.log('🎟 Final Applied Coupons:', appliedCoupons)
       if (appliedCoupons.length > 0) {
         appliedCoupons = appliedCoupons.filter((coupon) => coupon.code && coupon.code.trim() !== '')
-
-        // ✅ Step 7: Save Coupons in User's Database
         if (appliedCoupons.length > 0) {
-          await Register.findByIdAndUpdate(user._id, {
+          await Register.findByIdAndUpdate(userId, {
             $push: { coupons: { $each: appliedCoupons } },
           })
         }
       }
-
-      console.log('📧 Sending Email with Zoom Links:', zoomLinks)
-      console.log('🎟 Sending Email with Coupons:', appliedCoupons)
       if (calendlyLinks.length > 0) {
         await Register.findByIdAndUpdate(userId, {
           $push: { calendlyBookings: { $each: calendlyLinks } },
