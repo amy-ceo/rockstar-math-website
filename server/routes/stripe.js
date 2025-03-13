@@ -462,7 +462,6 @@ const express = require('express')
          userId, 
          { $set: { cart: [] } }, 
          { new: true }  // ✅ Returns updated user
-         { new: true }
        );
        
        console.log('Updated User After Clearing Cart:', updatedUser);
