@@ -602,12 +602,22 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
           </div>
           `,
       )
-      const hasCommonCore = cartSummary.some(
-        (item) => item.toLowerCase() === 'Common Core- Parents',
-      )
-      if (hasCommonCore) {
-        zoomLinks.push(COMMONCORE_ZOOM_LINK)
-      }
+       // ✅ Normalize the product names for a better match
+    const normalizeString = (str) =>
+      str
+        .toLowerCase()
+        .replace(/[^a-zA-Z0-9 ]/g, '')
+        .trim()
+
+    // ✅ Check if "Common Core for Parents" was purchased
+    const hasCommonCore = user.cartItems.some(
+      (item) => normalizeString(item.name) === normalizeString(COMMONCORE_ZOOM_LINK.name),
+    )
+
+    if (hasCommonCore) {
+      zoomLinks.push(COMMONCORE_ZOOM_LINK)
+    }
+
       let calendlyLinks = []
       cartSummary.forEach((item) => {
         const formattedItemName = item.trim().toLowerCase()
