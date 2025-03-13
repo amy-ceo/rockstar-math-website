@@ -219,6 +219,32 @@ app.post("/api/verify-otp", (req, res) => {
       );
       console.log("✅ Created new sparse index on zoomBookings.zoomMeetingId");
   
+      // 🛑 Fix duplicate `paymentIntentId` in `stripepayments` collection
+      console.log("🔧 Checking for duplicate paymentIntentId in stripepayments...");
+      const duplicateCheck = await db.collection('stripepayments').aggregate([
+        { $group: { _id: "$paymentIntentId", count: { $sum: 1 } } },
+        { $match: { count: { $gt: 1 } } }
+      ]).toArray();
+  
+      if (duplicateCheck.length > 0) {
+        console.log("⚠️ Found duplicate paymentIntentId. Resolving duplicates...");
+        for (let duplicate of duplicateCheck) {
+          // You can log and handle duplicates here, for example:
+          console.log(`Duplicate found for paymentIntentId: ${duplicate._id}`);
+          // You may choose to delete or merge duplicates here.
+          await db.collection('stripepayments').deleteMany({ paymentIntentId: duplicate._id });
+          console.log(`✅ Duplicates for paymentIntentId ${duplicate._id} resolved.`);
+        }
+      } else {
+        console.log("🎉 No duplicates found for paymentIntentId.");
+      }
+  
+      // ✅ Ensure unique index for paymentIntentId in `stripepayments`
+      console.log("🔧 Ensuring unique index on paymentIntentId...");
+      await db.collection('stripepayments').dropIndex('paymentIntentId_1').catch(err => console.warn("⚠️ No existing index for paymentIntentId"));
+      await db.collection('stripepayments').createIndex({ paymentIntentId: 1 }, { unique: true });
+      console.log("✅ Created unique index on paymentIntentId in stripepayments.");
+  
       console.log("🎉 MongoDB Index Fix Completed!");
   
     } catch (error) {
@@ -228,6 +254,7 @@ app.post("/api/verify-otp", (req, res) => {
   
   // Run index fix when the app starts
   mongoose.connection.once("open", fixMongoIndexes);
+11  
   
 
 
