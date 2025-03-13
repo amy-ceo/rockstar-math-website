@@ -93,7 +93,6 @@ app.use('/uploads', express.static('uploads'));
 
 
 
-// ✅ **Proper Webhook Middleware**
 // ✅ Use raw body ONLY for Zoom validation events
 app.use("/api/zoom/webhook", (req, res, next) => {
   if (req.headers["content-type"] === "application/json") {
