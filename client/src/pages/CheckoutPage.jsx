@@ -120,17 +120,15 @@ const CheckoutPage = () => {
   }
 
   const handlePayPalSuccess = async (data) => {
-    // Step 1: Check if user exists in localStorage
-    const user = JSON.parse(localStorage.getItem('user'));
-    console.log('🔍 Initial user in localStorage:', user);
-  
+    const user = JSON.parse(localStorage.getItem('user'))
+
     if (!user || !user._id) {
-      toast.error('User authentication required.');
-      throw new Error('User authentication required.');
+      toast.error('User authentication required.')
+      throw new Error('User authentication required.')
     }
-  
+
     try {
-      console.log('📡 Capturing PayPal Order...');
+      console.log('📡 Capturing PayPal Order...')
       const response = await fetch(
         'https://backend-production-cbe2.up.railway.app/api/paypal/capture-order',
         {
@@ -151,63 +149,79 @@ const CheckoutPage = () => {
             },
           }),
         },
-      );
-  
-      const result = await response.json();
-      console.log('📡 PayPal Capture Response:', result);
-  
+      )
+
+      const result = await response.json()
+      console.log('📡 PayPal Capture Response:', result)
+
       if (!response.ok) {
-        console.warn('⚠️ Payment capture failed, but still redirecting to dashboard.');
-        return navigate('/dashboard'); // Redirect even if there's a minor error
+        console.warn("⚠️ Payment capture failed, but still redirecting to dashboard.");
+        return navigate('/dashboard') // ✅ Redirect user to dashboard even if there's a minor error
+    }
+
+      console.log('📡 Calling addPurchasedClass API...')
+      const purchaseResponse = await fetch(
+        'https://backend-production-cbe2.up.railway.app/api/add-purchased-class',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user._id,
+            purchasedItems: cartItems.map((item) => ({
+              name: item.name,
+              description: item.description || 'No description available',
+            })),
+            userEmail: user.billingEmail || 'No email',
+          }),
+        },
+      )
+
+      const purchaseResult = await purchaseResponse.json()
+      console.log('✅ Purchased Classes API Response:', purchaseResult)
+
+      if (!purchaseResponse.ok) {
+        console.warn('⚠️ Issue updating purchased classes:', purchaseResult.message)
       }
-  
-      // Step 2: Fetch updated user data from the backend
-      console.log('📡 Fetching updated user data...');
+
+      console.log('📡 Fetching updated user data...')
       const userResponse = await fetch(
         `https://backend-production-cbe2.up.railway.app/api/user/${user._id}`,
-      );
-  
+      )
+
       if (!userResponse.ok) {
-        console.warn('⚠️ Failed to fetch updated user data.');
+        console.warn('⚠️ Failed to fetch updated user data.')
       } else {
-        const updatedUser = await userResponse.json();
-        console.log('✅ Updated User Data from Backend:', updatedUser);
-  
-        // Step 3: Update user session in localStorage
-        try {
-          localStorage.setItem('user', JSON.stringify(updatedUser));
-          console.log('✅ User data updated in localStorage:', JSON.parse(localStorage.getItem('user')));
-        } catch (error) {
-          console.error('❌ Error updating localStorage:', error);
-        }
+        const updatedUser = await userResponse.json()
+        console.log('✅ Updated User Data:', updatedUser)
+
+        // ✅ Update user session in localStorage
+        localStorage.setItem('user', JSON.stringify(updatedUser))
       }
-  
-      // Step 4: Clear Cart After Successful PayPal Payment
-      console.log('🛒 Clearing Cart after Successful Payment...');
-      localStorage.removeItem('cartItems');
-      setCartItems([]);
-      window.dispatchEvent(new Event('storage'));
-  
-      toast.success('🎉 Payment Successful! Redirecting...');
-  
-      // Step 5: Verify localStorage state before redirect
-      console.log('🔍 Checking localStorage state before redirect...');
-      const currentLocalStorage = {
-        user: JSON.parse(localStorage.getItem('user')),
-        cartItems: JSON.parse(localStorage.getItem('cartItems')),
-      };
-      console.log('🔍 Current localStorage:', currentLocalStorage);
-  
-      // Step 6: Redirect to Dashboard or Login
-      const updatedUser = JSON.parse(localStorage.getItem('user'));
-        console.log('✅ User found in localStorage. Redirecting to dashboard.');
-        navigate('/dashboard');
-      
+
+      // ✅ Clear Cart After Successful PayPal Payment
+      console.log('🛒 Clearing Cart after Successful Payment...')
+      localStorage.removeItem('cartItems')
+      setTimeout(() => {
+        const user = JSON.parse(localStorage.getItem('user'))
+        if (user && user._id) {
+            navigate('/dashboard') // ✅ Redirect to Dashboard
+        } else {
+            console.warn("⚠️ User not found in localStorage. Redirecting to login.")
+            navigate('/login')
+        }
+    }, 1000)
+    
+      setCartItems([])
+      window.dispatchEvent(new Event('storage'))
+
+      toast.success('🎉 Payment Successful! Redirecting...')
+
     } catch (error) {
-      console.error('❌ Error in Payment Process:', error);
-      toast.error(error.message || 'Payment processing error.');
+      console.error('❌ Error in Payment Process:', error)
+      toast.error(error.message || 'Payment processing error.')
     }
-  };
+  }
+
   const applyCoupon = () => {
     console.log('🔍 Entered Coupon Code:', couponCode)
     console.log('✅ Available Coupons from Backend:', validCoupons)
@@ -280,36 +294,36 @@ const CheckoutPage = () => {
       handleZeroAmount()
       return null
     }
-  
+
     try {
       const user = JSON.parse(localStorage.getItem('user'))
       if (!user || !user._id) {
         toast.error('User authentication required!')
         return
       }
-  
+
       const orderId = `order_${Date.now()}`
       const currency = 'usd'
-  
-      // Ensure cart items are properly formatted before sending
+
+      // ✅ Fix: Ensure cart items are properly formatted before sending
       const formattedCartItems = cartItems.map((item) => ({
-        id: item.id || `prod_${Math.random().toString(36).substring(7)}`,
+        id: item.id || `prod_${Math.random().toString(36).substring(7)}`, // 🔹 Ensure each item has a valid ID
         name: item.name,
         description: item.description || 'No description available',
-        price: String(item.price),
+        price: String(item.price), // 🔥 Convert price to string to avoid serialization issues
         currency: item.currency || 'USD',
-        quantity: item.quantity || 1,
+        quantity: item.quantity || 1, // ✅ Ensure quantity is present
       }))
-  
+
       console.log('🔹 Sending Payment Request:', {
         amount: total,
         currency,
         userId: user._id,
         orderId,
-        userEmail: user.billingEmail || 'no-email@example.com',
-        cartItems: formattedCartItems,
+        userEmail: user.billingEmail || 'no-email@example.com', // ✅ Ensure user email is included
+        cartItems: formattedCartItems, // ✅ Fix: Send formatted cart items
       })
-  
+
       const response = await fetch(
         'https://backend-production-cbe2.up.railway.app/api/stripe/create-payment-intent',
         {
@@ -320,23 +334,23 @@ const CheckoutPage = () => {
             currency,
             userId: user._id,
             orderId,
-            userEmail: user.billingEmail || 'no-email@example.com',
-            cartItems: formattedCartItems,
+            userEmail: user.billingEmail || 'no-email@example.com', // ✅ Ensure user email is included
+            cartItems: formattedCartItems, // ✅ Fix: Send full cart items array
           }),
         },
       )
-  
+
       if (!response.ok) {
         console.error('❌ Failed to create payment intent. Status:', response.status)
         throw new Error(`Payment Intent creation failed. Server responded with ${response.status}`)
       }
-  
+
       const data = await response.json()
       console.log('✅ Payment Intent Created:', data)
-  
+
       setPaymentIntentId(data.id)
       setClientSecret(data.clientSecret)
-  
+
       return data.clientSecret
     } catch (error) {
       console.error('❌ Payment Intent Error:', error)
@@ -344,7 +358,13 @@ const CheckoutPage = () => {
       return null
     }
   }
-  
+
+  const clearCartAfterPayment = () => {
+    console.log('🛒 Clearing Cart from LocalStorage...')
+    localStorage.setItem('cartItems', JSON.stringify([])) // 🛑 Ensure it's empty
+    setCartItems([])
+    window.dispatchEvent(new Event('storage'))
+  }
 
   const handlePaymentSuccess = async () => {
     try {
