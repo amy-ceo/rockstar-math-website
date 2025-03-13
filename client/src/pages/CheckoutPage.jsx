@@ -6,7 +6,7 @@ import { Elements } from '@stripe/react-stripe-js'
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js'
 import toast, { Toaster } from 'react-hot-toast'
 import 'react-toastify/dist/ReactToastify.css'
-
+import { useAuth } from "../context/AuthContext"
 // Lazy Load Components
 const PaymentForm = lazy(() => import('../components/PaymentForm'))
 
