@@ -1,4 +1,4 @@
-import React, { useState, Suspense, lazy,useEffect } from "react";
+import React, { useState, Suspense, lazy } from "react";
 import { AiFillEye, AiFillEyeInvisible } from "react-icons/ai";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { toast, Toaster } from "react-hot-toast"; // ✅ FIXED IMPORT
@@ -13,24 +13,14 @@ const ForgotPassword = lazy(() => import("../components/ForgotPassword.jsx"));
 
 function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
-
   const [formData, setFormData] = useState({
     username: "",
     password: "",
     rememberMe: false,
   });
-  
+
   const navigate = useNavigate();
   const { login } = useAuth();
-
-  useEffect(() => {
-    // If user is already logged in, redirect to dashboard immediately
-    const storedUser = localStorage.getItem("user") || sessionStorage.getItem("user");
-    if (storedUser) {
-      navigate("/dashboard");
-    }
-  }, [navigate]);
-
 
   // ✅ Handle Input Changes
   const handleChange = (e) => {
