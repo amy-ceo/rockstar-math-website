@@ -2,7 +2,6 @@ import React, { useState, Suspense, lazy } from "react";
 import { AiFillEye, AiFillEyeInvisible } from "react-icons/ai";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { toast, Toaster } from "react-hot-toast"; // ✅ FIXED IMPORT
-import { useNavigate } from "react-router-dom"; // Import the useNavigate hook
 
 import { useAuth } from "../context/AuthContext";
 import axios from "axios";
