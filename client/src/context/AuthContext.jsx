@@ -10,21 +10,21 @@ export const AuthProvider = ({ children }) => {
     const savedUser = localStorage.getItem("user");
     if (savedUser) {
       setUser(JSON.parse(savedUser)); // ✅ Load user from storage
-      navigate("/dashboard"); // Redirect to dashboard if user exists
     }
-  }, [navigate]);
+  }, []);
 
  
-  const login = (userData) => {
+  const login = (userData, navigate) => {
     localStorage.setItem("user", JSON.stringify(userData)); // Save user data to localStorage
     setUser(userData); // Update global state
     navigate("/dashboard"); // ✅ Redirect to dashboard after login
   };
-  const logout = () => {
+
+  const logout = (navigate) => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     setUser(null); // Reset user state
-    navigate("/login"); // Redirect to login page on logout
+    navigate("/login"); // ✅ Redirect to login page
   };
 
   return (
