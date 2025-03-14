@@ -57,9 +57,9 @@ const root = createRoot(document.getElementById('root'))
 root.render(
   <StrictMode>
     <AdminAuthProvider>
-      <AuthProvider>
-        <CartProvider>
-          <BrowserRouter>
+      <CartProvider>
+        <BrowserRouter>
+          <AuthProvider>
             <Suspense
               fallback={<div className="flex justify-center items-center h-screen">Loading...</div>}
             >
@@ -87,138 +87,262 @@ root.render(
                     </>
                   }
                 />
-                <Route path="reviews" element={   <>
+                <Route
+                  path="reviews"
+                  element={
+                    <>
                       <Navbar />
                       <ReviewsPage />
                       <Footer />
-                    </>} />
-                <Route path="calendar" element={   <>
+                    </>
+                  }
+                />
+                <Route
+                  path="calendar"
+                  element={
+                    <>
                       <Navbar />
                       <CalendarPage />
                       <Footer />
-                    </>} />
-                <Route path="faqs" element={   <>
+                    </>
+                  }
+                />
+                <Route
+                  path="faqs"
+                  element={
+                    <>
                       <Navbar />
                       <FAQsPage />
                       <Footer />
-                    </>} />
-                <Route path="courses" element={   <>
+                    </>
+                  }
+                />
+                <Route
+                  path="courses"
+                  element={
+                    <>
                       <Navbar />
                       <CoursesPage />
                       <Footer />
-                    </>} />
-                <Route path="blogs" element={   <>
+                    </>
+                  }
+                />
+                <Route
+                  path="blogs"
+                  element={
+                    <>
                       <Navbar />
                       <BlogPage />
                       <Footer />
-                    </>} />
-                <Route path="contact" element={   <>
+                    </>
+                  }
+                />
+                <Route
+                  path="contact"
+                  element={
+                    <>
                       <Navbar />
                       <ContactPage />
                       <Footer />
-                    </>} />
-                <Route path="services" element={   <>
+                    </>
+                  }
+                />
+                <Route
+                  path="services"
+                  element={
+                    <>
                       <Navbar />
                       <Services />
                       <Footer />
-                    </>} />
-                <Route path="forgot-password" element={   <>
+                    </>
+                  }
+                />
+                <Route
+                  path="forgot-password"
+                  element={
+                    <>
                       <Navbar />
                       <ForgotPassword />
                       <Footer />
-                    </>} />
-                <Route path="reset-password/:token" element={   <>
+                    </>
+                  }
+                />
+                <Route
+                  path="reset-password/:token"
+                  element={
+                    <>
                       <Navbar />
                       <ResetPassword />
                       <Footer />
-                    </>} />
-                <Route path="login" element={   <>
+                    </>
+                  }
+                />
+                <Route
+                  path="login"
+                  element={
+                    <>
                       <Navbar />
                       <LoginPage />
                       <Footer />
-                    </>} />
-                <Route path="signup" element={   <>
+                    </>
+                  }
+                />
+                <Route
+                  path="signup"
+                  element={
+                    <>
                       <Navbar />
                       <SignupPage />
                       <Footer />
-                    </>} />
-                <Route path="/register-before-checkout" element={   <>
+                    </>
+                  }
+                />
+                <Route
+                  path="/register-before-checkout"
+                  element={
+                    <>
                       <Navbar />
                       <RegisterBeforeCheckout />
                       <Footer />
-                    </>} />
-                <Route path="/subscription" element={   <>
+                    </>
+                  }
+                />
+                <Route
+                  path="/subscription"
+                  element={
+                    <>
                       <Navbar />
                       <SubscriptionPage />
                       <Footer />
-                    </>} />
-                <Route path="cart" element={   <>
+                    </>
+                  }
+                />
+                <Route
+                  path="cart"
+                  element={
+                    <>
                       <Navbar />
                       <CartPage />
                       <Footer />
-                    </>} />
-                <Route path="checkout" element={   <>
+                    </>
+                  }
+                />
+                <Route
+                  path="checkout"
+                  element={
+                    <>
                       <Navbar />
                       <CheckoutPage />
                       <Footer />
-                    </>} />
-                <Route path="/newsletter" element={   <>
+                    </>
+                  }
+                />
+                <Route
+                  path="/newsletter"
+                  element={
+                    <>
                       <Navbar />
                       <Newsletter />
                       <Footer />
-                    </>} />
-                <Route path="/course/:id" element={   <>
+                    </>
+                  }
+                />
+                <Route
+                  path="/course/:id"
+                  element={
+                    <>
                       <Navbar />
                       <CourseDetail />
                       <Footer />
-                    </>} />
+                    </>
+                  }
+                />
 
                 {/* ✅ User Dashboard Routes */}
                 <Route path="/dashboard/*" element={<DashboardLayout />}>
-                  <Route index element={   <>
-                      <Navbar />
-                      <Dashboard />
-                      <Footer />
-                    </>} />
-                  <Route path="courses" element={   <>
-                      <Navbar />
-                      <MyClasses />
-                      <Footer />
-                    </>} />
-                  <Route path="schedule" element={   <>
-                      <Navbar />
-                      <Schedule />
-                      <Footer />
-                    </>} />
-                  <Route path="archive" element={   <>
-                      <Navbar />
-                      <Archive />
-                      <Footer />
-                    </>} />
-                    <Route path="profile" element={   <>
-                      <Navbar />
-                      <Profile />
-                      <Footer />
-                    </>} />
-                    
+                  <Route
+                    index
+                    element={
+                      <>
+                        <Navbar />
+                        <Dashboard />
+                        <Footer />
+                      </>
+                    }
+                  />
+                  <Route
+                    path="courses"
+                    element={
+                      <>
+                        <Navbar />
+                        <MyClasses />
+                        <Footer />
+                      </>
+                    }
+                  />
+                  <Route
+                    path="schedule"
+                    element={
+                      <>
+                        <Navbar />
+                        <Schedule />
+                        <Footer />
+                      </>
+                    }
+                  />
+                  <Route
+                    path="archive"
+                    element={
+                      <>
+                        <Navbar />
+                        <Archive />
+                        <Footer />
+                      </>
+                    }
+                  />
+                  <Route
+                    path="profile"
+                    element={
+                      <>
+                        <Navbar />
+                        <Profile />
+                        <Footer />
+                      </>
+                    }
+                  />
                 </Route>
 
                 {/* ✅ Admin Authentication */}
-                <Route path="/admin" element={   <>
+                <Route
+                  path="/admin"
+                  element={
+                    <>
                       <Navbar />
                       <AdminLogin />
                       <Footer />
-                    </>} />
-                  <Route path="admin/forgot-password" element={<>
+                    </>
+                  }
+                />
+                <Route
+                  path="admin/forgot-password"
+                  element={
+                    <>
                       <Navbar />
                       <AdminForgotPassword />
                       <Footer />
-                    </>} />
-                  <Route path="admin/reset-password/:token" element={<>
+                    </>
+                  }
+                />
+                <Route
+                  path="admin/reset-password/:token"
+                  element={
+                    <>
                       <Navbar />
                       <AdminResetPassword />
                       <Footer />
-                    </>} />
+                    </>
+                  }
+                />
 
                 {/* ✅ Admin Dashboard Layout (Without Navbar & Footer) */}
                 <Route
@@ -234,8 +358,6 @@ root.render(
                   <Route path="payments" element={<Payments />} />
                   <Route path="newsletter" element={<AdminNewsLetter />} />
                   <Route path="upcomingsession" element={<UpcomingClasses />} />
-
-
                 </Route>
 
                 {/* Catch-All Route for 404 */}
@@ -245,9 +367,9 @@ root.render(
                 />
               </Routes>
             </Suspense>
-          </BrowserRouter>
-        </CartProvider>
-      </AuthProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </CartProvider>
     </AdminAuthProvider>
   </StrictMode>,
 )
