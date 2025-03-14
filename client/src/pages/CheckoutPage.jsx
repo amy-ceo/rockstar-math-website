@@ -181,6 +181,7 @@ const CheckoutPage = () => {
         console.warn('⚠️ Issue updating purchased classes:', purchaseResult.message)
       }
 
+      // ✅ Fetch updated user data and update localStorage
       console.log('📡 Fetching updated user data...')
       const userResponse = await fetch(
         `https://backend-production-cbe2.up.railway.app/api/user/${user._id}`,
@@ -194,21 +195,13 @@ const CheckoutPage = () => {
 
         // ✅ Update user session in localStorage
         localStorage.setItem('user', JSON.stringify(updatedUser))
+
+        // ✅ Redirect IMMEDIATELY after updating localStorage
+        navigate('/dashboard') // Direct redirect here
       }
-
       // ✅ Clear Cart After Successful PayPal Payment
-      console.log('🛒 Clearing Cart after Successful Payment...')
+      // ✅ Clear Cart
       localStorage.removeItem('cartItems')
-      setTimeout(() => {
-        const user = JSON.parse(localStorage.getItem('user'))
-        if (user && user._id) {
-          navigate('/dashboard') // ✅ Redirect to Dashboard
-        } else {
-          console.warn('⚠️ User not found in localStorage. Redirecting to login.')
-          navigate('/login')
-        }
-      }, 1000)
-
       setCartItems([])
       window.dispatchEvent(new Event('storage'))
 
