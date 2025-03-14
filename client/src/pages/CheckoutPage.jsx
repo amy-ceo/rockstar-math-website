@@ -121,10 +121,9 @@ const CheckoutPage = () => {
 
   const handlePayPalSuccess = async (data) => {
     const user = JSON.parse(localStorage.getItem('user'))
-
     if (!user || !user._id) {
-      toast.error('User authentication required.')
-      throw new Error('User authentication required.')
+      toast.error('User authentication required!')
+      return
     }
 
     try {
@@ -155,9 +154,8 @@ const CheckoutPage = () => {
       console.log('📡 PayPal Capture Response:', result)
 
       if (!response.ok) {
-        console.warn("⚠️ Payment capture failed, but still redirecting to dashboard.");
-        return navigate('/dashboard') // ✅ Redirect user to dashboard even if there's a minor error
-    }
+        throw new Error(result.error || 'PayPal capture failed.')
+      }
 
       console.log('📡 Calling addPurchasedClass API...')
       const purchaseResponse = await fetch(
@@ -204,18 +202,17 @@ const CheckoutPage = () => {
       setTimeout(() => {
         const user = JSON.parse(localStorage.getItem('user'))
         if (user && user._id) {
-            navigate('/dashboard') // ✅ Redirect to Dashboard
+          navigate('/dashboard') // ✅ Redirect to Dashboard
         } else {
-            console.warn("⚠️ User not found in localStorage. Redirecting to login.")
-            navigate('/login')
+          console.warn('⚠️ User not found in localStorage. Redirecting to login.')
+          navigate('/login')
         }
-    }, 1000)
-    
+      }, 1000)
+
       setCartItems([])
       window.dispatchEvent(new Event('storage'))
 
       toast.success('🎉 Payment Successful! Redirecting...')
-
     } catch (error) {
       console.error('❌ Error in Payment Process:', error)
       toast.error(error.message || 'Payment processing error.')

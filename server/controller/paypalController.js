@@ -523,7 +523,7 @@ exports.captureOrder = async (req, res) => {
       message: 'Payment captured successfully!',
       payment: captureResponse.result,
       redirectTo: '/dashboard' // ✅ Ensure this is included
-  })
+  });
   } catch (error) {
     console.error('❌ Error Capturing PayPal Payment:', error)
     res.status(500).json({ error: 'Internal Server Error', details: error.message || error })
