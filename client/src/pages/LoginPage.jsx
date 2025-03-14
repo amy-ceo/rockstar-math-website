@@ -19,6 +19,14 @@ function LoginPage() {
     rememberMe: false,
   });
 
+  useEffect(() => {
+    // If user is already logged in, redirect to dashboard immediately
+    const storedUser = localStorage.getItem("user") || sessionStorage.getItem("user");
+    if (storedUser) {
+      navigate("/dashboard");
+    }
+  }, [navigate]);
+
   const navigate = useNavigate();
   const { login } = useAuth();
 

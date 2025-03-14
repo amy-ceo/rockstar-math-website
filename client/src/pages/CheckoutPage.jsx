@@ -120,10 +120,11 @@ const CheckoutPage = () => {
   }
 
   const handlePayPalSuccess = async (data) => {
-    const user = JSON.parse(localStorage.getItem('user'))
+    const user = JSON.parse(localStorage.getItem('user'));
     if (!user || !user._id) {
-      toast.error('User authentication required!')
-      return
+      toast.error('User authentication required!');
+      navigate('/login'); // Redirect to login if not logged in
+      return;
     }
 
     try {
@@ -188,16 +189,16 @@ const CheckoutPage = () => {
       )
 
       if (!userResponse.ok) {
-        console.warn('⚠️ Failed to fetch updated user data.')
+        console.warn('⚠️ Failed to fetch updated user data.');
       } else {
-        const updatedUser = await userResponse.json()
-        console.log('✅ Updated User Data:', updatedUser)
+        const updatedUser = await userResponse.json();
+        console.log('✅ Updated User Data:', updatedUser);
 
         // ✅ Update user session in localStorage
-        localStorage.setItem('user', JSON.stringify(updatedUser))
+        localStorage.setItem('user', JSON.stringify(updatedUser));
 
         // ✅ Redirect IMMEDIATELY after updating localStorage
-        navigate('/dashboard') // Direct redirect here
+        navigate('/dashboard'); // Direct redirect here
       }
       // ✅ Clear Cart After Successful PayPal Payment
       // ✅ Clear Cart
