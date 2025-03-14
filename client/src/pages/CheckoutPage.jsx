@@ -6,7 +6,7 @@ import { Elements } from '@stripe/react-stripe-js'
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js'
 import toast, { Toaster } from 'react-hot-toast'
 import 'react-toastify/dist/ReactToastify.css'
-
+import { useAuth } from "../context/AuthContext";
 // Lazy Load Components
 const PaymentForm = lazy(() => import('../components/PaymentForm'))
 
@@ -17,7 +17,7 @@ const stripePromise = loadStripe(
 
 const CheckoutPage = () => {
   const [cartItems, setCartItems] = useState([])
-
+  const { users } = useAuth(); // Get user from AuthContext
   const [showPaymentForm, setShowPaymentForm] = useState(false)
   const [discount, setDiscount] = useState(0)
   const [couponCode, setCouponCode] = useState('')
@@ -48,6 +48,14 @@ const CheckoutPage = () => {
 
     fetchCoupons()
   }, [])
+
+  // UseEffect to check if the user is logged in
+  useEffect(() => {
+    if (!users) {
+      // If user is not logged in, redirect to login
+      navigate("/login");
+    }
+  }, [users, navigate]);
 
   useEffect(() => {
     console.log('🔄 Checking localStorage cart...')
@@ -185,28 +193,24 @@ const CheckoutPage = () => {
       // ✅ Fetch updated user data and update localStorage
       console.log('📡 Fetching updated user data...')
       const userResponse = await fetch(
-        `https://backend-production-cbe2.up.railway.app/api/user/${user._id}`,
-      )
+        `https://backend-production-cbe2.up.railway.app/api/user/${users._id}`
+      );
 
       if (!userResponse.ok) {
-        console.warn('⚠️ Failed to fetch updated user data.');
+        console.warn("⚠️ Failed to fetch updated user data.");
       } else {
         const updatedUser = await userResponse.json();
-        console.log('✅ Updated User Data:', updatedUser);
-
-        // ✅ Update user session in localStorage
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-
-        // ✅ Redirect IMMEDIATELY after updating localStorage
-        navigate('/dashboard'); // Direct redirect here
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+        // Redirect IMMEDIATELY after updating localStorage
+        navigate("/dashboard"); // Redirect to dashboard
       }
-      // ✅ Clear Cart After Successful PayPal Payment
-      // ✅ Clear Cart
-      localStorage.removeItem('cartItems')
-      setCartItems([])
-      window.dispatchEvent(new Event('storage'))
 
-      toast.success('🎉 Payment Successful! Redirecting...')
+      // Clear Cart after successful PayPal Payment
+      localStorage.removeItem("cartItems");
+      setCartItems([]);
+      window.dispatchEvent(new Event("storage"));
+
+      toast.success("🎉 Payment Successful! Redirecting...");
     } catch (error) {
       console.error('❌ Error in Payment Process:', error)
       toast.error(error.message || 'Payment processing error.')
