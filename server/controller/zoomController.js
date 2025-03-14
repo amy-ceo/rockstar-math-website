@@ -1,6 +1,6 @@
-
 const crypto = require("crypto");
 const Register = require("../models/registerModel");
+const moment = require("moment-timezone"); // Add moment-timezone for date handling
 
 exports.zoomWebhook = async (req, res) => {
   try {
@@ -33,12 +33,9 @@ exports.zoomWebhook = async (req, res) => {
     const meetingTopic = payload.topic || "Unknown Topic";
     const meetingId = payload.id || "Unknown ID";
     const joinUrl = registrant.join_url || "No Join URL Provided";
-    const startTime = payload.start_time
-  ? new Date(payload.start_time).toISOString() // Ensure UTC format
-  : null;
+    const endTime = payload.end_time ? new Date(payload.end_time) : null; // Extract endTime from payload
 
-
-    if (!inviteeEmail || !startTime) {
+    if (!inviteeEmail || !endTime) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
@@ -52,17 +49,30 @@ exports.zoomWebhook = async (req, res) => {
     let existingMeeting = user.zoomBookings.find(booking => booking.zoomMeetingId === meetingId);
 
     if (existingMeeting) {
-  if (!existingMeeting.sessionDates) {
-    existingMeeting.sessionDates = []; // Ensure sessionDates array exists
-  }
+      if (!existingMeeting.sessionDates) {
+        existingMeeting.sessionDates = []; // Ensure sessionDates array exists
+      }
 
-  // ✅ Ensure we're storing correct dates
-  if (!existingMeeting.sessionDates.some(date => new Date(date).getTime() === new Date(startTime).getTime())) {
-    existingMeeting.sessionDates.push(new Date(startTime)); // ✅ Store correct date
-    user.markModified("zoomBookings");
-    await user.save();
-  }
-}
+      // ✅ Ensure we're storing correct dates
+      if (!existingMeeting.sessionDates.some(date => new Date(date).getTime() === endTime.getTime())) {
+        existingMeeting.sessionDates.push(endTime.toISOString()); // ✅ Store correct date
+        user.markModified("zoomBookings");
+        await user.save();
+      }
+    }
+
+    // ✅ Calculate session dates by subtracting 7 days from endTime until reaching the current date
+    const sessionDates = [];
+    let currentDate = new Date(endTime); // Start from the end date
+    const now = new Date(); // Current date based on the user's OS time
+
+    while (currentDate >= now) {
+      sessionDates.push(currentDate.toISOString());
+      currentDate.setDate(currentDate.getDate() - 7); // Subtract 7 days
+    }
+
+    // ✅ Reverse the array to store dates in chronological order
+    sessionDates.reverse();
 
     // ✅ Create New Zoom Booking
     const newZoomBooking = {
@@ -71,7 +81,7 @@ exports.zoomWebhook = async (req, res) => {
       lastName: registrant.last_name || "N/A",
       zoomMeetingId: meetingId,
       zoomMeetingLink: joinUrl,
-      sessionDates: [startTime], // ✅ Store session dates as an array
+      sessionDates: sessionDates, // ✅ Store session dates as an array
       status: "Booked",
     };
 
@@ -86,7 +96,6 @@ exports.zoomWebhook = async (req, res) => {
     return res.status(500).json({ error: "Internal Server Error" });
   }
 };
-
 
 exports.getUserZoomBookings = async (req, res) => {
   try {
