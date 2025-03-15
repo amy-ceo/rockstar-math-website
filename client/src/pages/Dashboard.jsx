@@ -385,18 +385,31 @@ const Dashboard = () => {
                       <strong>🎯 Discount:</strong> {coupon.percent_off}% Off
                     </p>
                     {/* ✅ Conditional Text Based on Discount Percentage */}
-                    <p className="text-sm text-gray-700 mt-1">
+                    <div className="mt-2 text-gray-700">
                       {coupon.percent_off === 100 ? (
-                        <>
-                          ⚡ Applicable for only <strong>"60 Minute Tutoring Session"</strong>{' '}
-                          <br />
-                          Located on the <strong>"Tutoring"</strong> page services <br />❌ Not
-                          applicable for <strong>"Group Tutoring"</strong> services
-                        </>
+                        <div className="flex flex-col space-y-1">
+                          <p className="flex items-center">
+                            ⚡{' '}
+                            <span className="ml-2">
+                              Applicable for only <strong>"60 Minute Tutoring Session"</strong>
+                            </span>
+                          </p>
+                          <p className="ml-6">
+                            📍 Located on the <strong>"Tutoring"</strong> page services
+                          </p>
+                          <p className="flex items-center text-red-600">
+                            ❌{' '}
+                            <span className="ml-2">
+                              Not applicable for <strong>"Group Tutoring"</strong> services
+                            </span>
+                          </p>
+                        </div>
                       ) : (
-                        <>✅ Applicable for all tutoring page products</>
+                        <p className="flex items-center">
+                          ✅ <span className="ml-2">Applicable for all tutoring page products</span>
+                        </p>
                       )}
-                    </p>
+                    </div>
                   </div>
                 ))}
               </div>
