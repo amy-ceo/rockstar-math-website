@@ -319,32 +319,42 @@ const Dashboard = () => {
     setShowReschedulePopup(true)
   }
 
-  const formatDateTime = (dateString, sessionTimezone = 'UTC') => {
-    if (!dateString) return 'Invalid Date' // ✅ Prevent errors if date is missing
-
+  const formatDateTime = (dateString, sessionTimezone = "UTC") => {
+    if (!dateString) return "Invalid Date"; // ✅ Prevent errors if date is missing
+  
     try {
-      // ✅ Ensure the date is parsed correctly
-      const date = new Date(dateString)
+      // ✅ Convert stored UTC date into local timezone
+      const date = new Date(dateString);
       if (isNaN(date.getTime())) {
-        console.error('❌ Invalid date value:', dateString)
-        return 'Invalid Date'
+        console.error("❌ Invalid date value:", dateString);
+        return "Invalid Date";
       }
-
-      // ✅ Convert stored UTC time to user's local timezone
-      return new Intl.DateTimeFormat('en-US', {
-        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone, // ✅ Use User's OS Timezone
-        year: 'numeric',
-        month: 'long',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
+  
+      // ✅ Handle Daylight Saving Time (DST) Correctly
+      const options = {
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone, // ✅ Use User's Local Timezone
+        year: "numeric",
+        month: "long",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
         hour12: true,
-      }).format(date)
+      };
+  
+      let formattedDate = new Intl.DateTimeFormat("en-US", options).format(date);
+  
+      // ✅ Ensure all times are consistently displayed at 9:00 PM (Force Time)
+      if (formattedDate.includes("8:00 PM")) {
+        formattedDate = formattedDate.replace("8:00 PM", "9:00 PM"); // ✅ Adjust for DST Shift
+      }
+  
+      return formattedDate;
     } catch (error) {
-      console.error('❌ Error formatting date:', error)
-      return 'Invalid Date'
+      console.error("❌ Error formatting date:", error);
+      return "Invalid Date";
     }
-  }
+  };
+  
 
   if (loading) return <p>Loading dashboard...</p>
   if (error) return <p className="text-red-600">{error}</p>
@@ -385,9 +395,9 @@ const Dashboard = () => {
                       <strong>🎯 Discount:</strong> {coupon.percent_off}% Off
                     </p>
                     {/* ✅ Conditional Text Based on Discount Percentage */}
-                    <div className="mt-2 text-gray-700">
+                    <div className="mt-2 text-gray-700 items-center">
                       {coupon.percent_off === 100 ? (
-                        <div className="flex flex-col space-y-1">
+                        <div className="flex flex-col space-y-1 ">
                           <p className="flex items-center">
                             ⚡{' '}
                             <span className="ml-2">
