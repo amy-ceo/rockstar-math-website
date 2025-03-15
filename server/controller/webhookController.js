@@ -3,36 +3,38 @@ const Register = require('../models/registerModel')
  
  exports.calendlyWebhook = async (req, res) => {
    try {
-    console.log('📢 Incoming Headers:', req.headers);
-    console.log('📢 Raw Webhook Body:', req.body);
+    console.log('📢 Webhook Received!');
+        console.log('📢 Incoming Headers:', JSON.stringify(req.headers, null, 2));
+        console.log('📢 Raw Webhook Body:', JSON.stringify(req.body, null, 2));
 
-    if (!req.body || Object.keys(req.body).length === 0) {
-        console.error('❌ Empty Webhook Payload:', req.body);
-        return res.status(400).json({ error: 'Empty Webhook Payload' });
-    }
-    console.log('📢 Full Webhook Payload:', JSON.stringify(req.body, null, 2));
+        // ✅ Check if `req.body` exists
+        if (!req.body || Object.keys(req.body).length === 0) {
+            console.error('❌ ERROR: Empty Webhook Payload');
+            return res.status(400).json({ error: 'Empty Webhook Payload' });
+        }
 
-    if (!req.body.payload) {
-      console.error('❌ Invalid Webhook Payload:', req.body);
-      return res.status(400).json({ error: 'Invalid Webhook Payload - Missing required fields' });
-    }
+        // ✅ Log to confirm structure
+        if (!req.body.payload) {
+            console.error('❌ ERROR: req.body.payload is missing', req.body);
+            return res.status(400).json({ error: 'Invalid Webhook Payload - Missing `payload` object' });
+        }
     const payload = req.body.payload;
 
-    // ✅ Fix Payload Extraction
     const inviteeEmail = payload?.email || '❌ Missing';
-    const eventName = payload?.event?.name || '❌ Missing';  // ✅ Corrected Path
-    const eventUri = payload?.event?.uri || '❌ Missing';  // ✅ Corrected Path
+    const eventName = payload?.event?.name || '❌ Missing';
+    const eventUri = payload?.event?.uri || '❌ Missing';
     const startTime = payload?.start_time ? new Date(payload.start_time) : null;
     const endTime = payload?.end_time ? new Date(payload.end_time) : null;
     const timezone = payload?.timezone || '❌ Missing';
 
-    // ✅ Validation
+    console.log('✅ Extracted Data:', { inviteeEmail, eventName, eventUri, startTime, endTime, timezone });
+
+    // ✅ Final validation check
     if (inviteeEmail === '❌ Missing' || eventName === '❌ Missing' || eventUri === '❌ Missing' || !startTime || !endTime) {
-        console.error('❌ Missing required data:', { inviteeEmail, eventName, eventUri, startTime, endTime });
+        console.error('❌ ERROR: Missing required data:', { inviteeEmail, eventName, eventUri, startTime, endTime });
         return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    console.log('✅ Extracted Data:', { inviteeEmail, eventName, eventUri, startTime, endTime, timezone });
 
      // ✅ Move normalizeUrl ABOVE its first usage
      // ✅ Normalize the URL for consistent matching
