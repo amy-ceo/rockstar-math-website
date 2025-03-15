@@ -23,7 +23,7 @@ const paypalRoutes = require("./routes/paypalRoutes.js")
 const adminRoutes = require("./routes/adminRoutes");
 const blogRoutes = require('./routes/blogRoutes');
 const bcrypt = require("bcryptjs");
-
+const webhookHandler = require("./routes/webhookHandlerRoute.js");
 // ✅ Set Fallback for Missing Crypto Module
 if (!global.crypto) {
   global.crypto = require("crypto");
@@ -261,7 +261,8 @@ app.use("/api", userRoutes);
 app.use('/api/zoom', zoomRoutes);
 // ✅ **Use Webhook Route Properly**
 // app.use("/api/otp", otpRoutes);
-app.use("/api/webhook", webhookRoutes);
+app.use("/api/webhook/calendly", webhookRoutes);
+app.use("/api/webhook", webhookHandler);  // ✅ Handles both Calendly & Zoom
 app.use("/api/admin", adminRoutes);
 app.use('/api/blogs', blogRoutes);
 app.use("/api/paypal", paypalRoutes);

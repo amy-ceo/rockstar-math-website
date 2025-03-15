@@ -8,7 +8,7 @@ const {
 const router = express.Router();
 
 // ✅ Calendly Webhook Routes
-router.post("/calendly", calendlyWebhook);
+router.post("/", calendlyWebhook);
 router.get("/:userId/calendly-bookings", getCalendlyBookings);
 
 
