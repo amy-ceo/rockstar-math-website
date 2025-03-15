@@ -65,7 +65,7 @@ exports.zoomWebhook = async (req, res) => {
 
     while (currentDate >= today) {
       sessionDates.push(currentDate.toISOString()); // Store in ISO format
-      currentDate.setDate(currentDate.getDate() - 6); // Move back by 7 days
+      currentDate.setDate(currentDate.getDate() - 8); // Move back by 7 days
     }
 
     sessionDates.reverse(); // Store dates in chronological order
