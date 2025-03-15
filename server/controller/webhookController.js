@@ -108,11 +108,7 @@ exports.calendlyWebhook = async (req, res) => {
       }
     }
 
-    // ✅ Check if User Has Remaining Sessions
-    if (purchasedClass.remainingSessions <= 0) {
-      console.warn(`⚠️ User ${user.username} has no remaining sessions.`);
-      return res.status(403).json({ error: "You have no remaining sessions left." });
-    }
+    
 
     // ✅ Deduct 1 Session
     purchasedClass.remainingSessions -= 1;
