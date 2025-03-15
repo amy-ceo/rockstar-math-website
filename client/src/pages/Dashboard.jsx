@@ -376,7 +376,7 @@ const Dashboard = () => {
           {coupons.length > 0 && (
             <section className="mt-6 p-4 bg-white shadow-md rounded-lg">
               <h3 className="text-lg font-bold mb-2">🎟 Your Available Coupons</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-4">
                 {coupons.map((coupon, index) => (
                   <div key={index} className="p-4 bg-green-200 rounded-lg shadow">
                     <p>
