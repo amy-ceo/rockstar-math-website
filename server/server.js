@@ -43,7 +43,7 @@ app.use(
     next();
   }
 );
-app.use('/api/webhook', bodyParser.raw({ type: 'application/json' }));
+app.use('/api/webhook', express.json());
 
 
 // app.use((req, res, next) => {

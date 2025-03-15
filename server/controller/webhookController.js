@@ -3,14 +3,21 @@ const Register = require('../models/registerModel')
  
  exports.calendlyWebhook = async (req, res) => {
    try {
-     console.log('📢 FULL Webhook Payload:', JSON.stringify(req.body, null, 2));
- 
-     if (!req.body || !req.body.payload) {
-       console.error('❌ Invalid Webhook Payload:', req.body);
-       return res.status(400).json({ error: 'Invalid Webhook Payload' });
-     }
- 
-     const payload = req.body.payload;
+    console.log('📢 Raw Webhook Body:', req.body);
+
+    if (!req.body || Object.keys(req.body).length === 0) {
+      console.error('❌ Empty Webhook Payload:', req.body);
+      return res.status(400).json({ error: 'Empty Webhook Payload' });
+    }
+
+    console.log('📢 Full Webhook Payload:', JSON.stringify(req.body, null, 2));
+
+    if (!req.body.payload) {
+      console.error('❌ Invalid Webhook Payload:', req.body);
+      return res.status(400).json({ error: 'Invalid Webhook Payload - Missing required fields' });
+    }
+
+    const payload = req.body.payload;
  
      // ✅ Extract Invitee & Event Details
      const inviteeEmail = payload?.email || '❌ Missing';
