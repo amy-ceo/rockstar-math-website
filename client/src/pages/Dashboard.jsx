@@ -55,27 +55,22 @@ const Dashboard = () => {
   const excludedPlans = ['Learn', 'Achieve', 'Excel', 'Common Core- Parents']
 
   useEffect(() => {
-    const storedUser = JSON.parse(localStorage.getItem('user'))
-    console.log('STORED USER:  ', storedUser)
+    const storedUser = JSON.parse(localStorage.getItem('user'));
     if (!storedUser || !storedUser._id) {
-      console.warn('⚠️ User not logged in, redirecting to login...')
-      navigate('/login') // ✅ Redirect if user is not logged in
-    } else {
-      setUser(storedUser) // ✅ Store user in state
+      console.warn('⚠️ User not logged in, redirecting to login...');
+      navigate('/login');
     }
-  }, [navigate])
+    setUser(storedUser);
+  }, []);
+  
 
   // ✅ Fetch all user data when component mounts
   useEffect(() => {
-    if (!user || !user._id) {
-      console.warn('⚠️ User ID not found, skipping API calls.')
-      setLoading(false)
-      return
-    }
+    if (!user || !user._id) return;
 
-    console.log('📡 Fetching data for User ID:', user._id)
-    setLoading(true)
-
+    console.log('📡 Fetching data for User ID:', user._id);
+    setLoading(true);
+  
     // Fetch Purchased Classes
     const fetchPurchasedClasses = async () => {
       try {
@@ -192,14 +187,16 @@ const Dashboard = () => {
     if (users?._id) {
       fetchZoomBookings()
     }
-    // ✅ Run all API calls in parallel
-    Promise.allSettled([
-      fetchPurchasedClasses(),
-      fetchCalendlyBookings(),
-      fetchRemainingSessions(), // ✅ Fetch remaining sessions
-
-      fetchCoupons(),
-    ]).finally(() => setLoading(false))
+    const fetchAllData = async () => {
+      await Promise.allSettled([
+        fetchPurchasedClasses(),
+        fetchCalendlyBookings(),
+        fetchRemainingSessions(),
+        fetchCoupons(),
+      ]);
+      setLoading(false);
+    };
+    fetchAllData();
   }, [user]) // ✅ Depend only on `users`
 
   const handleReschedule = async () => {
@@ -345,8 +342,8 @@ const Dashboard = () => {
       return 'Invalid Date'
     }
   }
+  if (loading && !user) return <p>Loading dashboard...</p>;
 
-  if (loading) return <p>Loading dashboard...</p>
   if (error) return <p className="text-red-600">{error}</p>
 
   return (
