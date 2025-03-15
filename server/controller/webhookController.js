@@ -3,13 +3,13 @@ const Register = require('../models/registerModel')
  
  exports.calendlyWebhook = async (req, res) => {
    try {
+    console.log('📢 Incoming Headers:', req.headers);
     console.log('📢 Raw Webhook Body:', req.body);
 
     if (!req.body || Object.keys(req.body).length === 0) {
-      console.error('❌ Empty Webhook Payload:', req.body);
-      return res.status(400).json({ error: 'Empty Webhook Payload' });
+        console.error('❌ Empty Webhook Payload:', req.body);
+        return res.status(400).json({ error: 'Empty Webhook Payload' });
     }
-
     console.log('📢 Full Webhook Payload:', JSON.stringify(req.body, null, 2));
 
     if (!req.body.payload) {

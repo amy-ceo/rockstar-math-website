@@ -43,7 +43,6 @@ app.use(
     next();
   }
 );
-app.use('/api/webhook', express.json());
 
 
 // app.use((req, res, next) => {
@@ -62,15 +61,19 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true, }));
 
 // ✅ CORS Configuration
-const allowedOrigins = [
-  "http://localhost:3000",
-  "http://localhost:8080",
-  "https://www.rockstarmath.com",
-  "https://rockstarmath.com",
-  "https://calendly.com"
-];
 
-app.use(cors({ origin: '*' }));
+app.use(cors({
+  origin: [
+    "http://localhost:3000",
+    "https://www.rockstarmath.com",
+    "https://rockstarmath.com",
+    "https://calendly.com",
+    "https://api.calendly.com"
+  ],
+  methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
+
 
 // ✅ Trust Proxy for HTTPS
 app.set('trust proxy', true);
@@ -91,6 +94,7 @@ app.use("/api/zoom/webhook", (req, res, next) => {
 });
 
 
+
 // ========================= Error Handling Middleware =======================
 app.use((err, req, res, next) => {
   console.error('❌ Global Error Handler:', err);
@@ -103,7 +107,8 @@ app.use((err, req, res, next) => {
 });
 
 
-
+// ✅ Register Webhook Routes Early
+app.use("/api/webhook", express.json()); // Middleware for Calendly JSON parsing
 
 
 // // ✅ Remove Manual Header Setting (Fixes conflict)
