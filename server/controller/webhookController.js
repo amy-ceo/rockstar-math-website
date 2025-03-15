@@ -23,8 +23,9 @@ const Register = require('../models/registerModel')
     const inviteeEmail = payload?.email || '❌ Missing';
     const eventName = payload?.event?.name || '❌ Missing';
     const eventUri = payload?.event?.uri || '❌ Missing';
-    const startTime = payload?.start_time ? new Date(payload.start_time) : null;
-    const endTime = payload?.end_time ? new Date(payload.end_time) : null;
+    const startTime = payload?.event?.start_time ? new Date(payload.event.start_time) : null;
+const endTime = payload?.event?.end_time ? new Date(payload.event.end_time) : null;
+
     const timezone = payload?.timezone || '❌ Missing';
 
     console.log('✅ Extracted Data:', { inviteeEmail, eventName, eventUri, startTime, endTime, timezone });
