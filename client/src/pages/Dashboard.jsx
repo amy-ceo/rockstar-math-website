@@ -388,8 +388,8 @@ const Dashboard = () => {
                       {/* ✅ Conditional Text Based on Discount Percentage */}
                       <p className="text-sm text-gray-700 mt-1">
                                 {coupon.percent_off === 100
-                                  ? '⚡ Applicable for only 60 minutes Session'
-                                  : '✅ Applicable for all tutoring page products'}
+                                  ? '⚡ Applicable for only "60 Minute Tutoring Session" located on the "Tutoring" page services - Not applicable for "Group Tutoring" services'
+                                  : '✅ Applicable for all "Tutoring" page services - Not applicable for "Group Tutoring" services'}
                               </p>
                     {/* ✅ Show Available Coupons */}
                   
