@@ -98,7 +98,7 @@ exports.zoomWebhook = async (req, res) => {
         zoomMeetingId: meetingId,
         zoomMeetingLink: joinUrl,
         sessionDates: sessionDates, // ✅ Store the calculated session dates
-        timezone: payload.timezone || "UTC", // ✅ Extract timezone dynamically from payload
+        timezone: payload.timezone || "UTC", // ✅ Store user's timezone dynamically
         status: "Booked",
       };
 

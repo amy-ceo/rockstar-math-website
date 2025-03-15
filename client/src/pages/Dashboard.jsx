@@ -319,20 +319,23 @@ const Dashboard = () => {
     setShowReschedulePopup(true)
   }
 
-  const formatDateTime = (date, timezone = 'UTC') => {
-    if (!date) return 'Invalid Date' // ✅ Prevent errors if date is missing
-
-    return new Intl.DateTimeFormat('en-US', {
-      timeZone: timezone, // ✅ Use the dynamically passed timezone
-      year: 'numeric',
-      month: 'long',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
+  const formatDateTime = (date, sessionTimezone = "UTC") => {
+    if (!date) return "Invalid Date"; // ✅ Prevent errors if date is missing
+  
+    // Get the user's browser timezone dynamically
+    const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  
+    return new Intl.DateTimeFormat("en-US", {
+      timeZone: userTimezone, // ✅ Convert to the user's local timezone
+      year: "numeric",
+      month: "long",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
       hour12: true,
-    }).format(new Date(date))
-  }
-
+    }).format(new Date(date));
+  };
+  
   if (loading) return <p>Loading dashboard...</p>
   if (error) return <p className="text-red-600">{error}</p>
 
@@ -487,9 +490,7 @@ const Dashboard = () => {
                     <p className="font-semibold text-gray-700">📅 Session Dates:</p>
                     {session.sessionDates && session.sessionDates.length > 0 ? (
                       session.sessionDates.map((date, i) => (
-                        <p key={i} className="text-gray-600">
-                          🕒 {formatDateTime(date, session.timezone)}
-                        </p>
+                        <p key={i} className="text-gray-600"> 🕒 {formatDateTime(date)} </p>
                       ))
                     ) : (
                       <p className="text-red-500">⚠️ No scheduled dates found</p>
