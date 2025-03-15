@@ -30,25 +30,19 @@ exports.calendlyWebhook = async (req, res) => {
     const normalizedEventUri = eventUri !== "❌ Missing" ? normalizeUrl(eventUri) : null;
 
     // ✅ Extract `startTime` and `endTime`
-    const startTime =
-      payload?.start_time ||
-      payload?.event?.start_time ||
-      payload?.scheduled_event?.start_time
-        ? new Date(
-            payload?.start_time || payload?.event?.start_time || payload?.scheduled_event?.start_time
-          )
-        : null;
+    const startTime = payload?.start_time || payload?.event?.start_time || payload?.scheduled_event?.start_time
+      ? new Date(
+          payload?.start_time || payload?.event?.start_time || payload?.scheduled_event?.start_time
+        )
+      : null;
 
-    const endTime =
-      payload?.end_time ||
-      payload?.event?.end_time ||
-      payload?.scheduled_event?.end_time
-        ? new Date(
-            payload?.end_time || payload?.event?.end_time || payload?.scheduled_event?.end_time
-          )
-        : startTime
-        ? new Date(startTime.getTime() + 30 * 60000) // Default to 30 min duration
-        : null;
+    const endTime = payload?.end_time || payload?.event?.end_time || payload?.scheduled_event?.end_time
+      ? new Date(
+          payload?.end_time || payload?.event?.end_time || payload?.scheduled_event?.end_time
+        )
+      : startTime
+      ? new Date(startTime.getTime() + 30 * 60000) // Default to 30 min duration
+      : null;
 
     const timezone = payload?.timezone || payload?.event?.location?.timezone || "America/Los_Angeles";
 
@@ -80,42 +74,39 @@ exports.calendlyWebhook = async (req, res) => {
       (session) => normalizeUrl(session.calendlyEventUri) === normalizedEventUri
     );
 
-    // ✅ If event already exists, do NOT deduct session again
     if (eventAlreadyExists) {
       console.log(`⚠️ Duplicate Event Detected: ${eventName}. Skipping Booking.`);
       return res.status(200).json({ message: "Event already stored, skipping" });
     }
 
-    // ✅ Find Matching Purchased Class (Updated Logic)
+    // ✅ Find Matching Purchased Class
     let purchasedClass = user.purchasedClasses.find(
       (cls) => cls.status === "Active" && normalizeUrl(cls.bookingLink) === normalizedEventUri
     );
 
-    // ✅ If no match, try updating the first available class
-    if (!purchasedClass) {
-      console.warn(`⚠️ No valid purchased class found for user: ${inviteeEmail}`);
-
-      if (user.purchasedClasses.length > 0) {
-        user.purchasedClasses[0].bookingLink = normalizedEventUri;
-        user.purchasedClasses[0].description = user.purchasedClasses[0].description || "Calendly Booking";
-        user.markModified("purchasedClasses");
-        await user.save();
-        console.log(`🔄 Updated booking link to: ${normalizedEventUri}`);
-
-        purchasedClass = user.purchasedClasses[0];
-      } else {
-        return res.status(400).json({ error: "No valid purchased class for this booking." });
-      }
+    // ✅ If no valid purchased class, assign first available class
+    if (!purchasedClass && user.purchasedClasses.length > 0) {
+      purchasedClass = user.purchasedClasses.find(cls => cls.status === "Active") || user.purchasedClasses[0];
+      
+      // ✅ Update booking link in database
+      purchasedClass.bookingLink = normalizedEventUri;
+      purchasedClass.description = purchasedClass.description || "Calendly Booking";
+      user.markModified("purchasedClasses");
+      await user.save();
+      
+      console.log(`🔄 Updated booking link to: ${normalizedEventUri}`);
     }
 
-    
+    // ✅ Remove Session Deduction: Allow Booking Even if Sessions Are 0
+    if (purchasedClass) {
+      purchasedClass.remainingSessions = Math.max(purchasedClass.remainingSessions - 1, 0); // Prevent negative sessions
+      user.markModified("purchasedClasses");
 
-    // ✅ Deduct 1 Session
-    purchasedClass.remainingSessions -= 1;
-    user.markModified("purchasedClasses");
-
-    if (purchasedClass.remainingSessions === 0) {
-      purchasedClass.status = "Expired";
+      if (purchasedClass.remainingSessions === 0) {
+        purchasedClass.status = "Expired";
+      }
+    } else {
+      console.warn(`⚠️ No purchased class found. Booking will still proceed.`);
     }
 
     // ✅ Create New Booking Object
@@ -138,7 +129,6 @@ exports.calendlyWebhook = async (req, res) => {
     await user.save();
 
     console.log(`✅ Successfully Stored Calendly Booking for ${inviteeEmail}`);
-    console.log(`✅ Session Booked: Remaining ${purchasedClass.remainingSessions} sessions.`);
 
     // ✅ **Send Confirmation Email to Billing & Scheduling Emails**
     let recipients = [user.billingEmail];
@@ -165,7 +155,6 @@ exports.calendlyWebhook = async (req, res) => {
            <p><b>End Time:</b> ${endTime.toLocaleString()}</p>
            <p><b>Time Zone:</b> ${timezone}</p>
            <p><b>Event Link:</b> <a href="${eventUri}" target="_blank">${eventUri}</a></p>
-           <p>You have <b>${purchasedClass.remainingSessions}</b> sessions remaining.</p>
        </div>
      `;
 
@@ -178,6 +167,7 @@ exports.calendlyWebhook = async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
 
  
  exports.getCalendlyBookings = async (req, res) => {
