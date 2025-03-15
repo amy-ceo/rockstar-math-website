@@ -97,11 +97,11 @@ exports.zoomWebhook = async (req, res) => {
         lastName: registrant.last_name || "N/A",
         zoomMeetingId: meetingId,
         zoomMeetingLink: joinUrl,
-        sessionDates: sessionDates, // ✅ Store the calculated session dates
-        timezone: payload.timezone || "UTC", // ✅ Store user's timezone dynamically
+        sessionDates: sessionDates.map(date => new Date(date).toISOString()), // ✅ Store as UTC ISO
+        timezone: payload.timezone || "UTC", // ✅ Ensure timezone is stored
         status: "Booked",
       };
-
+      
       user.zoomBookings.push(newZoomBooking);
       await user.save();
       console.log("✅ Successfully stored new Zoom booking.");

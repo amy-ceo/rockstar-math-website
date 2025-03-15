@@ -319,22 +319,21 @@ const Dashboard = () => {
     setShowReschedulePopup(true)
   }
 
-  const formatDateTime = (date, sessionTimezone = 'UTC') => {
-    if (!date) return 'Invalid Date' // ✅ Prevent errors if date is missing
-
-    // Get the user's browser timezone dynamically
-    const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-
-    return new Intl.DateTimeFormat('en-US', {
-      timeZone: userTimezone, // ✅ Convert to the user's local timezone
-      year: 'numeric',
-      month: 'long',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
+  const formatDateTime = (date, sessionTimezone = "UTC") => {
+    if (!date) return "Invalid Date"; // ✅ Prevent errors if date is missing
+  
+    // Convert stored UTC time to user local timezone
+    return new Intl.DateTimeFormat("en-US", {
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone, // ✅ Convert to User's Local Timezone
+      year: "numeric",
+      month: "long",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
       hour12: true,
-    }).format(new Date(date))
-  }
+    }).format(new Date(date + "Z")); // ✅ Ensure proper UTC conversion
+  };
+  
 
   if (loading) return <p>Loading dashboard...</p>
   if (error) return <p className="text-red-600">{error}</p>
@@ -374,30 +373,14 @@ const Dashboard = () => {
                     <p>
                       <strong>🎯 Discount:</strong> {coupon.percent_off}% Off
                     </p>
-                    {/* ✅ Show Available Coupons */}
-                    {coupons.length > 0 && (
-                      <section className="mt-6 p-4 bg-white shadow-md rounded-lg">
-                        <h3 className="text-lg font-bold mb-2">🎟 Your Available Coupons</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                          {coupons.map((coupon, index) => (
-                            <div key={index} className="p-4 bg-green-200 rounded-lg shadow">
-                              <p>
-                                <strong>💰 Coupon Code:</strong> {coupon.code}
-                              </p>
-                              <p>
-                                <strong>🎯 Discount:</strong> {coupon.percent_off}% Off
-                              </p>
-                              {/* ✅ Conditional Text Based on Discount Percentage */}
-                              <p className="text-sm text-gray-700 mt-1">
+                      {/* ✅ Conditional Text Based on Discount Percentage */}
+                      <p className="text-sm text-gray-700 mt-1">
                                 {coupon.percent_off === 100
                                   ? '⚡ Applicable for only 60 minutes Session'
                                   : '✅ Applicable for all tutoring page products'}
                               </p>
-                            </div>
-                          ))}
-                        </div>
-                      </section>
-                    )}
+                    {/* ✅ Show Available Coupons */}
+                  
                   </div>
                 ))}
               </div>
@@ -515,9 +498,8 @@ const Dashboard = () => {
                     {session.sessionDates && session.sessionDates.length > 0 ? (
                       session.sessionDates.map((date, i) => (
                         <p key={i} className="text-gray-600">
-                          {' '}
-                          🕒 {formatDateTime(date)}{' '}
-                        </p>
+    🕒 {formatDateTime(date)}
+  </p>
                       ))
                     ) : (
                       <p className="text-red-500">⚠️ No scheduled dates found</p>
