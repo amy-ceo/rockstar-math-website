@@ -58,15 +58,16 @@ app.use('/api/webhook', bodyParser.raw({ type: 'application/json' }));
 // });
 
 // ========================= General Middleware ==============================
-app.use(bodyParser.json({ limit: '50mb' }));
-app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true, }));
 
 // ✅ CORS Configuration
 const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:8080",
   "https://www.rockstarmath.com",
-  "https://rockstarmath.com"
+  "https://rockstarmath.com",
+  "https://calendly.com"
 ];
 
 app.use(cors({ origin: '*' }));
