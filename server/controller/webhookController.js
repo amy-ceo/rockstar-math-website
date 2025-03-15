@@ -18,11 +18,23 @@ const Register = require('../models/registerModel')
     }
 
     const payload = req.body.payload;
- 
-     // ✅ Extract Invitee & Event Details
-     const inviteeEmail = payload?.email || '❌ Missing';
-     const eventName = payload?.name || payload?.event?.name || '❌ Missing';
-     const eventUri = payload?.event?.uri || payload?.event?.invitee?.uri || payload?.scheduled_event?.uri || '❌ Missing';
+
+    // ✅ Fix Payload Extraction
+    const inviteeEmail = payload?.email || '❌ Missing';
+    const eventName = payload?.event?.name || '❌ Missing';
+    const eventUri = payload?.event?.uri || '❌ Missing';
+    const startTime = payload?.start_time ? new Date(payload.start_time) : null;
+    const endTime = payload?.end_time ? new Date(payload.end_time) : null;
+    const timezone = payload?.timezone || '❌ Missing';
+
+    // ✅ Validation
+    if (inviteeEmail === '❌ Missing' || eventName === '❌ Missing' || eventUri === '❌ Missing' || !startTime || !endTime) {
+        console.error('❌ Missing required data:', { inviteeEmail, eventName, eventUri, startTime, endTime });
+        return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    console.log('✅ Extracted Data:', { inviteeEmail, eventName, eventUri, startTime, endTime, timezone });
+
  
      // ✅ Move normalizeUrl ABOVE its first usage
      // ✅ Normalize the URL for consistent matching
@@ -30,32 +42,6 @@ const Register = require('../models/registerModel')
  
      const normalizedEventUri = eventUri !== '❌ Missing' ? normalizeUrl(eventUri) : null;
  
-     // ✅ Extract `startTime` and `endTime`
-     const startTime =
-       payload?.start_time || payload?.event?.start_time || payload?.scheduled_event?.start_time
-         ? new Date(
-             payload?.start_time ||
-               payload?.event?.start_time ||
-               payload?.scheduled_event?.start_time
-           )
-         : null;
- 
-     const endTime =
-       payload?.end_time || payload?.event?.end_time || payload?.scheduled_event?.end_time
-         ? new Date(
-             payload?.end_time || payload?.event?.end_time || payload?.scheduled_event?.end_time
-           )
-         : startTime
-         ? new Date(startTime.getTime() + 30 * 60000) // Default to 30 min duration
-         : null;
- 
-     const timezone = payload?.timezone || payload?.event?.location?.timezone || '❌ Missing';
- 
-     // ✅ Validation: Ensure required fields are present
-     if (inviteeEmail === '❌ Missing' || !startTime || !endTime) {
-       console.error('❌ Missing required data:', { inviteeEmail, startTime, endTime });
-       return res.status(400).json({ error: 'Missing required fields' });
-     }
  
     
      // ✅ Find user in MongoDB using invitee email (Match both billing & scheduling emails)
