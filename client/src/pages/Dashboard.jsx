@@ -56,7 +56,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem('user'))
-    console.log("STORED USER:  ",storedUser)
+    console.log('STORED USER:  ', storedUser)
     if (!storedUser || !storedUser._id) {
       console.warn('⚠️ User not logged in, redirecting to login...')
       navigate('/login') // ✅ Redirect if user is not logged in
@@ -131,16 +131,17 @@ const Dashboard = () => {
 
         if (!response.ok) throw new Error(data.error || 'Failed to fetch Zoom bookings.')
 
-        // ✅ Ensure sessionDates is always an array
+        // ✅ Ensure sessionDates and timezone are always present
         const processedBookings = data.zoomBookings.map((booking) => ({
           ...booking,
-          sessionDates: Array.isArray(booking.sessionDates) ? booking.sessionDates : [], // ✅ Ensure it is an array
+          sessionDates: Array.isArray(booking.sessionDates) ? booking.sessionDates : [],
+          timezone: booking.timezone || 'UTC', // ✅ Ensure timezone is present
         }))
 
         setZoomBookings(processedBookings)
       } catch (error) {
         console.error('❌ Error fetching Zoom bookings:', error)
-        setZoomBookings([]) // Prevent UI from breaking
+        setZoomBookings([])
       }
     }
 
@@ -318,9 +319,11 @@ const Dashboard = () => {
     setShowReschedulePopup(true)
   }
 
-  const formatDateTime = (date) => {
+  const formatDateTime = (date, timezone = 'UTC') => {
+    if (!date) return 'Invalid Date' // ✅ Prevent errors if date is missing
+
     return new Intl.DateTimeFormat('en-US', {
-      timeZone: 'Asia/Karachi', // Aapke timezone ke hisaab se update karein
+      timeZone: timezone, // ✅ Use the dynamically passed timezone
       year: 'numeric',
       month: 'long',
       day: '2-digit',
@@ -462,6 +465,7 @@ const Dashboard = () => {
               </div>
             </section>
           )}
+          {/* ✅ Display Zoom Sessions */}
           {zoomBookings.length > 0 && (
             <section className="mt-6 p-6 bg-white shadow-lg rounded-lg">
               <h3 className="text-2xl font-bold mb-4 text-gray-800">
@@ -480,13 +484,15 @@ const Dashboard = () => {
                     </h4>
 
                     {/* Show all session dates */}
-                    <p>📅 Dates & Times:</p>
+                    <p className="font-semibold text-gray-700">📅 Session Dates:</p>
                     {session.sessionDates && session.sessionDates.length > 0 ? (
-                      session.sessionDates.map((date, index) => (
-                        <p key={index}>🕒 {formatDateTime(date)}</p>
+                      session.sessionDates.map((date, i) => (
+                        <p key={i} className="text-gray-600">
+                          🕒 {formatDateTime(date, session.timezone)}
+                        </p>
                       ))
                     ) : (
-                      <p>⚠️ No scheduled dates found</p>
+                      <p className="text-red-500">⚠️ No scheduled dates found</p>
                     )}
 
                     {/* Zoom Meeting Link */}

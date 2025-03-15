@@ -8,12 +8,12 @@ exports.zoomWebhook = async (req, res) => {
     console.log("📢 Request IP:", req.headers["x-forwarded-for"] || req.connection.remoteAddress);
     console.log("📢 Full Payload:", JSON.stringify(req.body, null, 2));
 
-    // ✅ If request body is a Buffer, convert it to a JSON object
-    if (Buffer.isBuffer(req.body)) {
+    // ✅ Convert Buffer Body to JSON if necessary
+    if (Buffer.isBuffer(req.body)) { 
       req.body = JSON.parse(req.body.toString("utf8"));
     }
 
-    // ✅ 1️⃣ Handle Zoom URL Validation (Required for Webhook Setup)
+    // ✅ 1️⃣ Handle Zoom URL Validation
     if (req.body.event === "endpoint.url_validation" && req.body.payload?.plainToken) {
       console.log("✅ Sending Validation Response:", req.body.payload.plainToken);
 
@@ -23,7 +23,6 @@ exports.zoomWebhook = async (req, res) => {
         .update(req.body.payload.plainToken)
         .digest("hex");
 
-      // ✅ Fix: Return JSON response as per Zoom’s expected format
       return res.status(200).json({
         plainToken: req.body.payload.plainToken,
         encryptedToken: encryptedToken,
@@ -32,7 +31,7 @@ exports.zoomWebhook = async (req, res) => {
 
     console.log("🔹 Received a Non-Validation Webhook Event:", req.body.event);
 
-    // ✅ 2️⃣ Ensure Incoming Zoom Webhook Payload is Valid
+    // ✅ 2️⃣ Ensure Valid Webhook Payload
     if (!req.body.payload || !req.body.payload.object) {
       console.error("❌ Invalid Webhook Payload:", req.body);
       return res.status(400).json({ error: "Invalid Webhook Payload - Missing required fields" });
@@ -46,43 +45,68 @@ exports.zoomWebhook = async (req, res) => {
     const joinUrl = registrant.join_url || "No Join URL Provided";
 
     const startTime = payload.start_time ? new Date(payload.start_time) : null;
-
+    
     if (!inviteeEmail || !startTime) {
       console.error("❌ Missing required data:", { inviteeEmail, startTime });
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    // ✅ 3️⃣ Check if User Exists in MongoDB
+    // ✅ 3️⃣ Find User in MongoDB
     const user = await Register.findOne({ billingEmail: new RegExp(`^${inviteeEmail}$`, "i") }).exec();
     if (!user) {
       console.error("❌ No user found with email:", inviteeEmail);
       return res.status(404).json({ error: "User not found" });
     }
 
-    // ✅ 4️⃣ Check for Duplicate Zoom Event
-    const eventAlreadyExists = user.zoomBookings.some(booking => booking.zoomMeetingId === meetingId);
-    if (eventAlreadyExists) {
-      console.log(`⚠️ Duplicate Zoom Event Detected: ${meetingTopic}. Skipping Booking.`);
-      return res.status(200).json({ message: "Event already stored, skipping" });
+    // ✅ 4️⃣ Generate Weekly Session Dates (Every 7 Days)
+    const sessionDates = [];
+    let currentDate = new Date(startTime);
+    const today = new Date();
+
+    while (currentDate >= today) {
+      sessionDates.push(currentDate.toISOString()); // Store in ISO format
+      currentDate.setDate(currentDate.getDate() - 7); // Move back by 7 days
     }
 
-    // ✅ 5️⃣ Store Zoom Booking in User Document
-    const newZoomBooking = {
-      eventName: meetingTopic,
-      firstName: registrant.first_name || "N/A",
-      lastName: registrant.last_name || "N/A",
-      zoomMeetingId: meetingId,
-      zoomMeetingLink: joinUrl,
-      startTime,
-      endTime: new Date(startTime.getTime() + ((payload.duration || 30) * 60000)),
-      timezone: "UTC",
-      status: "Booked",
-    };
+    sessionDates.reverse(); // Store dates in chronological order
+    console.log("✅ Generated Session Dates:", sessionDates);
 
-    user.zoomBookings.push(newZoomBooking);
-    await user.save();
+    // ✅ 5️⃣ Check if the Zoom Event Already Exists
+    let existingMeeting = user.zoomBookings.find(booking => booking.zoomMeetingId === meetingId);
 
-    console.log(`✅ Successfully Stored Zoom Booking for ${inviteeEmail}`);
+    if (existingMeeting) {
+      if (!existingMeeting.sessionDates) {
+        existingMeeting.sessionDates = []; // Ensure sessionDates array exists
+      }
+
+      // ✅ Add new session dates if they are not already present
+      sessionDates.forEach(date => {
+        if (!existingMeeting.sessionDates.some(storedDate => new Date(storedDate).getTime() === new Date(date).getTime())) {
+          existingMeeting.sessionDates.push(date);
+        }
+      });
+
+      user.markModified("zoomBookings");
+      await user.save();
+      console.log("✅ Updated existing Zoom booking with new session dates.");
+    } else {
+      // ✅ 6️⃣ Store New Zoom Booking
+      const newZoomBooking = {
+        eventName: meetingTopic,
+        firstName: registrant.first_name || "N/A",
+        lastName: registrant.last_name || "N/A",
+        zoomMeetingId: meetingId,
+        zoomMeetingLink: joinUrl,
+        sessionDates: sessionDates, // ✅ Store the calculated session dates
+        timezone: payload.timezone || "UTC", // ✅ Extract timezone dynamically from payload
+        status: "Booked",
+      };
+
+      user.zoomBookings.push(newZoomBooking);
+      await user.save();
+      console.log("✅ Successfully stored new Zoom booking.");
+    }
+
     return res.status(200).json({ message: "Zoom Booking stored successfully", updatedUser: user });
 
   } catch (error) {
@@ -90,7 +114,6 @@ exports.zoomWebhook = async (req, res) => {
     return res.status(500).json({ error: "Internal Server Error" });
   }
 };
-
 
 
 exports.getUserZoomBookings = async (req, res) => {
@@ -108,9 +131,15 @@ exports.getUserZoomBookings = async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
+    // ✅ Ensure sessionDates is always returned as an array
+    const zoomBookings = user.zoomBookings.map(booking => ({
+      ...booking.toObject(),
+      sessionDates: Array.isArray(booking.sessionDates) ? booking.sessionDates : [], // ✅ Ensure sessionDates is an array
+    }));
+
     return res.status(200).json({
       message: 'Zoom bookings fetched successfully',
-      zoomBookings: user.zoomBookings || [], // ✅ Ensure empty array if no bookings
+      zoomBookings,
     });
 
   } catch (error) {
@@ -118,4 +147,3 @@ exports.getUserZoomBookings = async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
-
