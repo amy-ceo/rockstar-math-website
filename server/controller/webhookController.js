@@ -16,13 +16,12 @@ const Register = require('../models/registerModel')
       console.error('❌ Invalid Webhook Payload:', req.body);
       return res.status(400).json({ error: 'Invalid Webhook Payload - Missing required fields' });
     }
-
     const payload = req.body.payload;
 
     // ✅ Fix Payload Extraction
     const inviteeEmail = payload?.email || '❌ Missing';
-    const eventName = payload?.event?.name || '❌ Missing';
-    const eventUri = payload?.event?.uri || '❌ Missing';
+    const eventName = payload?.event?.name || '❌ Missing';  // ✅ Corrected Path
+    const eventUri = payload?.event?.uri || '❌ Missing';  // ✅ Corrected Path
     const startTime = payload?.start_time ? new Date(payload.start_time) : null;
     const endTime = payload?.end_time ? new Date(payload.end_time) : null;
     const timezone = payload?.timezone || '❌ Missing';
@@ -35,7 +34,6 @@ const Register = require('../models/registerModel')
 
     console.log('✅ Extracted Data:', { inviteeEmail, eventName, eventUri, startTime, endTime, timezone });
 
- 
      // ✅ Move normalizeUrl ABOVE its first usage
      // ✅ Normalize the URL for consistent matching
      const normalizeUrl = (url) => url?.split('?')[0].trim().toLowerCase();
