@@ -394,7 +394,7 @@ const Dashboard = () => {
                               Applicable for only <strong>"60 Minute Tutoring Session"</strong>
                             </span>
                           </p>
-                          <p className="ml-6">
+                          <p className="ml-2">
                             📍 Located on the <strong>"Tutoring"</strong> page services
                           </p>
                           <p className="flex items-center text-red-600">
