@@ -33,52 +33,65 @@ exports.zoomWebhook = async (req, res) => {
     const meetingTopic = payload.topic || "Unknown Topic";
     const meetingId = payload.id || "Unknown ID";
     const joinUrl = registrant.join_url || "No Join URL Provided";
-    const startTime = payload.start_time
-  ? new Date(payload.start_time).toISOString() // Ensure UTC format
-  : null;
+    const endTime = payload.end_time ? new Date(payload.end_time) : null; // Extract endTime
 
-
-    if (!inviteeEmail || !startTime) {
+    if (!inviteeEmail || !endTime) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    // ✅ Find User
+    // ✅ Find User in Database
     const user = await Register.findOne({ billingEmail: new RegExp(`^${inviteeEmail}$`, "i") }).exec();
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // ✅ Find Existing Zoom Booking
+    // ✅ Calculate session dates by subtracting 7 days from endTime until reaching today's date
+    const sessionDates = [];
+    let currentDate = new Date(endTime);
+    const today = new Date();
+
+    while (currentDate >= today) {
+      sessionDates.push(currentDate.toISOString()); // Store in ISO format
+      currentDate.setDate(currentDate.getDate() - 7); // Move back by 7 days
+    }
+
+    // ✅ Reverse array to store dates in correct order
+    sessionDates.reverse();
+
+    // ✅ Check if Zoom Booking Already Exists
     let existingMeeting = user.zoomBookings.find(booking => booking.zoomMeetingId === meetingId);
 
     if (existingMeeting) {
-  if (!existingMeeting.sessionDates) {
-    existingMeeting.sessionDates = []; // Ensure sessionDates array exists
-  }
+      if (!existingMeeting.sessionDates) {
+        existingMeeting.sessionDates = []; // Ensure sessionDates array exists
+      }
 
-  // ✅ Ensure we're storing correct dates
-  if (!existingMeeting.sessionDates.some(date => new Date(date).getTime() === new Date(startTime).getTime())) {
-    existingMeeting.sessionDates.push(new Date(startTime)); // ✅ Store correct date
-    user.markModified("zoomBookings");
-    await user.save();
-  }
-}
+      // ✅ Add new session dates if they are not already present
+      sessionDates.forEach(date => {
+        if (!existingMeeting.sessionDates.some(storedDate => new Date(storedDate).getTime() === new Date(date).getTime())) {
+          existingMeeting.sessionDates.push(date);
+        }
+      });
 
-    // ✅ Create New Zoom Booking
-    const newZoomBooking = {
-      eventName: meetingTopic,
-      firstName: registrant.first_name || "N/A",
-      lastName: registrant.last_name || "N/A",
-      zoomMeetingId: meetingId,
-      zoomMeetingLink: joinUrl,
-      sessionDates: [startTime], // ✅ Store session dates as an array
-      status: "Booked",
-    };
+      user.markModified("zoomBookings");
+      await user.save();
+    } else {
+      // ✅ Create a New Zoom Booking
+      const newZoomBooking = {
+        eventName: meetingTopic,
+        firstName: registrant.first_name || "N/A",
+        lastName: registrant.last_name || "N/A",
+        zoomMeetingId: meetingId,
+        zoomMeetingLink: joinUrl,
+        sessionDates: sessionDates, // ✅ Store the calculated session dates
+        status: "Booked",
+      };
 
-    user.zoomBookings.push(newZoomBooking);
-    await user.save();
+      user.zoomBookings.push(newZoomBooking);
+      await user.save();
+    }
 
-    console.log("✅ Successfully Stored Zoom Booking");
+    console.log("✅ Successfully Stored Zoom Booking with Session Dates");
     return res.status(200).json({ message: "Zoom Booking stored successfully", updatedUser: user });
 
   } catch (error) {
@@ -86,7 +99,6 @@ exports.zoomWebhook = async (req, res) => {
     return res.status(500).json({ error: "Internal Server Error" });
   }
 };
-
 
 exports.getUserZoomBookings = async (req, res) => {
   try {
