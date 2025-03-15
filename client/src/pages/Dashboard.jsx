@@ -319,19 +319,31 @@ const Dashboard = () => {
     setShowReschedulePopup(true)
   }
 
-  const formatDateTime = (date, sessionTimezone = "UTC") => {
-    if (!date) return "Invalid Date"; // ✅ Prevent errors if date is missing
+  const formatDateTime = (dateString, sessionTimezone = "UTC") => {
+    if (!dateString) return "Invalid Date"; // ✅ Prevent errors if date is missing
   
-    // Convert stored UTC time to user local timezone
-    return new Intl.DateTimeFormat("en-US", {
-      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone, // ✅ Convert to User's Local Timezone
-      year: "numeric",
-      month: "long",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    }).format(new Date(date + "Z")); // ✅ Ensure proper UTC conversion
+    try {
+      // ✅ Ensure the date is parsed correctly
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        console.error("❌ Invalid date value:", dateString);
+        return "Invalid Date";
+      }
+  
+      // ✅ Convert stored UTC time to user's local timezone
+      return new Intl.DateTimeFormat("en-US", {
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone, // ✅ Use User's OS Timezone
+        year: "numeric",
+        month: "long",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      }).format(date);
+    } catch (error) {
+      console.error("❌ Error formatting date:", error);
+      return "Invalid Date";
+    }
   };
   
 
@@ -498,8 +510,8 @@ const Dashboard = () => {
                     {session.sessionDates && session.sessionDates.length > 0 ? (
                       session.sessionDates.map((date, i) => (
                         <p key={i} className="text-gray-600">
-    🕒 {formatDateTime(date)}
-  </p>
+                        🕒 {formatDateTime(date, session.timezone)}
+                      </p>
                       ))
                     ) : (
                       <p className="text-red-500">⚠️ No scheduled dates found</p>
