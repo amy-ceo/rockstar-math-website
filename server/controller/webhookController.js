@@ -3,9 +3,29 @@ const sendEmail = require('../utils/emailSender')
 
 exports.calendlyWebhook = async (req, res) => {
   try {
-    console.log('📢 Webhook Received!')
-    console.log('📢 Incoming Headers:', JSON.stringify(req.headers, null, 2))
-    console.log('📢 Raw Webhook Body:', JSON.stringify(req.body, null, 2))
+    console.log('📢 Webhook Received!');
+        console.log('📢 Incoming Headers:', req.headers);
+        console.log('📢 Raw Webhook Body:', JSON.stringify(req.body, null, 2));
+
+        const signature = req.headers['x-calendly-signature']; // Calendly Webhook Signature
+        const secret = process.env.CALENDLY_SIGNING_KEY || 'p5kGuYS2gJkb-wz5RLeQhHLAIWYPIqF4a1wVEew_lE4';
+
+        if (!signature) {
+            console.error('❌ ERROR: Missing Webhook Signature');
+            return res.status(400).json({ error: 'Missing Webhook Signature' });
+        }
+
+        const expectedSignature = crypto
+            .createHmac('sha256', secret)
+            .update(JSON.stringify(req.body))
+            .digest('hex');
+
+        if (signature !== expectedSignature) {
+            console.error('❌ ERROR: Invalid Webhook Signature');
+            return res.status(403).json({ error: 'Invalid Webhook Signature' });
+        }
+
+        console.log('✅ Webhook Signature Verified');
 
     if (!req.body || Object.keys(req.body).length === 0) {
       console.error('❌ ERROR: Empty Webhook Payload')
