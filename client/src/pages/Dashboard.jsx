@@ -392,7 +392,7 @@ const Dashboard = () => {
                             </span>
                           </p>
                           <p className="ml-2">
-                            📍 Located on the <strong>"Tutoring"</strong> page services
+                          📍 Located on the <strong>"Tutoring"</strong> page services
                           </p>
                           <p className="flex items-center text-red-600">
                             ❌{' '}
@@ -403,7 +403,7 @@ const Dashboard = () => {
                         </div>
                       ) : (
                         <p className="flex items-center">
-                          ✅ <span className="ml-2">Applicable for all tutoring page products</span>
+                          ✅ <span className="ml-2">Applicable for all </span> <strong>"Tutoring"</strong> page services</span>
                         </p>
                       )}
                     </div>
