@@ -392,7 +392,7 @@ const Dashboard = () => {
                             </span>
                           </p>
                           <p className="ml-2">
-                          📍 Located on the <strong>"Tutoring"</strong> page services
+                           📍 Located on the <strong>"Tutoring"</strong> page services
                           </p>
                           <p className="flex items-center text-red-600">
                             ❌{' '}
