@@ -10,9 +10,9 @@ const API_BASE_URL = "https://backend-production-cbe2.up.railway.app"; // ✅ En
 const UpcomingClasses = () => {
   const [sessions, setSessions] = useState([]);
   const [selectedSession, setSelectedSession] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
-  const [note, setNote] = useState(""); // ✅ State for note input
+  const [note, setNote] = useState("");
   const [loading, setLoading] = useState(true);
 
   // ✅ Fetch sessions with latest notes
@@ -20,7 +20,7 @@ const UpcomingClasses = () => {
     const fetchSessions = async () => {
       try {
         const response = await axios.get(`${API_BASE_URL}/api/admin/booked-sessions`);
-        console.log("📢 API Response:", response.data); // ✅ Debugging log
+        console.log("📢 API Response:", response.data);
 
         if (response.data && Array.isArray(response.data.sessions)) {
           setSessions(response.data.sessions);
@@ -32,25 +32,25 @@ const UpcomingClasses = () => {
         console.error("❌ Error fetching sessions:", error);
         setSessions([]);
       } finally {
-        setLoading(false); // ✅ Set loading to false after API call
+        setLoading(false);
       }
     };
 
     fetchSessions();
   }, []);
 
-  console.log("🔍 Current Sessions:", sessions); // ✅ Debugging log
+  console.log("🔍 Current Sessions:", sessions);
 
   // ✅ Open Cancel Modal
-  const openModal = (session) => {
+  const openCancelModal = (session) => {
     setSelectedSession(session);
-    setIsModalOpen(true);
+    setIsCancelModalOpen(true);
   };
 
   // ✅ Close Cancel Modal
-  const closeModal = () => {
+  const closeCancelModal = () => {
     setSelectedSession(null);
-    setIsModalOpen(false);
+    setIsCancelModalOpen(false);
   };
 
   // ✅ Cancel Session
@@ -65,17 +65,17 @@ const UpcomingClasses = () => {
 
       setSessions(sessions.filter((session) => session.sessionId !== selectedSession.sessionId));
       toast.success("Session cancelled successfully!");
-      closeModal();
+      closeCancelModal();
     } catch (error) {
       console.error("Error cancelling session:", error);
       toast.error("Failed to cancel session.");
     }
   };
 
-  // ✅ Open Note Modal (for Add/Edit)
+  // ✅ Open Note Modal
   const openNoteModal = (session) => {
     setSelectedSession(session);
-    setNote(session.note || ""); // Load existing note if any
+    setNote(session.note || "");
     setIsNoteModalOpen(true);
   };
 
@@ -93,7 +93,7 @@ const UpcomingClasses = () => {
     try {
       const response = await axios.post(`${API_BASE_URL}/api/admin/add-note`, {
         userId: selectedSession.userId,
-        startTime: selectedSession.startTime, // ✅ Correct field
+        startTime: selectedSession.startTime,
         note,
       });
 
@@ -113,30 +113,6 @@ const UpcomingClasses = () => {
     }
 
     closeNoteModal();
-  };
-
-  // ✅ Delete Note (Admin Only)
-  const deleteNote = async (session) => {
-    if (!session) return;
-
-    try {
-      const response = await axios.post(`${API_BASE_URL}/api/admin/delete-note`, {
-        userId: session.userId,
-        startTime: session.startTime, // ✅ Ensure correct field
-      });
-
-      if (response.data.success) {
-        setSessions((prevSessions) =>
-          prevSessions.map((s) => (s.startTime === session.startTime ? { ...s, note: "" } : s))
-        );
-        toast.success("Note deleted successfully!");
-      } else {
-        toast.error("Failed to delete note.");
-      }
-    } catch (error) {
-      console.error("Error deleting note:", error);
-      toast.error("Failed to delete note.");
-    }
   };
 
   return (
@@ -169,7 +145,7 @@ const UpcomingClasses = () => {
                     <span className="font-semibold">{session.userName}</span>
                   </td>
                   <td className="px-4 py-3 text-center flex gap-3 justify-center">
-                    <button onClick={() => openModal(session)} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md flex items-center gap-2">
+                    <button onClick={() => openCancelModal(session)} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md flex items-center gap-2">
                       <FaTrash /> Cancel
                     </button>
                     <button onClick={() => openNoteModal(session)} className={`px-4 py-2 rounded-md flex items-center gap-2 ${
@@ -185,6 +161,42 @@ const UpcomingClasses = () => {
         </div>
       ) : (
         <p className="text-center text-gray-500 text-lg">No upcoming sessions available.</p>
+      )}
+
+      {/* Cancel Session Modal */}
+      {isCancelModalOpen && (
+        <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center">
+          <div className="bg-white p-6 rounded-md shadow-md w-96">
+            <h3 className="text-lg font-semibold mb-4">Confirm Cancel</h3>
+            <p>Are you sure you want to cancel this session?</p>
+            <div className="mt-4 flex justify-end gap-3">
+              <button onClick={closeCancelModal} className="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded-md">
+                No
+              </button>
+              <button onClick={cancelSession} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md">
+                Yes, Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Note Modal */}
+      {isNoteModalOpen && (
+        <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center">
+          <div className="bg-white p-6 rounded-md shadow-md w-96">
+            <h3 className="text-lg font-semibold mb-4">Add/Edit Note</h3>
+            <textarea value={note} onChange={(e) => setNote(e.target.value)} className="w-full p-2 border rounded-md" placeholder="Enter note here..."></textarea>
+            <div className="mt-4 flex justify-end gap-3">
+              <button onClick={closeNoteModal} className="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded-md">
+                Close
+              </button>
+              <button onClick={saveNote} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md">
+                Save Note
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
