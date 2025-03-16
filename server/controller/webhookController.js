@@ -120,7 +120,7 @@ exports.calendlyWebhook = async (req, res) => {
       createdAt: new Date(),
     };
 
-    console.log("📢 Storing New Booking:", JSON.stringify(newBooking, null, 2));
+    console.log("Storing New Booking:", JSON.stringify(newBooking, null, 2));
 
     // ✅ Update User's bookedSessions
     user.bookedSessions.push(newBooking);
