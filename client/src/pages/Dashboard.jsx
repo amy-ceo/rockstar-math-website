@@ -565,10 +565,10 @@ const Dashboard = () => {
                     </p>
 
                     {/* ✅ Show "Book Now" Button if bookingLink Exists */}
-                    {session.bookingLink && (
+                    {session.proxyBookingLink && (
                       <div className="mt-3">
                         <a
-                          href={session.bookingLink}
+                          href={session.proxyBookingLink}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-white bg-blue-600 hover:bg-blue-700 font-medium px-4 py-2 rounded-lg block text-center"

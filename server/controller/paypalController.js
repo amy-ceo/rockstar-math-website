@@ -387,38 +387,36 @@ exports.captureOrder = async (req, res) => {
     console.log('🎟 Sending Email with Coupons:', appliedCoupons)
     const proxyBaseUrl = 'https://backend-production-cbe2.up.railway.app/api/proxy-calendly';
 
-    // ✅ Extract Purchased Items & Apply Session Mapping
     const purchasedItems = user.cartItems.map((item) => {
-      const formattedItemName = item.name.trim().toLowerCase() // ✅ Standardize Name for Mapping
-
-      // ✅ Fetch Session Count & Remaining Sessions (Ensure Defaults)
-      const sessionCount = sessionMapping[formattedItemName] ?? 0
-      const remainingSessions = sessionMapping[formattedItemName] ?? 0
-
-        // ✅ Generate Proxy Booking Link
-  const proxyBookingLink = calendlyMapping[formattedItemName]
-  ? `${proxyBaseUrl}?userId=${user._id}&session=${encodeURIComponent(item.name)}`
-  : null;
-
+      const formattedItemName = item.name.trim().toLowerCase();
+    
+      // ✅ Fetch Session Count & Ensure Defaults
+      const sessionCount = sessionMapping[formattedItemName] ?? 0;
+      const remainingSessions = sessionMapping[formattedItemName] ?? 0;
+    
+      // ✅ Generate Proxy URL Instead of Calendly Link
+      const originalCalendlyLink = calendlyMapping[formattedItemName] || null;
+      const proxyBookingLink = originalCalendlyLink
+        ? `${proxyBaseUrl}?userId=${user._id}&session=${encodeURIComponent(item.name)}`
+        : null;
+    
       return {
         name: item.name,
         sessionCount,
         remainingSessions,
-        bookingLink: proxyBookingLink, // ✅ Store Proxy Calendly Link!
+        bookingLink: originalCalendlyLink, // ✅ Keep Original Link (Hidden)
+        proxyBookingLink: proxyBookingLink, // ✅ Use Proxy URL in UI
         status: 'Active',
-      }
-    })
-    console.log('🛒 Mapped Purchased Items with Sessions:', purchasedItems)
-
+      };
+    });
+    
     // ✅ Save Purchased Classes in Database
     if (purchasedItems.length > 0) {
       await Register.findByIdAndUpdate(
         user._id,
         { $push: { purchasedClasses: { $each: purchasedItems } } },
         { new: true },
-      )
-    } else {
-      console.log('⚠️ No new purchased classes to add.')
+      );
     }
     // ✅ **Extract Correct Calendly Booking Links for Email**
     let calendlyLinks = purchasedItems

@@ -9,6 +9,7 @@ const purchasedClassSchema = new mongoose.Schema({
   sessionCount: { type: Number, required: true }, // ✅ Total Purchased
   remainingSessions: { type: Number, required: true }, // ✅ Sessions Left
   bookingLink: { type: String, default: null }, // ✅ Calendly Booking Link (For Services)
+  proxyBookingLink: { type: String, default: null }, // ✅ New Field for Proxy URL
   status: {
     type: String,
     enum: ['Active', 'Expired', 'Completed'],

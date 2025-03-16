@@ -345,12 +345,13 @@ exports.getAllBookedSessions = async (req, res) => {
         allSessions.push({
           userId: user._id,
           userEmail: user.billingEmail,
-          userName: user.username,  // ✅ Now Including Username
+          userName: user.username,
           sessionId: session._id,
           eventName: session.eventName,
           startTime: session.startTime,
           endTime: session.endTime,
           status: session.status,
+          note: session.note || "" // ✅ Ensure note is included
         });
       });
     });

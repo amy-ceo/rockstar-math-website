@@ -541,7 +541,7 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
         .map((item) => {
           const originalCalendlyLink = calendlyMapping[item] || null
 
-          // Generate Proxy URL
+          // ✅ Generate Proxy URL
           const proxyBookingLink = originalCalendlyLink
             ? `${proxyBaseUrl}?userId=${user._id}&session=${encodeURIComponent(item)}`
             : null
@@ -550,7 +550,8 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
             name: item,
             sessionCount: sessionMapping[item] || 0,
             remainingSessions: sessionMapping[item] || 0,
-            bookingLink: proxyBookingLink, // ✅ Save Proxy URL Instead of Direct Calendly Link
+            bookingLink: originalCalendlyLink, // ✅ Keep Original Calendly Link (Hidden in UI)
+            proxyBookingLink: proxyBookingLink, // ✅ Store Proxy URL for UI
             status: 'Active',
           }
         })
@@ -563,9 +564,8 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
           },
           { new: true },
         )
-      } else {
-        console.log('⚠️ No new purchased classes to add.')
       }
+
       // ✅ Continue with Zoom links, Calendly, Coupons, and Emails
       const activeCoupons = await getActiveCoupons()
       console.log('🎟 Active Coupons from Stripe:', activeCoupons)
