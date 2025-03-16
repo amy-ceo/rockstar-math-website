@@ -115,6 +115,30 @@ const UpcomingClasses = () => {
     closeNoteModal();
   };
 
+  // ✅ Delete Note Function
+  const deleteNote = async (session) => {
+    if (!session) return;
+
+    try {
+      const response = await axios.post(`${API_BASE_URL}/api/admin/delete-note`, {
+        userId: session.userId,
+        startTime: session.startTime,
+      });
+
+      if (response.data.success) {
+        setSessions((prevSessions) =>
+          prevSessions.map((s) => (s.startTime === session.startTime ? { ...s, note: "" } : s))
+        );
+        toast.success("Note deleted successfully!");
+      } else {
+        toast.error("Failed to delete note.");
+      }
+    } catch (error) {
+      console.error("Error deleting note:", error);
+      toast.error("Failed to delete note.");
+    }
+  };
+
   return (
     <div className="container mx-auto p-6">
       <Toaster position="top-right" />
@@ -153,6 +177,11 @@ const UpcomingClasses = () => {
                     } text-white`}>
                       <FaStickyNote /> {session.note ? "Edit Note" : "Add Note"}
                     </button>
+                    {session.note && (
+                      <button onClick={() => deleteNote(session)} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md flex items-center gap-2">
+                        <FaTrash /> Delete Note
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
