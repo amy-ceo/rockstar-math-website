@@ -544,14 +544,23 @@ function generateEmailHtml(user, zoomLinks, userCoupons, calendlyLinks, hasCommo
               <h3 style="color: #007bff;">🔗 Available Courses & Registration Links:</h3>
               <ul style="list-style-type: none; padding: 0;">`
 
-  // ✅ Add Zoom Links (if available)
-  if (zoomLinks.length > 0) {
-    detailsHtml += `<h3>🔗 Your Course Zoom Links:</h3><ul>`
-    zoomLinks.forEach((course) => {
-      detailsHtml += `<li>📚 <b>${course.name}</b> – <a href="${course.link}" target="_blank">Register Here</a></li>`
-    })
-    detailsHtml += `</ul>`
-  }
+  const proxyZoomBaseUrl = 'https://backend-production-cbe2.up.railway.app/api/proxy-zoom';
+
+if (zoomLinks.length > 0) {
+  detailsHtml += `<h3>🔗 Your Course Zoom Links:</h3><ul>`;
+
+  zoomLinks.forEach((course) => {
+    // ✅ Generate Proxy Zoom URL
+    const proxyLink = `${proxyZoomBaseUrl}?userId=${user._id}&session=${encodeURIComponent(course.name)}`;
+
+    detailsHtml += `<li>📚 <b>${course.name}</b> – 
+      <a href="${proxyLink}" target="_blank"><b>Register Here</b></a> (One-time Access)
+    </li>`;
+  });
+
+  detailsHtml += `</ul>`;
+}
+
   // ✅ Special Section for "Common Core for Parents"
   if (hasCommonCore) {
     detailsHtml += `

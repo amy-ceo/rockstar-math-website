@@ -300,38 +300,6 @@ router.post('/capture-stripe-payment', async (req, res) => {
       console.error('❌ Error Saving Payment:', saveError)
       return res.status(500).json({ error: 'Database error while saving payment.' })
     }
-     // ✅ Step 2: Generate Proxy URLs for Booking Links
-     const proxyBaseUrl = 'https://backend-production-cbe2.up.railway.app/api/proxy-calendly';
-
-     // ✅ Map Purchased Items with Proxy Booking Links
-     const purchasedItems = user.cartItems.map((item) => {
-       const formattedItemName = item.name.trim().toLowerCase();
- 
-       // ✅ Check if there's a Calendly link for this item
-       const proxyBookingLink = calendlyMapping[formattedItemName]
-         ? `${proxyBaseUrl}?userId=${user._id}&session=${encodeURIComponent(item.name)}`
-         : null;
- 
-       return {
-         name: item.name,
-         sessionCount: sessionMapping[formattedItemName] ?? 0,
-         remainingSessions: sessionMapping[formattedItemName] ?? 0,
-         bookingLink: proxyBookingLink, // ✅ Proxy Link Stored in DB!
-         status: 'Active',
-       };
-     });
- 
-     console.log('✅ Final Purchased Items with Proxy Booking Links:', purchasedItems);
-     // ✅ Step 3: Save Proxy URLs in User's Purchased Classes in Database
-    if (purchasedItems.length > 0) {
-      await Register.findByIdAndUpdate(
-        user._id,
-        { $push: { purchasedClasses: { $each: purchasedItems } } },
-        { new: true }
-      );
-    } else {
-      console.log('⚠️ No new purchased classes to add.');
-    }
 
     // ✅ Step 2: Call addPurchasedClass API
     try {
@@ -566,15 +534,27 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
         user.purchasedClasses.map((cls) => cls.name.toLowerCase().trim()),
       )
       // ✅ Filter new purchases to avoid duplicate entries
+      const proxyBaseUrl = 'https://backend-production-cbe2.up.railway.app/api/proxy-calendly'
+
       const purchasedItems = cartSummary
         .filter((item) => !existingClasses.has(item.toLowerCase().trim()))
-        .map((item) => ({
-          name: item,
-          sessionCount: sessionMapping[item] || 0,
-          remainingSessions: sessionMapping[item] || 0,
-          bookingLink: calendlyMapping[item] || null,
-          status: 'Active',
-        }))
+        .map((item) => {
+          const originalCalendlyLink = calendlyMapping[item] || null
+
+          // Generate Proxy URL
+          const proxyBookingLink = originalCalendlyLink
+            ? `${proxyBaseUrl}?userId=${user._id}&session=${encodeURIComponent(item)}`
+            : null
+
+          return {
+            name: item,
+            sessionCount: sessionMapping[item] || 0,
+            remainingSessions: sessionMapping[item] || 0,
+            bookingLink: proxyBookingLink, // ✅ Save Proxy URL Instead of Direct Calendly Link
+            status: 'Active',
+          }
+        })
+
       if (purchasedItems.length > 0) {
         await Register.findByIdAndUpdate(
           userId,
@@ -589,36 +569,11 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
       // ✅ Continue with Zoom links, Calendly, Coupons, and Emails
       const activeCoupons = await getActiveCoupons()
       console.log('🎟 Active Coupons from Stripe:', activeCoupons)
-
-      // ✅ Step 1: Match Coupons Based on Purchased Course Names
       let userCoupons = activeCoupons.filter((coupon) => {
         return cartSummary.some((item) => {
           return item.toLowerCase().includes(coupon.code.toLowerCase())
         })
       })
-
-      // ✅ Step 2: Apply Fixed Coupons for "Achieve" Course
-      cartSummary.forEach((item) => {
-        if (item.toLowerCase() === 'Achieve') {
-          userCoupons.push(
-            { code: 'fs4n9tti', percent_off: 100, expires: 'Forever' }, // ✅ 100% Off Coupon
-            { code: 'qRBcEmgS', percent_off: 30, expires: 'Forever' }, // ✅ 30% Off Coupon
-          )
-        }
-      })
-      // ✅ Step 3: Remove Duplicate Coupons
-      userCoupons = userCoupons.filter(
-        (coupon, index, self) => index === self.findIndex((c) => c.code === coupon.code),
-      )
-
-      // ✅ Step 4: Save Coupons in User's Database
-      if (userCoupons.length > 0) {
-        await Register.findByIdAndUpdate(userId, {
-          $push: { coupons: { $each: userCoupons } },
-        })
-      }
-
-      console.log('🎟 Final Coupons Sent via Email:', userCoupons)
       console.log('🛒 Purchased Items from Metadata:', cartSummary)
       let zoomLinks = []
       if (['Learn', 'Achieve', 'Excel'].some((course) => cartSummary.includes(course))) {
@@ -706,18 +661,28 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
       })
       let appliedCoupons = []
       cartSummary.forEach((item) => {
-        let matchedCoupon = activeCoupons.find((coupon) => {
-          if (item === 'Learn' && coupon.percent_off === 10) return true
-          if (item === 'Achieve' && coupon.percent_off === 30) return true
-          if (item === 'Excel' && coupon.percent_off === 20) return true
-          return false
-        })
-        if (matchedCoupon && matchedCoupon.code) {
-          appliedCoupons.push({
-            code: matchedCoupon.code,
-            percent_off: matchedCoupon.percent_off,
-            expires: matchedCoupon.expires,
+        if (item.toLowerCase() === 'achieve') {
+          // ✅ Ensure 100% off and 30% off coupons are added
+          appliedCoupons.push(
+            { code: 'fs4n9tti', percent_off: 100, expires: 'Forever' }, // 100% Off Coupon
+            { code: 'qRBcEmgS', percent_off: 30, expires: 'Forever' }, // 30% Off Coupon
+          )
+        } else {
+          // ✅ Automatically assign coupons from Stripe if available
+          let matchedCoupon = activeCoupons.find((coupon) => {
+            if (item === 'Learn' && coupon.percent_off === 10) return true
+            if (item === 'Achieve' && coupon.percent_off === 30) return true
+            if (item === 'Excel' && coupon.percent_off === 20) return true
+            return false
           })
+
+          if (matchedCoupon && matchedCoupon.code) {
+            appliedCoupons.push({
+              code: matchedCoupon.code,
+              percent_off: matchedCoupon.percent_off,
+              expires: matchedCoupon.expires,
+            })
+          }
         }
       })
       if (appliedCoupons.length > 0) {
@@ -777,21 +742,54 @@ function generateEmailHtml(user, zoomLinks, userCoupons, calendlyLinks, hasCommo
       </p>
     `
   }
+  const proxyZoomBaseUrl = 'https://backend-production-cbe2.up.railway.app/api/proxy-zoom'
+
   if (zoomLinks.length > 0) {
     detailsHtml += `<h3>🔗 Your Course Zoom Links:</h3><ul>`
+
     zoomLinks.forEach((course) => {
-      detailsHtml += `<li>📚 <b>${course.name}</b> – <a href="${course.link}" target="_blank">Register Here</a></li>`
+      // ✅ Generate Proxy Zoom URL
+      const proxyLink = `${proxyZoomBaseUrl}?userId=${user._id}&session=${encodeURIComponent(
+        course.name,
+      )}`
+
+      detailsHtml += `<li>📚 <b>${course.name}</b> – 
+        <a href="${proxyLink}" target="_blank"><b>Register Here</b></a> (One-time Access)
+      </li>`
     })
+
     detailsHtml += `</ul>`
   }
 
+  // ✅ Add Discount Coupons (if available)
   if (userCoupons.length > 0) {
     detailsHtml += `<h3 style="color: #d9534f;">🎟 Your Exclusive Discount Coupons:</h3>`
+
     userCoupons.forEach((coupon) => {
-      detailsHtml += `<p><b>Coupon Code:</b> ${coupon.code} - ${coupon.percent_off}% off (Expires: ${coupon.expires})</p>`
+      if (coupon.percent_off === 100) {
+        detailsHtml += `
+        <p>
+          <b>Coupon Code:</b> ${coupon.code} - <b>${coupon.percent_off}% off</b> (Expires: ${
+          coupon.expires || 'undefined'
+        })  
+          For a Free 60-minute session valued at $100.00 Purchase here ---> 
+          <a href="https://www.rockstarmath.com/services" target="_blank">https://www.rockstarmath.com/services</a>
+        </p>
+      `
+      } else if (coupon.percent_off === 30) {
+        detailsHtml += `
+        <p>
+          <b>Coupon Code:</b> ${coupon.code} - <b>${coupon.percent_off}% off</b> (Expires: ${
+          coupon.expires || 'undefined'
+        })  
+          Applies to all products on the Tutoring Page Here ---> 
+          <a href="https://www.rockstarmath.com/services" target="_blank">https://www.rockstarmath.com/services</a>
+        </p>
+      `
+      }
     })
   }
-  
+
   if (calendlyLinks.length > 0) {
     // ✅ Add structured heading
     detailsHtml += `<h3>📅 Your Scheduled Calendly Sessions:</h3>
