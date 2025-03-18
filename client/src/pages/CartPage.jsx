@@ -11,22 +11,6 @@ const CartPage = () => {
   const navigate = useNavigate();
   const [cartItems, setCartItems] = useState([]);
 
-  // ✅ Load Cart from Local Storage on Page Load
-  useEffect(() => {
-    const savedCart = localStorage.getItem("cart");
-    if (savedCart) {
-      setCartItems(JSON.parse(savedCart));
-    } else {
-      setCartItems(cart); // Fallback to context if localStorage is empty
-    }
-  }, [cart]);
-
-  // ✅ Sync Local State with Context
-  useEffect(() => {
-    setCartItems(cart);
-    localStorage.setItem("cart", JSON.stringify(cart)); // Ensure localStorage is updated
-  }, [cart]);
-
   const handleProceedToCheckout = async () => {
     try {
       const email = localStorage.getItem("userEmail");

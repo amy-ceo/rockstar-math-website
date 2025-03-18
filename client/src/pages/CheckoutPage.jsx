@@ -6,7 +6,7 @@ import { Elements } from '@stripe/react-stripe-js'
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js'
 import toast, { Toaster } from 'react-hot-toast'
 import 'react-toastify/dist/ReactToastify.css'
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from '../context/AuthContext'
 // Lazy Load Components
 const PaymentForm = lazy(() => import('../components/PaymentForm'))
 
@@ -17,7 +17,7 @@ const stripePromise = loadStripe(
 
 const CheckoutPage = () => {
   const [cartItems, setCartItems] = useState([])
-  const { users } = useAuth(); // Get user from AuthContext
+  const { users } = useAuth() // Get user from AuthContext
   const [showPaymentForm, setShowPaymentForm] = useState(false)
   const [discount, setDiscount] = useState(0)
   const [couponCode, setCouponCode] = useState('')
@@ -53,9 +53,9 @@ const CheckoutPage = () => {
   useEffect(() => {
     if (!users) {
       // If user is not logged in, redirect to login
-      navigate("/login");
+      navigate('/login')
     }
-  }, [users, navigate]);
+  }, [users, navigate])
 
   useEffect(() => {
     console.log('🔄 Checking localStorage cart...')
@@ -73,6 +73,14 @@ const CheckoutPage = () => {
       setTotal(calculatedSubtotal) // ✅ Initially, total = subtotal
     }
   }, [navigate])
+
+  // ✅ Function to clear the cart from localStorage and state
+  const clearCart = () => {
+    console.log('🛒 Clearing Cart...')
+    setCart([]) // Reset State
+    localStorage.setItem('cartItems', JSON.stringify([])) // Ensure it's empty in localStorage
+    window.dispatchEvent(new Event('storage')) // Sync across tabs
+  }
 
   // ✅ Create PayPal Order
   const createPayPalOrder = async () => {
@@ -128,11 +136,11 @@ const CheckoutPage = () => {
   }
 
   const handlePayPalSuccess = async (data) => {
-    const user = JSON.parse(localStorage.getItem('user'));
+    const user = JSON.parse(localStorage.getItem('user'))
     if (!user || !user._id) {
-      toast.error('User authentication required!');
-      navigate('/login'); // Redirect to login if not logged in
-      return;
+      toast.error('User authentication required!')
+      navigate('/login') // Redirect to login if not logged in
+      return
     }
 
     try {
@@ -193,24 +201,24 @@ const CheckoutPage = () => {
       // ✅ Fetch updated user data and update localStorage
       console.log('📡 Fetching updated user data...')
       const userResponse = await fetch(
-        `https://backend-production-cbe2.up.railway.app/api/user/${users._id}`
-      );
+        `https://backend-production-cbe2.up.railway.app/api/user/${users._id}`,
+      )
 
       if (!userResponse.ok) {
-        console.warn("⚠️ Failed to fetch updated user data.");
+        console.warn('⚠️ Failed to fetch updated user data.')
       } else {
-        const updatedUser = await userResponse.json();
-        localStorage.setItem("user", JSON.stringify(updatedUser));
+        const updatedUser = await userResponse.json()
+        localStorage.setItem('user', JSON.stringify(updatedUser))
         // Redirect IMMEDIATELY after updating localStorage
-        navigate("/dashboard"); // Redirect to dashboard
+        navigate('/dashboard') // Redirect to dashboard
       }
 
       // Clear Cart after successful PayPal Payment
-      localStorage.removeItem("cartItems");
-      setCartItems([]);
-      window.dispatchEvent(new Event("storage"));
+      localStorage.removeItem('cartItems')
+      setCartItems([])
+      window.dispatchEvent(new Event('storage'))
 
-      toast.success("🎉 Payment Successful! Redirecting...");
+      toast.success('🎉 Payment Successful! Redirecting...')
     } catch (error) {
       console.error('❌ Error in Payment Process:', error)
       toast.error(error.message || 'Payment processing error.')
@@ -396,7 +404,10 @@ const CheckoutPage = () => {
 
       const result = await response.json()
       console.log('📡 Stripe Capture Response:', result) // ADD THIS LINE
-      clearCartAfterPayment() // ✅ Ensure cart is cleared
+      // Clear Cart after successful Stripe Payment
+      clearCart()
+      toast.success('🎉 Payment Successful! Redirecting...')
+      navigate('/dashboard')
     } catch (error) {
       console.error('❌ Error in Payment Process:', error)
       toast.error(error.message || 'Payment processing error.')
