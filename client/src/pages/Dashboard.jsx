@@ -343,20 +343,29 @@ const Dashboard = () => {
     }
   }
   const renderBookNowButton = (session) => {
-    console.log("Session Data:", session); // Add a console log to see the session object
+    console.log("Session Data:", session); // Check the session data
+  
+    // Static proxy URL generation in the frontend
+    const proxyBaseUrl = "https://your-backend-url.com/api/proxy-calendly"; // Backend URL
+    const userId = user._id; // Make sure user._id is available
+    const sessionName = session.name;
+  
+    const proxyBookingLink = session.proxyBookingLink
+      ? `${proxyBaseUrl}?userId=${userId}&session=${encodeURIComponent(sessionName)}`
+      : null; // Generate static proxy link directly in frontend
   
     // Ensure the proxyBookingLink exists
-    if (!session.proxyBookingLink) {
-      return <p className="text-red-500">No booking link available.</p>; // Display error message if link is not available
+    if (!proxyBookingLink) {
+      return <p className="text-red-500">No booking link available.</p>; // If no link available
     }
   
     // If proxyBookingLink is available, show the "Book Now" button
     return (
       <div className="mt-3">
         <a
-          href={session.proxyBookingLink} // Use the proxyBookingLink for redirection
+          href={proxyBookingLink} // Use the proxyBookingLink for redirection
           target="_blank" // Open in a new tab
-          rel="noopener noreferrer" // Prevent security issues
+          rel="noopener noreferrer" // Security measure
           className="text-white bg-blue-600 hover:bg-blue-700 font-medium px-4 py-2 rounded-lg block text-center"
         >
           📅 Book Now
@@ -364,6 +373,7 @@ const Dashboard = () => {
       </div>
     );
   };
+  
   if (loading && !user) return <p>Loading dashboard...</p>
 
   if (error) return <p className="text-red-600">{error}</p>
