@@ -74,21 +74,21 @@ const CheckoutPage = () => {
     }
   }, [navigate])
 
-  // ✅ Function to clear the cart from localStorage and state
-  const clearCart = () => {
-    console.log("🛒 Clearing Cart...");
+ // ✅ Function to clear the cart from localStorage and state
+const clearCart = () => {
+  console.log("🛒 Clearing Cart...");
+
+  // Reset State using setCartItems (since you are using this state for cart items)
+  setCartItems([]); // Reset cart state
   
-    // Reset State
-    setCart([]);
-    
-    // Clear both 'cart' and 'cartItems' from localStorage
-    localStorage.removeItem("cart"); // Remove 'cart' key
-    localStorage.removeItem("cartItems"); // Remove 'cartItems' key
-    
-    // Sync across tabs
-    window.dispatchEvent(new Event("storage"));
-  };
+  // Clear both 'cart' and 'cartItems' from localStorage
+  localStorage.removeItem("cart"); // Remove 'cart' key
+  localStorage.removeItem("cartItems"); // Remove 'cartItems' key
   
+  // Sync across tabs
+  window.dispatchEvent(new Event("storage"));
+};
+
 
   // ✅ Create PayPal Order
   const createPayPalOrder = async () => {
