@@ -55,21 +55,22 @@ const Dashboard = () => {
   const excludedPlans = ['Learn', 'Achieve', 'Excel', 'Common Core- Parents']
 
   useEffect(() => {
-    const storedUser = JSON.parse(localStorage.getItem('user'))
+    const storedUser = JSON.parse(localStorage.getItem('user'));
     if (!storedUser || !storedUser._id) {
-      console.warn('⚠️ User not logged in, redirecting to login...')
-      navigate('/login')
+      console.warn('⚠️ User not logged in, redirecting to login...');
+      navigate('/login');
     }
-    setUser(storedUser)
-  }, [])
+    setUser(storedUser);
+  }, []);
+  
 
   // ✅ Fetch all user data when component mounts
   useEffect(() => {
-    if (!user || !user._id) return
+    if (!user || !user._id) return;
 
-    console.log('📡 Fetching data for User ID:', user._id)
-    setLoading(true)
-
+    console.log('📡 Fetching data for User ID:', user._id);
+    setLoading(true);
+  
     // Fetch Purchased Classes
     const fetchPurchasedClasses = async () => {
       try {
@@ -79,13 +80,15 @@ const Dashboard = () => {
         const data = await response.json()
         if (!response.ok) throw new Error(data.message || 'Failed to fetch purchased classes.')
 
-        // Ensure proxyBookingLink exists in each purchased class
+        // ✅ Ensure bookingLink is included
         const updatedClasses = (data.purchasedClasses || []).map((cls) => ({
           ...cls,
-          proxyBookingLink: cls.proxyBookingLink || null,
+          bookingLink: cls.bookingLink || null,
         }))
 
         setPurchasedClasses(updatedClasses)
+        console.log(updatedClasses);
+        
       } catch (error) {
         console.error('❌ Error fetching classes:', error)
         setError('Failed to load classes. Try again.')
@@ -171,7 +174,7 @@ const Dashboard = () => {
           .filter((session) => !excludedPlans.includes(session.name))
           .map((session) => ({
             ...session,
-            proxyBookingLink: session.proxyBookingLink || null, // ✅ Ensure bookingLink is present
+            bookingLink: session.bookingLink || null, // ✅ Ensure bookingLink is present
           }))
 
         setRemainingSessions(filteredSessions)
@@ -192,15 +195,11 @@ const Dashboard = () => {
         fetchCalendlyBookings(),
         fetchRemainingSessions(),
         fetchCoupons(),
-      ])
-      setLoading(false)
-    }
-    fetchAllData()
+      ]);
+      setLoading(false);
+    };
+    fetchAllData();
   }, [user]) // ✅ Depend only on `users`
-  const handleError = (errorMessage) => {
-    toast.error(errorMessage)
-    setError(errorMessage)
-  }
 
   const handleReschedule = async () => {
     if (!selectedRescheduleEvent || !newDateTime) {
@@ -345,31 +344,7 @@ const Dashboard = () => {
       return 'Invalid Date'
     }
   }
-
-  // Ensuring proxyBookingLink is valid
-const renderBookNowButton = (session) => {
-  console.log("Session Data: ", session); // Log the session object
-
-  if (!session.proxyBookingLink) {
-    handleError('No booking link available.');
-    return null;
-  }
-
-  return (
-    <div className="mt-3">
-      <a
-        href={session.proxyBookingLink}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-white bg-blue-600 hover:bg-blue-700 font-medium px-4 py-2 rounded-lg block text-center"
-      >
-        📅 Book Now
-      </a>
-    </div>
-  );
-}
-
-  if (loading && !user) return <p>Loading dashboard...</p>
+  if (loading && !user) return <p>Loading dashboard...</p>;
 
   if (error) return <p className="text-red-600">{error}</p>
 
@@ -430,8 +405,7 @@ const renderBookNowButton = (session) => {
                         </div>
                       ) : (
                         <p className="flex items-center">
-                          ✅ <span className="ml-2">Applicable for all </span>{' '}
-                          <span> "Tutoring" page services</span>
+                          ✅ <span className="ml-2">Applicable for all </span> <span> "Tutoring" page services</span>
                         </p>
                       )}
                     </div>
@@ -578,28 +552,36 @@ const renderBookNowButton = (session) => {
             </section>
           )}
 
-          
-// Display Remaining Sessions
-{remainingSessions.length > 0 && (
-  <section className="mt-6 p-4 bg-white shadow-md rounded-lg">
-    <h3 className="text-lg font-bold mb-2">🕒 Your Remaining Sessions</h3>
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-      {remainingSessions.map((session, index) => (
-        <div key={index} className="p-4 bg-blue-200 rounded-lg shadow">
-          <p>
-            <strong>📚 Plan:</strong> {session.name}
-          </p>
-          <p>
-            <strong>🕒 Remaining Sessions:</strong> {session.remainingSessions}
-          </p>
+          {/* ✅ Show Remaining Sessions - Hide "Learn", but display other sessions */}
+          {remainingSessions.length > 0 && (
+            <section className="mt-6 p-4 bg-white shadow-md rounded-lg">
+              <h3 className="text-lg font-bold mb-2">🕒 Your Remaining Sessions</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {remainingSessions.map((session, index) => (
+                  <div key={index} className="p-4 bg-blue-200 rounded-lg shadow">
+                    <p>
+                      <strong>📚 Plan:</strong> {session.name}
+                    </p>
+                    <p>
+                      <strong>🕒 Remaining Sessions:</strong> {session.remainingSessions}
+                    </p>
 
-          {/* Render "Book Now" button only if proxyBookingLink is available */}
-          {renderBookNowButton(session)}
-        </div>
-      ))}
-    </div>
-  </section>
-)}
+                    {/* ✅ Show "Book Now" Button if bookingLink Exists */}
+                      <div className="mt-3">
+                        <a
+                          href={session.proxyBookingLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-white bg-blue-600 hover:bg-blue-700 font-medium px-4 py-2 rounded-lg block text-center"
+                        >
+                          📅 Book Now
+                        </a>
+                      </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
         </AnimatedSection>
       </div>
 
