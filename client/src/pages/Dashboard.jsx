@@ -346,7 +346,7 @@ const Dashboard = () => {
     console.log("Session Data:", session); // Check the session data
   
     // Static proxy URL generation in the frontend
-    const proxyBaseUrl = "https://your-backend-url.com/api/proxy-calendly"; // Backend URL
+    const proxyBaseUrl = "https://backend-production-cbe2.up.railway.app/api/proxy-calendly"; // Backend URL
     const userId = user._id; // Make sure user._id is available
     const sessionName = session.name;
   
