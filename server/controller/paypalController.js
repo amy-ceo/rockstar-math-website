@@ -388,6 +388,7 @@ exports.captureOrder = async (req, res) => {
     console.log('🎟 Sending Email with Coupons:', appliedCoupons)
 
     // Add this code to check for existing coupons before inserting them:
+    // Ensure no duplicates are inserted into the coupons array.
     if (appliedCoupons.length > 0) {
       for (let coupon of appliedCoupons) {
         const existingCoupon = await Register.findOne({ 'coupons.code': coupon.code })
@@ -402,6 +403,7 @@ exports.captureOrder = async (req, res) => {
         }
       }
     }
+
     const proxyBaseUrl = 'https://backend-production-cbe2.up.railway.app/api/proxy-calendly'
 
     const purchasedItems = user.cartItems.map((item) => {

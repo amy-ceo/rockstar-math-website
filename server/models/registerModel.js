@@ -44,17 +44,31 @@ const zoomBookingSchema = new mongoose.Schema({
   zoomMeetingId: { type: String, required: true, unique: true, sparse: true },
   zoomMeetingLink: { type: String, required: true },
   sessionDates: [{ type: Date, required: true }], // ✅ Array of session dates
-  timezone: { type: String, default: "UTC" }, 
-  status: { type: String, enum: ["Booked", "Completed", "Cancelled"], default: "Booked" },
+  timezone: { type: String, default: 'UTC' },
+  status: { type: String, enum: ['Booked', 'Completed', 'Cancelled'], default: 'Booked' },
   createdAt: { type: Date, default: Date.now },
-});
+})
 
 // ✅ Coupon Schema Inside Register Model
 const couponSchema = new mongoose.Schema({
-  code: { type: String, required: true, unique: true, sparse: true }, // ✅ Fix added
-  percent_off: { type: Number, required: true },
-  valid: { type: Boolean, default: true },
-  assignedAt: { type: Date, default: Date.now },
+  code: {
+    type: String,
+    required: true,
+    unique: true, // Ensure uniqueness of the code field
+    sparse: true, // Allow sparse indexing to handle missing fields
+  },
+  percent_off: {
+    type: Number,
+    required: true,
+  },
+  valid: {
+    type: Boolean,
+    default: true,
+  },
+  assignedAt: {
+    type: Date,
+    default: Date.now,
+  },
 })
 
 // ✅ Archived Classes Schema (Same as purchasedClasses)
