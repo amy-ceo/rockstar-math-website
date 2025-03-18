@@ -76,11 +76,19 @@ const CheckoutPage = () => {
 
   // ✅ Function to clear the cart from localStorage and state
   const clearCart = () => {
-    console.log('🛒 Clearing Cart...')
-    setCart([]) // Reset State
-    localStorage.setItem('cartItems', JSON.stringify([])) // Ensure it's empty in localStorage
-    window.dispatchEvent(new Event('storage')) // Sync across tabs
-  }
+    console.log("🛒 Clearing Cart...");
+  
+    // Reset State
+    setCart([]);
+    
+    // Clear both 'cart' and 'cartItems' from localStorage
+    localStorage.removeItem("cart"); // Remove 'cart' key
+    localStorage.removeItem("cartItems"); // Remove 'cartItems' key
+    
+    // Sync across tabs
+    window.dispatchEvent(new Event("storage"));
+  };
+  
 
   // ✅ Create PayPal Order
   const createPayPalOrder = async () => {
