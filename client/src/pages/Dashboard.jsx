@@ -169,13 +169,13 @@ const Dashboard = () => {
 
         // ✅ Filter out only the excluded plans & ensure bookingLink exists
         const filteredSessions = (data.remainingSessions || [])
-          .filter((session) => !excludedPlans.includes(session.name))
-          .map((session) => ({
-            ...session,
-            bookingLink: session.bookingLink || null, // ✅ Ensure bookingLink is present
-          }))
-
-        setRemainingSessions(filteredSessions)
+        .filter((session) => !excludedPlans.includes(session.name))
+        .map((session) => ({
+          ...session,
+          proxyBookingLink: session.proxyBookingLink || session.bookingLink || null, // Ensure fallback
+        }));
+      
+      setRemainingSessions(filteredSessions);
       } catch (error) {
         console.error('❌ Error fetching remaining sessions:', error)
         setRemainingSessions([])
