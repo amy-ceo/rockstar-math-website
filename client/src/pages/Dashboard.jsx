@@ -55,22 +55,21 @@ const Dashboard = () => {
   const excludedPlans = ['Learn', 'Achieve', 'Excel', 'Common Core- Parents']
 
   useEffect(() => {
-    const storedUser = JSON.parse(localStorage.getItem('user'));
+    const storedUser = JSON.parse(localStorage.getItem('user'))
     if (!storedUser || !storedUser._id) {
-      console.warn('⚠️ User not logged in, redirecting to login...');
-      navigate('/login');
+      console.warn('⚠️ User not logged in, redirecting to login...')
+      navigate('/login')
     }
-    setUser(storedUser);
-  }, []);
-  
+    setUser(storedUser)
+  }, [])
 
   // ✅ Fetch all user data when component mounts
   useEffect(() => {
-    if (!user || !user._id) return;
+    if (!user || !user._id) return
 
-    console.log('📡 Fetching data for User ID:', user._id);
-    setLoading(true);
-  
+    console.log('📡 Fetching data for User ID:', user._id)
+    setLoading(true)
+
     // Fetch Purchased Classes
     const fetchPurchasedClasses = async () => {
       try {
@@ -87,8 +86,7 @@ const Dashboard = () => {
         }))
 
         setPurchasedClasses(updatedClasses)
-        console.log(updatedClasses);
-        
+        console.log(updatedClasses)
       } catch (error) {
         console.error('❌ Error fetching classes:', error)
         setError('Failed to load classes. Try again.')
@@ -195,10 +193,10 @@ const Dashboard = () => {
         fetchCalendlyBookings(),
         fetchRemainingSessions(),
         fetchCoupons(),
-      ]);
-      setLoading(false);
-    };
-    fetchAllData();
+      ])
+      setLoading(false)
+    }
+    fetchAllData()
   }, [user]) // ✅ Depend only on `users`
 
   const handleReschedule = async () => {
@@ -344,7 +342,28 @@ const Dashboard = () => {
       return 'Invalid Date'
     }
   }
-  if (loading && !user) return <p>Loading dashboard...</p>;
+  const renderBookNowButton = (session) => {
+    // Check if proxyBookingLink exists
+    if (!session.proxyBookingLink) {
+      return <p className="text-red-500">No booking link available.</p> // Display error message if link is not available
+    }
+    console.log("Session Proxy Booking Link:", session.proxyBookingLink);
+    // If proxyBookingLink is available, show the "Book Now" button
+    return (
+      <div className="mt-3">
+        <a
+          href={session.proxyBookingLink} // Use the proxyBookingLink for redirection
+          target="_blank" // Open in a new tab
+          rel="noopener noreferrer" // Prevent security issues
+          className="text-white bg-blue-600 hover:bg-blue-700 font-medium px-4 py-2 rounded-lg block text-center"
+        >
+          📅 Book Now
+        </a>
+      </div>
+    )
+  }
+
+  if (loading && !user) return <p>Loading dashboard...</p>
 
   if (error) return <p className="text-red-600">{error}</p>
 
@@ -405,7 +424,8 @@ const Dashboard = () => {
                         </div>
                       ) : (
                         <p className="flex items-center">
-                          ✅ <span className="ml-2">Applicable for all </span> <span> "Tutoring" page services</span>
+                          ✅ <span className="ml-2">Applicable for all </span>{' '}
+                          <span> "Tutoring" page services</span>
                         </p>
                       )}
                     </div>
@@ -566,17 +586,8 @@ const Dashboard = () => {
                       <strong>🕒 Remaining Sessions:</strong> {session.remainingSessions}
                     </p>
 
-                    {/* ✅ Show "Book Now" Button if bookingLink Exists */}
-                      <div className="mt-3">
-                        <a
-                          href={session.proxyBookingLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-white bg-blue-600 hover:bg-blue-700 font-medium px-4 py-2 rounded-lg block text-center"
-                        >
-                          📅 Book Now
-                        </a>
-                      </div>
+                    {/* Render the "Book Now" button if proxyBookingLink exists */}
+                    {renderBookNowButton(session)}
                   </div>
                 ))}
               </div>
