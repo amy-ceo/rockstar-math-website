@@ -347,25 +347,27 @@ const Dashboard = () => {
   }
 
   // Ensuring proxyBookingLink is valid
-  const renderBookNowButton = (classItem) => {
-    if (!classItem.proxyBookingLink) {
-      handleError('No booking link available.')
-      return null
-    }
+const renderBookNowButton = (session) => {
+  console.log("Session Data: ", session); // Log the session object
 
-    return (
-      <div className="mt-3">
-        <a
-          href={classItem.proxyBookingLink}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-white bg-blue-600 hover:bg-blue-700 font-medium px-4 py-2 rounded-lg block text-center"
-        >
-          📅 Book Now
-        </a>
-      </div>
-    )
+  if (!session.proxyBookingLink) {
+    handleError('No booking link available.');
+    return null;
   }
+
+  return (
+    <div className="mt-3">
+      <a
+        href={session.proxyBookingLink}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-white bg-blue-600 hover:bg-blue-700 font-medium px-4 py-2 rounded-lg block text-center"
+      >
+        📅 Book Now
+      </a>
+    </div>
+  );
+}
 
   if (loading && !user) return <p>Loading dashboard...</p>
 
@@ -576,38 +578,28 @@ const Dashboard = () => {
             </section>
           )}
 
-          {/* ✅ Show Remaining Sessions - Hide "Learn", but display other sessions */}
-          {remainingSessions.length > 0 && (
-            <section className="mt-6 p-4 bg-white shadow-md rounded-lg">
-              <h3 className="text-lg font-bold mb-2">🕒 Your Remaining Sessions</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {remainingSessions.map((session, index) => (
-                  <div key={index} className="p-4 bg-blue-200 rounded-lg shadow">
-                    <p>
-                      <strong>📚 Plan:</strong> {session.name}
-                    </p>
-                    <p>
-                      <strong>🕒 Remaining Sessions:</strong> {session.remainingSessions}
-                    </p>
+          
+// Display Remaining Sessions
+{remainingSessions.length > 0 && (
+  <section className="mt-6 p-4 bg-white shadow-md rounded-lg">
+    <h3 className="text-lg font-bold mb-2">🕒 Your Remaining Sessions</h3>
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+      {remainingSessions.map((session, index) => (
+        <div key={index} className="p-4 bg-blue-200 rounded-lg shadow">
+          <p>
+            <strong>📚 Plan:</strong> {session.name}
+          </p>
+          <p>
+            <strong>🕒 Remaining Sessions:</strong> {session.remainingSessions}
+          </p>
 
-                    {/* Render "Book Now" button only if proxyBookingLink is available */}
-                    {session.proxyBookingLink && (
-                      <div className="mt-3">
-                        <a
-                          href={session.proxyBookingLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-white bg-blue-600 hover:bg-blue-700 font-medium px-4 py-2 rounded-lg block text-center"
-                        >
-                          📅 Book Now
-                        </a>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
+          {/* Render "Book Now" button only if proxyBookingLink is available */}
+          {renderBookNowButton(session)}
+        </div>
+      ))}
+    </div>
+  </section>
+)}
         </AnimatedSection>
       </div>
 
