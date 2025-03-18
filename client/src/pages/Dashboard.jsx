@@ -343,11 +343,13 @@ const Dashboard = () => {
     }
   }
   const renderBookNowButton = (session) => {
-    // Check if proxyBookingLink exists
+    console.log("Session Data:", session); // Add a console log to see the session object
+  
+    // Ensure the proxyBookingLink exists
     if (!session.proxyBookingLink) {
-      return <p className="text-red-500">No booking link available.</p> // Display error message if link is not available
+      return <p className="text-red-500">No booking link available.</p>; // Display error message if link is not available
     }
-    console.log("Session Proxy Booking Link:", session.proxyBookingLink);
+  
     // If proxyBookingLink is available, show the "Book Now" button
     return (
       <div className="mt-3">
@@ -360,9 +362,8 @@ const Dashboard = () => {
           📅 Book Now
         </a>
       </div>
-    )
-  }
-
+    );
+  };
   if (loading && !user) return <p>Loading dashboard...</p>
 
   if (error) return <p className="text-red-600">{error}</p>
