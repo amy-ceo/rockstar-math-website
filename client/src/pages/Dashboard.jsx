@@ -55,22 +55,21 @@ const Dashboard = () => {
   const excludedPlans = ['Learn', 'Achieve', 'Excel', 'Common Core- Parents']
 
   useEffect(() => {
-    const storedUser = JSON.parse(localStorage.getItem('user'));
+    const storedUser = JSON.parse(localStorage.getItem('user'))
     if (!storedUser || !storedUser._id) {
-      console.warn('⚠️ User not logged in, redirecting to login...');
-      navigate('/login');
+      console.warn('⚠️ User not logged in, redirecting to login...')
+      navigate('/login')
     }
-    setUser(storedUser);
-  }, []);
-  
+    setUser(storedUser)
+  }, [])
 
   // ✅ Fetch all user data when component mounts
   useEffect(() => {
-    if (!user || !user._id) return;
+    if (!user || !user._id) return
 
-    console.log('📡 Fetching data for User ID:', user._id);
-    setLoading(true);
-  
+    console.log('📡 Fetching data for User ID:', user._id)
+    setLoading(true)
+
     // Fetch Purchased Classes
     const fetchPurchasedClasses = async () => {
       try {
@@ -80,18 +79,19 @@ const Dashboard = () => {
         const data = await response.json()
         if (!response.ok) throw new Error(data.message || 'Failed to fetch purchased classes.')
 
-        // ✅ Ensure bookingLink is included
-        const updatedClasses = (data.purchasedClasses || []).map((cls) => ({
+         // Ensure proxyBookingLink exists in each purchased class
+         const updatedClasses = (data.purchasedClasses || []).map((cls) => ({
           ...cls,
           proxyBookingLink: cls.proxyBookingLink || null,
-        }))
+        }));
 
-        setPurchasedClasses(updatedClasses)
+        setPurchasedClasses(updatedClasses);
       } catch (error) {
         console.error('❌ Error fetching classes:', error)
         setError('Failed to load classes. Try again.')
       }
     }
+
 
     const fetchCalendlyBookings = async () => {
       try {
@@ -193,11 +193,15 @@ const Dashboard = () => {
         fetchCalendlyBookings(),
         fetchRemainingSessions(),
         fetchCoupons(),
-      ]);
-      setLoading(false);
-    };
-    fetchAllData();
+      ])
+      setLoading(false)
+    }
+    fetchAllData()
   }, [user]) // ✅ Depend only on `users`
+  const handleError = (errorMessage) => {
+    toast.error(errorMessage);
+    setError(errorMessage);
+  };
 
   const handleReschedule = async () => {
     if (!selectedRescheduleEvent || !newDateTime) {
@@ -342,7 +346,30 @@ const Dashboard = () => {
       return 'Invalid Date'
     }
   }
-  if (loading && !user) return <p>Loading dashboard...</p>;
+
+   // Ensuring proxyBookingLink is valid
+   const renderBookNowButton = (classItem) => {
+    if (!classItem.proxyBookingLink) {
+      handleError('No booking link available.');
+      return null;
+    }
+
+    return (
+      <div className="mt-3">
+        <a
+          href={classItem.proxyBookingLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-white bg-blue-600 hover:bg-blue-700 font-medium px-4 py-2 rounded-lg block text-center"
+        >
+          📅 Book Now
+        </a>
+      </div>
+    );
+  };
+
+
+  if (loading && !user) return <p>Loading dashboard...</p>
 
   if (error) return <p className="text-red-600">{error}</p>
 
@@ -403,7 +430,8 @@ const Dashboard = () => {
                         </div>
                       ) : (
                         <p className="flex items-center">
-                          ✅ <span className="ml-2">Applicable for all </span> <span> "Tutoring" page services</span>
+                          ✅ <span className="ml-2">Applicable for all </span>{' '}
+                          <span> "Tutoring" page services</span>
                         </p>
                       )}
                     </div>
@@ -564,19 +592,8 @@ const Dashboard = () => {
                       <strong>🕒 Remaining Sessions:</strong> {session.remainingSessions}
                     </p>
 
-                    {/* ✅ Show "Book Now" Button if bookingLink Exists */}
-                    {session.proxyBookingLink && (
-                      <div className="mt-3">
-                        <a
-                          href={session.proxyBookingLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-white bg-blue-600 hover:bg-blue-700 font-medium px-4 py-2 rounded-lg block text-center"
-                        >
-                          📅 Book Now
-                        </a>
-                      </div>
-                    )}
+                     {/* Render "Book Now" button only if proxyBookingLink is available */}
+                  {renderBookNowButton(classItem)}
                   </div>
                 ))}
               </div>

@@ -74,12 +74,12 @@ const CheckoutPage = () => {
     }
   }, [navigate])
 
- // ✅ Function to clear the cart from localStorage and state
+  // ✅ Function to clear the cart from localStorage and state
 const clearCart = () => {
   console.log("🛒 Clearing Cart...");
 
-  // Reset State using setCartItems (since you are using this state for cart items)
-  setCartItems([]); // Reset cart state
+  // Reset State
+  setCart([]);
   
   // Clear both 'cart' and 'cartItems' from localStorage
   localStorage.removeItem("cart"); // Remove 'cart' key
@@ -361,14 +361,20 @@ const clearCart = () => {
 
       setPaymentIntentId(data.id)
       setClientSecret(data.clientSecret)
-// Clear Cart after successful Stripe Payment
-clearCart()
+
       return data.clientSecret
     } catch (error) {
       console.error('❌ Payment Intent Error:', error)
       toast.error(`Payment Error: ${error.message}`)
       return null
     }
+  }
+
+  const clearCartAfterPayment = () => {
+    console.log('🛒 Clearing Cart from LocalStorage...')
+    localStorage.setItem('cartItems', JSON.stringify([])) // 🛑 Ensure it's empty
+    setCartItems([])
+    window.dispatchEvent(new Event('storage'))
   }
 
   const handlePaymentSuccess = async () => {
