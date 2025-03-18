@@ -3,6 +3,7 @@ const Payment = require('../models/Payment')
 const Register = require('../models/registerModel') // Ensure Register Model is imported
 const sendEmail = require('../utils/emailSender')
 const paypalClient = require('../config/paypal')
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
 
 // ✅ Define Zoom Course Links
 const zoomCourseMapping = [
@@ -185,9 +186,9 @@ exports.captureOrder = async (req, res) => {
     if (!captureResponse.result || captureResponse.result.status !== 'COMPLETED') {
       console.error('❌ PayPal Capture Failed - Status:', captureResponse.result.status)
       return res
-          .status(400)
-          .json({ error: 'Payment capture failed', details: captureResponse.result })
-  }
+        .status(400)
+        .json({ error: 'Payment capture failed', details: captureResponse.result })
+    }
 
     const captureDetails = captureResponse.result.purchase_units[0].payments?.captures?.[0]
 
@@ -385,21 +386,37 @@ exports.captureOrder = async (req, res) => {
 
     console.log('📧 Sending Email with Zoom Links:', zoomLinks)
     console.log('🎟 Sending Email with Coupons:', appliedCoupons)
-    const proxyBaseUrl = 'https://backend-production-cbe2.up.railway.app/api/proxy-calendly';
+
+    // Add this code to check for existing coupons before inserting them:
+    if (appliedCoupons.length > 0) {
+      for (let coupon of appliedCoupons) {
+        const existingCoupon = await Register.findOne({ 'coupons.code': coupon.code })
+        if (existingCoupon) {
+          console.log(`Coupon ${coupon.code} already exists. Skipping insert.`)
+        } else {
+          // Proceed with inserting coupon into the user's record
+          await Register.findByIdAndUpdate(user._id, {
+            $push: { coupons: coupon },
+          })
+          console.log(`Coupon ${coupon.code} added successfully.`)
+        }
+      }
+    }
+    const proxyBaseUrl = 'https://backend-production-cbe2.up.railway.app/api/proxy-calendly'
 
     const purchasedItems = user.cartItems.map((item) => {
-      const formattedItemName = item.name.trim().toLowerCase();
-    
+      const formattedItemName = item.name.trim().toLowerCase()
+
       // ✅ Fetch Session Count & Ensure Defaults
-      const sessionCount = sessionMapping[formattedItemName] ?? 0;
-      const remainingSessions = sessionMapping[formattedItemName] ?? 0;
-    
+      const sessionCount = sessionMapping[formattedItemName] ?? 0
+      const remainingSessions = sessionMapping[formattedItemName] ?? 0
+
       // ✅ Generate Proxy URL Instead of Calendly Link
-      const originalCalendlyLink = calendlyMapping[formattedItemName] || null;
+      const originalCalendlyLink = calendlyMapping[formattedItemName] || null
       const proxyBookingLink = originalCalendlyLink
         ? `${proxyBaseUrl}?userId=${user._id}&session=${encodeURIComponent(item.name)}`
-        : null;
-    
+        : null
+
       return {
         name: item.name,
         sessionCount,
@@ -407,16 +424,16 @@ exports.captureOrder = async (req, res) => {
         bookingLink: originalCalendlyLink, // ✅ Keep Original Link (Hidden)
         proxyBookingLink: proxyBookingLink, // ✅ Use Proxy URL in UI
         status: 'Active',
-      };
-    });
-    
+      }
+    })
+
     // ✅ Save Purchased Classes in Database
     if (purchasedItems.length > 0) {
       await Register.findByIdAndUpdate(
         user._id,
         { $push: { purchasedClasses: { $each: purchasedItems } } },
         { new: true },
-      );
+      )
     }
     // ✅ **Extract Correct Calendly Booking Links for Email**
     let calendlyLinks = purchasedItems
@@ -520,8 +537,8 @@ exports.captureOrder = async (req, res) => {
     res.json({
       message: 'Payment captured successfully!',
       payment: captureResponse.result,
-      redirectTo: '/dashboard' // ✅ Ensure this is included
-  });
+      redirectTo: '/dashboard', // ✅ Ensure this is included
+    })
   } catch (error) {
     console.error('❌ Error Capturing PayPal Payment:', error)
     res.status(500).json({ error: 'Internal Server Error', details: error.message || error })
@@ -542,22 +559,24 @@ function generateEmailHtml(user, zoomLinks, userCoupons, calendlyLinks, hasCommo
               <h3 style="color: #007bff;">🔗 Available Courses & Registration Links:</h3>
               <ul style="list-style-type: none; padding: 0;">`
 
-  const proxyZoomBaseUrl = 'https://backend-production-cbe2.up.railway.app/api/proxy-zoom';
+  const proxyZoomBaseUrl = 'https://backend-production-cbe2.up.railway.app/api/proxy-zoom'
 
-if (zoomLinks.length > 0) {
-  detailsHtml += `<h3>🔗 Your Course Zoom Links:</h3><ul>`;
+  if (zoomLinks.length > 0) {
+    detailsHtml += `<h3>🔗 Your Course Zoom Links:</h3><ul>`
 
-  zoomLinks.forEach((course) => {
-    // ✅ Generate Proxy Zoom URL
-    const proxyLink = `${proxyZoomBaseUrl}?userId=${user._id}&session=${encodeURIComponent(course.name)}`;
+    zoomLinks.forEach((course) => {
+      // ✅ Generate Proxy Zoom URL
+      const proxyLink = `${proxyZoomBaseUrl}?userId=${user._id}&session=${encodeURIComponent(
+        course.name,
+      )}`
 
-    detailsHtml += `<li>📚 <b>${course.name}</b> – 
+      detailsHtml += `<li>📚 <b>${course.name}</b> – 
       <a href="${proxyLink}" target="_blank"><b>Register Here</b></a> (One-time Access)
-    </li>`;
-  });
+    </li>`
+    })
 
-  detailsHtml += `</ul>`;
-}
+    detailsHtml += `</ul>`
+  }
 
   // ✅ Special Section for "Common Core for Parents"
   if (hasCommonCore) {

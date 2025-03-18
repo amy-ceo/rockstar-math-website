@@ -83,7 +83,7 @@ const Dashboard = () => {
         // ✅ Ensure bookingLink is included
         const updatedClasses = (data.purchasedClasses || []).map((cls) => ({
           ...cls,
-          bookingLink: cls.bookingLink || null,
+          proxyBookingLink: cls.proxyBookingLink || null,
         }))
 
         setPurchasedClasses(updatedClasses)
@@ -172,7 +172,7 @@ const Dashboard = () => {
           .filter((session) => !excludedPlans.includes(session.name))
           .map((session) => ({
             ...session,
-            bookingLink: session.bookingLink || null, // ✅ Ensure bookingLink is present
+            proxyBookingLink: session.proxyBookingLink || null, // ✅ Ensure bookingLink is present
           }))
 
         setRemainingSessions(filteredSessions)

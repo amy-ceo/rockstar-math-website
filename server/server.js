@@ -178,11 +178,11 @@ app.post("/api/verify-otp", (req, res) => {
   
       console.log("🔧 Running MongoDB Index Fix...");
   
-      // 🛑 Drop existing `coupons.code_1` index
+      // Drop existing coupon index and recreate it with sparse option
       await db.collection("registers").dropIndex("coupons.code_1").catch(err => console.warn("⚠️ No existing index for coupons.code"));
       console.log("✅ Dropped old coupons.code_1 index");
   
-      // ✅ Recreate `coupons.code` index with sparse
+      // Recreate coupons.code index with sparse
       await db.collection("registers").createIndex({ "coupons.code": 1 }, { unique: true, sparse: true });
       console.log("✅ Created new sparse index on coupons.code");
   

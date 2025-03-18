@@ -702,6 +702,24 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
       console.log('📅 Available Calendly Links:', Object.keys(calendlyMapping))
       console.log('📧 Sending Email with Zoom Links & Calendly Links:', zoomLinks, calendlyLinks)
       console.log('🎟 Sending Email with Coupons:', appliedCoupons)
+
+      // Assume you have already populated appliedCoupons array with relevant coupons
+
+      if (appliedCoupons.length > 0) {
+        for (let coupon of appliedCoupons) {
+          // Check if this coupon already exists in the user's coupons array
+          const existingCoupon = await Register.findOne({ 'coupons.code': coupon.code })
+          if (existingCoupon) {
+            console.log(`Coupon ${coupon.code} already exists. Skipping insert.`)
+          } else {
+            // Proceed with inserting coupon into the user's record
+            await Register.findByIdAndUpdate(user._id, {
+              $push: { coupons: coupon },
+            })
+            console.log(`Coupon ${coupon.code} added successfully.`)
+          }
+        }
+      }
       const emailHtml = generateEmailHtml(
         user,
         zoomLinks,
