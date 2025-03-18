@@ -222,14 +222,14 @@ exports.registerUser = async (req, res) => {
 
     //     // ✅ Send Welcome Email
     //     try {
-    //       const subject = `🎉 Welcome to Rockstar Math, ${newUser.username}!`
+    //       const subject = `🎉 Welcome to RockstarMath, ${newUser.username}!`
     //       const htmlContent = `
     //   <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
 
     //     <div style="text-align: center; padding-bottom: 20px;">
-    //       <img src="https://your-logo-url.com/logo.png" alt="Rockstar Math" style="width: 150px; margin-bottom: 10px;">
+    //       <img src="https://your-logo-url.com/logo.png" alt="RockstarMath" style="width: 150px; margin-bottom: 10px;">
     //       <h2 style="color: #2C3E50;">🎉 Welcome, ${newUser.username}!</h2>
-    //       <p style="font-size: 16px;">We're thrilled to have you join <b>Rockstar Math</b>! 🚀</p>
+    //       <p style="font-size: 16px;">We're thrilled to have you join <b>RockstarMath</b>! 🚀</p>
     //     </div>
 
     //     <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
@@ -262,7 +262,7 @@ exports.registerUser = async (req, res) => {
     //     <p style="text-align: center; font-size: 14px; color: #555; margin-top: 20px;">
     //       Best regards,<br>
     //       <b>Amy Gemme</b><br>
-    //       Rockstar Math Tutoring<br>
+    //       RockstarMath Tutoring<br>
     //       📞 510-410-4963
     //     </p>
     //   </div>

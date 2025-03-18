@@ -41,7 +41,7 @@ const AdminLogin = () => {
 
       <div className="bg-white shadow-lg rounded-lg p-8 w-full max-w-md">
         <div className="text-center">
-          <img src="/images/logo.png" alt="Rockstar Math" className="mx-auto w-52 mb-4" />
+          <img src="/images/logo.png" alt="RockstarMath" className="mx-auto w-52 mb-4" />
           <h2 className="text-2xl font-bold">Admin Login</h2>
           <p className="text-gray-500">Welcome back! Please log in to access your admin dashboard.</p>
         </div>

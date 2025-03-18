@@ -9,7 +9,7 @@ function Milestones() {
                 {/* Header */}
                 <div className="w-full text-center lg:text-left mb-12">
                     <h1 className="text-4xl font-bold text-gray-800">
-                        Amy’s / Rockstar Math Milestones
+                        Amy’s / RockstarMath Milestones
                     </h1>
                 </div>
 

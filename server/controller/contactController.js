@@ -24,25 +24,25 @@ exports.submitForm = async (req, res) => {
         });
 
         const mailOptions = {
-            from: '"Rockstar Math Team" rockstarmathtutoring@gmail.com', // Sender's email and name
+            from: '"RockstarMath Team" rockstarmathtutoring@gmail.com', // Sender's email and name
             to: email, // Recipient's email
-            subject: 'Thank You for Contacting Rockstar Math!',
+            subject: 'Thank You for Contacting RockstarMath!',
             text: `Dear ${fullName},
         
-        Thank you for reaching out to us at Rockstar Math! We’ve received your message and will get back to you within 24 hours. 
+        Thank you for reaching out to us at RockstarMath! We’ve received your message and will get back to you within 24 hours. 
         
         If you have any urgent queries, feel free to reply to this email.
         
         Best regards,  
-        The Rockstar Math Team`,
+        The RockstarMath Team`,
             html: `
                 <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #00008B;">
-                    <h2 style="color: #FFBF00;">Thank You for Contacting Rockstar Math!</h2>
+                    <h2 style="color: #FFBF00;">Thank You for Contacting RockstarMath!</h2>
                     <p>Dear <strong>${fullName}</strong>,</p>
                     <p>We’ve received your message and will get back to you within 24 hours.</p>
                     <p>If you have any urgent queries, feel free to reply to this email.</p>
                     <p style="margin-top: 20px;">Best regards,</p>
-                    <p><strong>The Rockstar Math Team</strong></p>
+                    <p><strong>The RockstarMath Team</strong></p>
                 </div>
             `,
         };

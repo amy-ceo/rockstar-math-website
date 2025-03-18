@@ -60,7 +60,7 @@ exports.requestWaitlist = async (req, res) => {
         </p>
         <p style="font-size: 16px; color: #4b5563; margin-top: 20px;">Best regards,</p>
         <p style="font-size: 16px; color: #111827; font-weight: bold; margin-top: 5px;">
-          Rockstar Math Team
+          RockstarMath Team
         </p>
       </div>
     `;

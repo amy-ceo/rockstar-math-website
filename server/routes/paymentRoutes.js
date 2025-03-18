@@ -30,9 +30,9 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
 
     // ✅ User Confirmation Email
     const userEmailContent = `
-      <h2>Skate Through Math with Rockstar Math! 🛹🚀</h2>
+      <h2>Skate Through Math with RockstarMath! 🛹🚀</h2>
       <p>Dear <b>${customerName}</b>,</p>
-      <p>You’ve just taken a big step toward committing to learning the math you'll need to reach your dreams—welcome to <b>Rockstar Math</b>! 🎉</p>
+      <p>You’ve just taken a big step toward committing to learning the math you'll need to reach your dreams—welcome to <b>RockstarMath</b>! 🎉</p>
       <p>With the right support, you can stay on track, overcome challenges, and skate through with confidence.</p>
 
       <h3>📌 Here’s how you can stay on track:</h3>
@@ -43,7 +43,7 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
       </ul>
 
       <p>Skateboarding and math have something in common—it’s not about never falling, but about getting back up, pushing forward, and mastering it.</p>
-      <p>With <b>Rockstar Math</b> by your side, you’ll have the support you need to keep rolling toward your goals. 🚀</p>
+      <p>With <b>RockstarMath</b> by your side, you’ll have the support you need to keep rolling toward your goals. 🚀</p>
 
       <h3>🔹 Payment Summary:</h3>
       <p><b>Plan:</b> ${purchasedPlan}</p>
@@ -52,10 +52,10 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
       <br/>
       <p>We’re excited to be part of your journey.</p>
       <p>Best,</p>
-      <p><b>Amy Gemme</b><br/>Rockstar Math Team<br/>📞 510-410-4963<br/><a href="https://www.rockstarmath.com">www.rockstarmath.com</a></p>
+      <p><b>Amy Gemme</b><br/>RockstarMath Team<br/>📞 510-410-4963<br/><a href="https://www.rockstarmath.com">www.rockstarmath.com</a></p>
     `;
 
-    await sendEmail(userEmail, "Welcome to Rockstar Math! 🚀", userEmailContent);
+    await sendEmail(userEmail, "Welcome to RockstarMath! 🚀", userEmailContent);
 
     // ✅ Admin Notification Email
     const adminEmailContent = `

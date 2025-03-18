@@ -13,7 +13,7 @@ const sendTestEmail = async () => {
     });
 
     const info = await transporter.sendMail({
-      from: '"Rockstar Math" consultant2049@gmail.com',
+      from: '"RockstarMath" consultant2049@gmail.com',
       to: 'recipient_email@example.com', // Replace with a test email
       subject: 'Test Email',
       text: 'This is a test email!',

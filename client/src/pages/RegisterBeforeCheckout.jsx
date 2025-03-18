@@ -596,7 +596,7 @@ const RegisterBeforeCheckout = () => {
           <div className="bg-white p-8 rounded-lg shadow-2xl w-96 text-center">
             <h3 className="text-2xl font-bold text-gray-800">Webcam Attendance Agreement</h3>
             <p className="text-sm text-gray-600 mt-4 text-left">
-              Rockstar Math Webcam Attendance & Identity Verification Policy
+              RockstarMath Webcam Attendance & Identity Verification Policy
             </p>
             <ul className="text-left text-gray-600 text-sm mt-2">
               <li>
@@ -634,12 +634,12 @@ const RegisterBeforeCheckout = () => {
           <div className="bg-white p-8 rounded-lg shadow-2xl w-96 text-center">
             <h3 className="text-2xl font-bold text-gray-800">SMS Text Agreement</h3>
             <p className="text-sm text-gray-600 mt-4 text-left">
-              Rockstar Math SMS Notification & Alerts Agreement
+              RockstarMath SMS Notification & Alerts Agreement
             </p>
             <p className="text-left text-gray-600 text-sm mt-2">
               By providing your phone number during registration, you consent to receive SMS
               notifications, updates, and alerts related to your tutoring sessions, payment
-              confirmations, and important announcements from Rockstar Math.
+              confirmations, and important announcements from RockstarMath.
             </p>
             <p className="text-left text-gray-600 text-sm mt-2">
               <strong>Opt-Out Instructions:</strong>

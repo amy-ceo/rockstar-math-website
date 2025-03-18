@@ -488,14 +488,14 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
 
       // ✅ **Send Welcome Email**
       console.log(`📧 Sending Welcome Email to: ${userEmail}`)
-      let welcomeSubject = `🎉 Welcome to Rockstar Math, ${user.username}!`
+      let welcomeSubject = `🎉 Welcome to RockstarMath, ${user.username}!`
       let welcomeHtml = `
       <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
         
         <div style="text-align: center; padding-bottom: 20px;">
-          <img src="https://www.rockstarmath.com/images/logo.png" alt="Rockstar Math" style="width: 150px; margin-bottom: 10px;">
+          <img src="https://www.rockstarmath.com/images/logo.png" alt="RockstarMath" style="width: 150px; margin-bottom: 10px;">
         <h2 style="color: #2C3E50;">🎉 Welcome, ${user.username}!</h2>
-        <p style="font-size: 16px;">We're thrilled to have you join <b>Rockstar Math</b>! 🚀</p>
+        <p style="font-size: 16px;">We're thrilled to have you join <b>RockstarMath</b>! 🚀</p>
       </div>
 
       <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
@@ -521,7 +521,7 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
       <p style="text-align: center; font-size: 14px; color: #555; margin-top: 20px;">
         Best regards,<br>
         <b>Amy Gemme</b><br>
-        Rockstar Math Tutoring<br>
+        RockstarMath Tutoring<br>
         📞 510-410-4963
       </p>
     </div>
@@ -588,7 +588,7 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
           <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
             
             <div style="text-align: center; padding-bottom: 20px;">
-              <img src="https://www.rockstarmath.com/images/logo.png" alt="Rockstar Math" style="width: 150px; margin-bottom: 10px;">
+              <img src="https://www.rockstarmath.com/images/logo.png" alt="RockstarMath" style="width: 150px; margin-bottom: 10px;">
               <h2 style="color: #2C3E50;">🎉 Thank You for Your Purchase – Welcome to RockstarMath!</h2>
             </div>
         
@@ -709,7 +709,7 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
         calendlyLinks,
         hasCommonCore,
       )
-      await sendEmail(recipientEmails, '📚 Your Rockstar Math Purchase Details', '', emailHtml)
+      await sendEmail(recipientEmails, '📚 Your RockstarMath Purchase Details', '', emailHtml)
       console.log('✅ Purchase confirmation email sent successfully!')
       return res.status(200).json({ message: 'Purchase updated & all emails sent!' })
     } catch (error) {

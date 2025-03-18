@@ -23,16 +23,16 @@ const crypto = require('crypto')
 //     await newUser.save()
 
 //     // Send confirmation email
-//     const subject = 'Welcome to Rockstar Math!'
+//     const subject = 'Welcome to RockstarMath!'
 //     const message = `
 //      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; background-color: #00008B; border: 1px solid #e0e0e0; border-radius: 10px;">
 //        <div style="text-align: center; padding: 10px;">
-//          <img src="https://scontent.flhe5-1.fna.fbcdn.net/v/t39.30808-6/442503438_957788876133590_2909592720330641516_n.jpg?_nc_cat=101&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=_dgNhmagikUQ7kNvgF7yFq6&_nc_oc=Adhr6WCD8Nl5hiM9AQ1natQbVg_toEMzMqVnjaMr__V4XoY-MX0a4LKwhYr5eJigaBgxjmT1aETfgLzr7M-ieaVR&_nc_zt=23&_nc_ht=scontent.flhe5-1.fna&_nc_gid=A4Uh5Hdlx5SDIa1YcpDnRa3&oh=00_AYDj2m22g0-YYSOi9qqOvw0EWXp14czCwIw4M6zGGPB0cQ&oe=679A2D99" alt="Rockstar Math" style="height: 50px; margin-bottom: 20px;" />
+//          <img src="https://scontent.flhe5-1.fna.fbcdn.net/v/t39.30808-6/442503438_957788876133590_2909592720330641516_n.jpg?_nc_cat=101&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=_dgNhmagikUQ7kNvgF7yFq6&_nc_oc=Adhr6WCD8Nl5hiM9AQ1natQbVg_toEMzMqVnjaMr__V4XoY-MX0a4LKwhYr5eJigaBgxjmT1aETfgLzr7M-ieaVR&_nc_zt=23&_nc_ht=scontent.flhe5-1.fna&_nc_gid=A4Uh5Hdlx5SDIa1YcpDnRa3&oh=00_AYDj2m22g0-YYSOi9qqOvw0EWXp14czCwIw4M6zGGPB0cQ&oe=679A2D99" alt="RockstarMath" style="height: 50px; margin-bottom: 20px;" />
 //        </div>
 //        <div style="background-color: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);">
-//          <h1 style="color: #333333; text-align: center;">Welcome to Rockstar Math!</h1>
+//          <h1 style="color: #333333; text-align: center;">Welcome to RockstarMath!</h1>
 //          <p style="color: #555555; font-size: 16px; line-height: 1.6;">
-//            Congratulations! You have successfully created an account with <strong>Rockstar Math</strong>.
+//            Congratulations! You have successfully created an account with <strong>RockstarMath</strong>.
 //          </p>
 //          <p style="color: #555555; font-size: 16px; line-height: 1.6;">
 //            Explore step-by-step math courses, enhance your skills, and achieve results like never before.
@@ -47,12 +47,12 @@ const crypto = require('crypto')
 //          </p>
 //        </div>
 //        <div style="text-align: center; margin-top: 20px; font-size: 12px; color: #999999;">
-//          © 2025 Rockstar Math. All rights reserved.
+//          © 2025 RockstarMath. All rights reserved.
 //        </div>
 //      </div>
 //    `
 
-//     await sendEmail(email, subject, 'Welcome to Rockstar Math!', message)
+//     await sendEmail(email, subject, 'Welcome to RockstarMath!', message)
 
 //     res.status(201).json({ message: 'User registered successfully' })
 //   } catch (error) {
@@ -130,7 +130,7 @@ exports.forgotPassword = async (req, res) => {
     const message = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; background-color: #00008B; border: 1px solid #e0e0e0; border-radius: 10px;">
       <div style="text-align: center; padding: 10px;">
-        <img src="https://scontent.flhe5-1.fna.fbcdn.net/v/t39.30808-6/442503438_957788876133590_2909592720330641516_n.jpg?_nc_cat=101&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=_dgNhmagikUQ7kNvgF7yFq6&_nc_oc=Adhr6WCD8Nl5hiM9AQ1natQbVg_toEMzMqVnjaMr__V4XoY-MX0a4LKwhYr5eJigaBgxjmT1aETfgLzr7M-ieaVR&_nc_zt=23&_nc_ht=scontent.flhe5-1.fna&_nc_gid=A4Uh5Hdlx5SDIa1YcpDnRa3&oh=00_AYDj2m22g0-YYSOi9qqOvw0EWXp14czCwIw4M6zGGPB0cQ&oe=679A2D99" alt="Rockstar Math" style="height: 50px; margin-bottom: 20px;" alt="Rockstar Math" style="height: 50px; margin-bottom: 20px;" />
+        <img src="https://scontent.flhe5-1.fna.fbcdn.net/v/t39.30808-6/442503438_957788876133590_2909592720330641516_n.jpg?_nc_cat=101&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=_dgNhmagikUQ7kNvgF7yFq6&_nc_oc=Adhr6WCD8Nl5hiM9AQ1natQbVg_toEMzMqVnjaMr__V4XoY-MX0a4LKwhYr5eJigaBgxjmT1aETfgLzr7M-ieaVR&_nc_zt=23&_nc_ht=scontent.flhe5-1.fna&_nc_gid=A4Uh5Hdlx5SDIa1YcpDnRa3&oh=00_AYDj2m22g0-YYSOi9qqOvw0EWXp14czCwIw4M6zGGPB0cQ&oe=679A2D99" alt="RockstarMath" style="height: 50px; margin-bottom: 20px;" alt="RockstarMath" style="height: 50px; margin-bottom: 20px;" />
       </div>
       <div style="background-color: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);">
         <h2 style="color: #333333; text-align: center;">Password Reset Request</h2>
@@ -151,7 +151,7 @@ exports.forgotPassword = async (req, res) => {
         </p>
       </div>
       <div style="text-align: center; margin-top: 20px; font-size: 12px; color: #999999;">
-        © 2025 Rockstar Math. All rights reserved.
+        © 2025 RockstarMath. All rights reserved.
       </div>
     </div>
   `;

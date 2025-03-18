@@ -136,7 +136,7 @@ const Services = () => {
     <>
       {/* ✅ Hero Section */}
       <div className="bg-deepBlue py-6 text-white mt-16">
-        <h1 className="text-2xl font-bold text-center">Rockstar Math Tutoring Services</h1>
+        <h1 className="text-2xl font-bold text-center">RockstarMath Tutoring Services</h1>
         <p className="text-center">Learn, Excel, Achieve!</p>
       </div>
 

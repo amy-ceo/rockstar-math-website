@@ -22,7 +22,7 @@ const createZoomMeeting = async (topic, duration, startTime) => {
     duration: duration || 60, // Duration in minutes
     start_time: startTime || new Date().toISOString(), // Start time in ISO format
     timezone: "America/New_York",
-    agenda: "Rockstar Math Session",
+    agenda: "RockstarMath Session",
     settings: {
       host_video: true,
       participant_video: true,
