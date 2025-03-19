@@ -251,6 +251,10 @@ exports.cancelZoomSession = async (req, res) => {
         source: "zoom", // ✅ Identify this as a Zoom session
       };
 
+      if (!user.archivedClasses) {
+        user.archivedClasses = []; // ✅ Ensure array exists
+      }
+
       user.archivedClasses.push(archivedSession);
       user.zoomBookings.splice(sessionIndex, 1); // ✅ Remove session from zoomBookings
     } else {
@@ -266,6 +270,7 @@ exports.cancelZoomSession = async (req, res) => {
     await user.save();
 
     console.log("✅ Zoom session canceled and archived successfully!");
+    console.log("✅ Updated archivedClasses:", user.archivedClasses); // 🛠️ Debugging log
 
     res.status(200).json({
       message: "Zoom session canceled and archived successfully",
