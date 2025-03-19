@@ -1,47 +1,49 @@
-import React, { useEffect, useState } from "react";
-import { useAuth } from "../context/AuthContext";
-import { FaUndo, FaArchive, FaClock } from "react-icons/fa";
-import toast, { Toaster } from "react-hot-toast"; // ✅ React-Hot-Toast for notifications
+import React, { useEffect, useState } from 'react'
+import { useAuth } from '../context/AuthContext'
+import { FaUndo, FaArchive, FaClock } from 'react-icons/fa'
+import toast, { Toaster } from 'react-hot-toast' // ✅ React-Hot-Toast for notifications
 
 const Archive = () => {
-  const { users } = useAuth(); // ✅ Get logged-in user from AuthContext
-  const [archivedClasses, setArchivedClasses] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const { users } = useAuth() // ✅ Get logged-in user from AuthContext
+  const [archivedClasses, setArchivedClasses] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   // ✅ Fetch Archived Classes
+  // ✅ Fetch Archived Classes (Calendly & Zoom)
   const fetchArchivedClasses = async () => {
     if (!users || !users._id) {
-      console.error("❌ User ID not available!");
-      setError("User authentication required.");
-      setLoading(false);
-      return;
+      console.error('❌ User ID not available!')
+      setError('User authentication required.')
+      setLoading(false)
+      return
     }
 
     try {
-      console.log("📡 Fetching archived classes for user:", users._id);
+      console.log('📡 Fetching archived classes for user:', users._id)
       const response = await fetch(
-        `https://backend-production-cbe2.up.railway.app/api/${users._id}/archived-classes`
-      );
-      const data = await response.json();
+        `https://backend-production-cbe2.up.railway.app/api/${users._id}/archived-classes`,
+      )
+      const data = await response.json()
 
-      if (!response.ok) throw new Error(data.message || "Failed to fetch archived data.");
+      if (!response.ok) throw new Error(data.message || 'Failed to fetch archived data.')
 
-      console.log("📥 Archived Classes Response:", data); // ✅ Debugging log
+      console.log('📥 Archived Classes Response:', data)
 
-      setArchivedClasses(data.archivedClasses || []);
-      setError("");
+      // ✅ Separate Calendly and Zoom Sessions
+      setArchivedClasses(data.archivedClasses || [])
+      setError('')
     } catch (error) {
-      console.error("❌ Error fetching archived data:", error);
-      setError("Error loading archived classes. Try again later.");
+      console.error('❌ Error fetching archived data:', error)
+      setError('Error loading archived classes. Try again later.')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   useEffect(() => {
-    fetchArchivedClasses();
-  }, [users]);
+    fetchArchivedClasses()
+  }, [users])
 
   // ✅ **Restore Function**
   // const handleRestore = async (className) => {
@@ -76,12 +78,11 @@ const Archive = () => {
 
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
-      <Toaster position="top-center" reverseOrder={false} /> {/* ✅ React-Hot-Toast */}
+      <Toaster position="top-center" reverseOrder={false} />
       <h3 className="text-3xl font-bold mb-6 text-gray-800 flex items-center gap-2">
         <FaArchive className="text-blue-500" /> Archived Classes & Expired Sessions
       </h3>
 
-      {/* ✅ Loading & Error Handling */}
       {loading ? (
         <p className="text-gray-600 text-lg">Loading archived data...</p>
       ) : error ? (
@@ -96,27 +97,35 @@ const Archive = () => {
               <h4 className="text-xl font-semibold text-gray-800">{classItem.name}</h4>
               <p className="text-gray-600 mt-1">{classItem.description}</p>
               <p className="text-gray-500 text-sm mt-2">
-                📅 Archived On:{" "}
+                📅 Archived On:{' '}
                 <strong>{new Date(classItem.archivedAt || Date.now()).toLocaleDateString()}</strong>
               </p>
 
-              {/* ✅ Calendly Booking Info (If Available) */}
-              {classItem.bookingLink && (
-                <p className="text-sm text-blue-600 mt-2 flex items-center gap-2">
-                  <FaClock className="text-gray-500" /> Expired Calendly Session:{" "}
-                  <a href={classItem.bookingLink} target="_blank" rel="noopener noreferrer" className="underline">
-                    View Details
-                  </a>
+              {/* ✅ Show if it was a Zoom Session */}
+              {classItem.source === 'zoom' && (
+                <p className="text-sm text-gray-600 mt-2 flex items-center gap-2">
+                  🎥 <span className="text-blue-600">Zoom Session</span>
                 </p>
               )}
 
-              {/* ✅ Restore Button */}
-              {/* <button
-                className="mt-4 bg-green-600 text-white py-2 px-4 rounded flex items-center gap-2 hover:bg-green-700 transition-all"
-                onClick={() => handleRestore(classItem.name)}
-              >
-                <FaUndo /> Restore
-              </button> */}
+              {/* ✅ Show if it was a Calendly Session */}
+              {classItem.source !== 'zoom' && (
+                <p className="text-sm text-blue-600 mt-2 flex items-center gap-2">
+                  <FaClock className="text-gray-500" /> Expired Calendly Session
+                </p>
+              )}
+
+              {/* ✅ Show Meeting Link if available */}
+              {classItem.zoomMeetingLink && (
+                <a
+                  href={classItem.zoomMeetingLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 underline mt-2 block"
+                >
+                  🔗 View Session Details
+                </a>
+              )}
             </div>
           ))}
         </div>
@@ -124,7 +133,7 @@ const Archive = () => {
         <p className="text-gray-500 text-lg">No archived classes or expired sessions found.</p>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default Archive;
+export default Archive

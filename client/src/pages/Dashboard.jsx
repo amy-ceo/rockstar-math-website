@@ -353,59 +353,67 @@ const Dashboard = () => {
     setShowZoomCancelPopup(true)
   }
 
-  // ✅ Cancel Zoom Session API Call
   const cancelZoomSession = async () => {
     if (!selectedZoomSession || !selectedZoomDate) {
-      toast.error('Invalid Zoom session details!')
-      return
+      toast.error("Invalid Zoom session details!");
+      return;
     }
-
+  
     try {
-      console.log('📡 Sending cancel request to API...', {
+      console.log("📡 Sending cancel request to API...", {
         userId: users._id,
         sessionId: selectedZoomSession,
         sessionDate: selectedZoomDate,
-      })
-
+      });
+  
       const response = await fetch(
         `https://backend-production-cbe2.up.railway.app/api/zoom/cancel-session`,
         {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             userId: users._id,
             sessionId: selectedZoomSession,
             sessionDate: selectedZoomDate,
           }),
-        },
-      )
-
-      const data = await response.json()
-      console.log('📥 API Response:', data)
-
+        }
+      );
+  
+      const data = await response.json();
+      console.log("📥 API Response:", data);
+  
       if (response.ok) {
-        toast.success('✅ Zoom Session Canceled!')
-
+        toast.success("✅ Zoom Session Canceled!");
+  
         // ✅ Remove the canceled session from the UI
         setZoomBookings((prev) =>
-          prev.map((session) =>
-            session._id === selectedZoomSession
-              ? {
+          prev
+            .map((session) => {
+              if (session._id === selectedZoomSession) {
+                return {
                   ...session,
-                  sessionDates: session.sessionDates.filter((date) => date !== selectedZoomDate),
-                }
-              : session,
-          ),
-        )
-
-        setShowZoomCancelPopup(false)
+                  sessionDates: session.sessionDates.filter(
+                    (date) => date !== selectedZoomDate
+                  ),
+                };
+              }
+              return session;
+            })
+            .filter((session) => session.sessionDates.length > 0) // Remove empty sessions
+        );
+  
+        // ✅ Update Archived Classes
+        setArchivedClasses(data.archivedClasses);
+  
+        setShowZoomCancelPopup(false);
       } else {
-        toast.error('❌ Error canceling session.')
+        toast.error("❌ Error canceling session.");
       }
     } catch (error) {
-      console.error('❌ Error canceling Zoom session:', error.message)
+      console.error("❌ Error canceling Zoom session:", error.message);
     }
-  }
+  };
+  
   const renderBookNowButton = (session) => {
     console.log('Session Data:', session) // Check the session data
 

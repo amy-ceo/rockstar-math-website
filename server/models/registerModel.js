@@ -71,12 +71,17 @@ const couponSchema = new mongoose.Schema({
   },
 })
 
-// ✅ Archived Classes Schema (Same as purchasedClasses)
+// ✅ Archived Classes Schema (Now Supports Zoom & Calendly)
 const archivedClassSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  description: { type: String },
-  archivedAt: { type: Date, default: Date.now },
-})
+  name: { type: String, required: true }, // Class Name
+  description: { type: String }, // Additional Notes
+  archivedAt: { type: Date, default: Date.now }, // Archive Date
+  sessionDate: { type: Date }, // ✅ Store the exact session date
+  zoomMeetingLink: { type: String, default: null }, // ✅ Store Zoom link if it's a Zoom session
+  calendlyBookingLink: { type: String, default: null }, // ✅ Store Calendly link if it's a Calendly session
+  source: { type: String, enum: ["zoom", "calendly"], required: true }, // ✅ Identify session type
+});
+
 
 // ✅ Define Schema
 const RegisterSchema = new mongoose.Schema(
@@ -113,8 +118,9 @@ const RegisterSchema = new mongoose.Schema(
     // ✅ Password Reset Fields
     resetPasswordToken: { type: String },
     resetPasswordExpires: { type: Date },
-    // ✅ Archived Classes (New Feature)
-    archivedClasses: [purchasedClassSchema], // ✅ Archived Classes
+  
+    // ✅ Archived Classes (Now Supports Zoom & Calendly)
+    archivedClasses: [archivedClassSchema], // ✅ Now Includes Zoom & Calendly
     // ✅ Store User Coupons
     coupons: [couponSchema],
     // ✅ New Separate Zoom Bookings
