@@ -282,7 +282,6 @@ const CheckoutPage = () => {
   const handleZeroAmount = () => {
     toast.error('Cannot process a payment of $0.00!')
   }
-
   const createPaymentIntent = async () => {
     if (total <= 0) {
       handleZeroAmount();
@@ -299,12 +298,23 @@ const CheckoutPage = () => {
       const orderId = `order_${Date.now()}`;
       const currency = 'usd';
   
+      // ✅ Fix: Ensure cart items are properly formatted before sending
+      const formattedCartItems = cartItems.map((item) => ({
+        id: item.id || `prod_${Math.random().toString(36).substring(7)}`, // 🔹 Ensure each item has a valid ID
+        name: item.name,
+        description: item.description || 'No description available',
+        price: String(item.price), // 🔥 Convert price to string to avoid serialization issues
+        currency: item.currency || 'USD',
+        quantity: item.quantity || 1, // ✅ Ensure quantity is present
+      }));
+  
       console.log('🔹 Sending Payment Request:', {
         amount: total,
         currency,
         userId: user._id,
         orderId,
         userEmail: user.billingEmail || 'no-email@example.com', // ✅ Ensure user email is included
+        cartItems: formattedCartItems, // ✅ Fix: Send formatted cart items
       });
   
       // Step 1: Send Payment Request to Create Payment Intent
@@ -317,6 +327,7 @@ const CheckoutPage = () => {
           userId: user._id,
           orderId,
           userEmail: user.billingEmail || 'no-email@example.com', // ✅ Ensure user email is included
+          cartItems: formattedCartItems, // ✅ Fix: Send full cart items array
         }),
       });
   
@@ -330,10 +341,6 @@ const CheckoutPage = () => {
   
       setPaymentIntentId(data.id);
       setClientSecret(data.clientSecret);
-  
-      // Step 2: Clear cart after payment intent is created
-      clearCarts();
-  
       return data.clientSecret;
     } catch (error) {
       console.error('❌ Payment Intent Error:', error);

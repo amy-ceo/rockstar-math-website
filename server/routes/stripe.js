@@ -204,85 +204,22 @@ router.get('/get-products', async (req, res) => {
   }
 })
 
-// router.post('/create-payment-intent', async (req, res) => {
-//   try {
-//     let { amount, currency, userId, orderId, cartItems, userEmail } = req.body;
-//     console.log('🔹 Received Payment Request:', {
-//       amount,
-//       currency,
-//       userId,
-//       orderId,
-//       cartItems,
-//       userEmail,
-//     });
-
-//     // Validate required fields
-//     if (!userId || !orderId || !cartItems || cartItems.length === 0) {
-//       console.error('❌ Missing required fields:', { userId, orderId, cartItems });
-//       return res.status(400).json({ error: 'Missing required fields: userId, orderId, cartItems.' });
-//     }
-//     if (!amount || isNaN(amount) || amount <= 0) {
-//       console.error('❌ Invalid amount received:', amount);
-//       return res.status(400).json({ error: 'Invalid amount. Must be greater than 0.' });
-//     }
-//     amount = Math.round(amount * 100); // Convert to cents
-//     const supportedCurrencies = ['usd', 'eur', 'gbp', 'cad', 'aud'];
-//     if (!currency || !supportedCurrencies.includes(currency.toLowerCase())) {
-//       console.error('❌ Unsupported currency:', currency);
-//       return res.status(400).json({ error: 'Unsupported currency. Use USD, EUR, GBP, etc.' });
-//     }
-
-//     // Prepare metadata
-//     const metadata = {
-//       userId: String(userId),
-//       orderId: String(orderId),
-//       userEmail: userEmail || 'no-email@example.com',
-//       cartSummary: cartItems.map((item) => item.name).join(', '),
-//       cartItemIds: JSON.stringify(cartItems.map((item) => item.id)),
-//       bookingLinks: JSON.stringify(cartItems.map((item) => calendlyMapping[item.name] || null)),
-//     };
-
-//     console.log('📡 Sending Payment Intent with Metadata:', metadata);
-
-//     // Create Payment Intent
-//     const paymentIntent = await stripe.paymentIntents.create({
-//       amount: amount,
-//       currency: currency.toLowerCase(),
-//       payment_method_types: ['card'],
-//       metadata,
-//     });
-
-//     if (!paymentIntent.client_secret) {
-//       console.error('❌ Missing client_secret in response:', paymentIntent);
-//       return res.status(500).json({ error: 'Payment Intent creation failed. No client_secret returned.' });
-//     }
-
-//     console.log(`✅ PaymentIntent Created: ${paymentIntent.id} for User: ${userId}`);
-   
-//     // Return response with the clientSecret for frontend
-//     res.json({ clientSecret: paymentIntent.client_secret, id: paymentIntent.id, clearCart: true });
-
-//   } catch (error) {
-//     console.error('❌ Stripe Payment Intent Error:', error);
-//     res.status(500).json({ error: 'Payment creation failed. Please try again later.' });
-//   }
-// });
-
 router.post('/create-payment-intent', async (req, res) => {
   try {
-    let { amount, currency, userId, orderId, userEmail } = req.body;
+    let { amount, currency, userId, orderId, cartItems, userEmail } = req.body;
     console.log('🔹 Received Payment Request:', {
       amount,
       currency,
       userId,
       orderId,
+      cartItems,
       userEmail,
     });
 
     // Validate required fields
-    if (!userId || !orderId) {
-      console.error('❌ Missing required fields:', { userId, orderId });
-      return res.status(400).json({ error: 'Missing required fields: userId, orderId.' });
+    if (!userId || !orderId || !cartItems || cartItems.length === 0) {
+      console.error('❌ Missing required fields:', { userId, orderId, cartItems });
+      return res.status(400).json({ error: 'Missing required fields: userId, orderId, cartItems.' });
     }
     if (!amount || isNaN(amount) || amount <= 0) {
       console.error('❌ Invalid amount received:', amount);
@@ -295,11 +232,14 @@ router.post('/create-payment-intent', async (req, res) => {
       return res.status(400).json({ error: 'Unsupported currency. Use USD, EUR, GBP, etc.' });
     }
 
-    // Prepare metadata without cart items
+    // Prepare metadata
     const metadata = {
       userId: String(userId),
       orderId: String(orderId),
       userEmail: userEmail || 'no-email@example.com',
+      cartSummary: cartItems.map((item) => item.name).join(', '),
+      cartItemIds: JSON.stringify(cartItems.map((item) => item.id)),
+      bookingLinks: JSON.stringify(cartItems.map((item) => calendlyMapping[item.name] || null)),
     };
 
     console.log('📡 Sending Payment Intent with Metadata:', metadata);
@@ -338,7 +278,6 @@ router.post('/create-payment-intent', async (req, res) => {
     res.status(500).json({ error: 'Payment creation failed. Please try again later.' });
   }
 });
-
 
 
 router.post('/capture-stripe-payment', async (req, res) => {
@@ -416,8 +355,7 @@ router.post('/capture-stripe-payment', async (req, res) => {
     } catch (purchaseError) {
       console.error('❌ Error calling addPurchasedClass API:', purchaseError)
     }
-
-    // After capturing payment, clear the cart
+    // After capturing payment
     console.log('Cart clearing triggered for user:', user._id)
     const updatedUser = await Register.findByIdAndUpdate(
       user._id,
@@ -436,7 +374,6 @@ router.post('/capture-stripe-payment', async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error', details: error.message || error })
   }
 })
-
 
 router.get('/payment-details/:paymentIntentId', async (req, res) => {
   try {
