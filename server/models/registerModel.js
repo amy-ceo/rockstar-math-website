@@ -120,13 +120,13 @@ const RegisterSchema = new mongoose.Schema(
     resetPasswordExpires: { type: Date },
   
     // ✅ Archived Classes (Now Supports Zoom & Calendly)
-    archivedClasses: [archivedClassSchema], // ✅ Now Includes Zoom & Calendly
     // ✅ Store User Coupons
     coupons: [couponSchema],
     // ✅ New Separate Zoom Bookings
     zoomBookings: [zoomBookingSchema],
     // ✅ Purchased Classes & Services
     purchasedClasses: [purchasedClassSchema], // ✅ Includes both Zoom & Service purchases
+    archivedClasses: [archivedClassSchema], // ✅ Now Includes Zoom & Calendly
     // ✅ New: Calendly Bookings
     bookedSessions: [bookedSessionSchema], // ✅ This will store all booked sessions
     // ✅ Zoom Meeting Details (For Purchased Classes)
