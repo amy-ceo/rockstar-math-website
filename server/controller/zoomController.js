@@ -232,20 +232,24 @@ exports.cancelZoomSession = async (req, res) => {
       (date) => date !== sessionDate
     );
 
-    // ✅ Move to Archive if no dates left
+    // ✅ If no more session dates left, move to archive
     if (session.sessionDates.length === 0) {
       user.archivedClasses.push({
         name: session.eventName,
         description: "Zoom session was canceled by user",
         archivedAt: new Date(),
-        sessionDate: sessionDate, // Save the canceled session date
+        sessionDate: sessionDate, // ✅ Store canceled session date
         zoomMeetingLink: session.zoomMeetingLink,
-        source: "zoom", // ✅ Add source to differentiate Calendly vs Zoom
+        source: "zoom", // ✅ Identify this as a Zoom session
       });
 
-      user.zoomBookings.splice(sessionIndex, 1); // Remove session from zoomBookings
+      user.zoomBookings.splice(sessionIndex, 1); // ✅ Remove from zoomBookings
+    } else {
+      // ✅ Update the modified session back into zoomBookings
+      user.zoomBookings[sessionIndex] = session;
     }
 
+    // ✅ Save the updated user data
     await user.save();
 
     res.status(200).json({
@@ -257,5 +261,6 @@ exports.cancelZoomSession = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
 
 
