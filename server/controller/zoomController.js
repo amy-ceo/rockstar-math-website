@@ -274,7 +274,7 @@ exports.cancelZoomSession = async (req, res) => {
       user.zoomBookings.splice(sessionIndex, 1);
 
       // ✅ Explicitly update archivedClasses in Mongoose
-      user.set("archivedClasses", [...user.archivedClasses]);
+      user.set("archivedClasses", [...user.archivedClasses]); // 🔥 Force Mongoose to detect change
 
       user.markModified("archivedClasses");
       user.markModified("zoomBookings");
@@ -283,6 +283,8 @@ exports.cancelZoomSession = async (req, res) => {
       user.zoomBookings[sessionIndex] = session;
       user.markModified("zoomBookings");
     }
+
+    console.log("🔍 Before Saving - archivedClasses:", JSON.stringify(user.archivedClasses, null, 2));
 
     // ✅ Save updated user data
     await user.save();
