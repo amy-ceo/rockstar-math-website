@@ -428,7 +428,8 @@ exports.getArchivedClasses = async (req, res) => {
     const { userId } = req.params;
     console.log("📂 Fetching Archived Classes for User ID:", userId);
 
-    const user = await Register.findById(userId);
+    const user = await Register.findById(userId).select("archivedClasses"); // ✅ Fix: Fetch only archivedClasses
+
     if (!user) return res.status(404).json({ message: "User not found" });
 
     console.log("✅ Retrieved Archived Classes:", user.archivedClasses);
@@ -439,6 +440,7 @@ exports.getArchivedClasses = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
 
 // ✅ Restore a Class
 exports.restoreClass = async (req, res) => {
