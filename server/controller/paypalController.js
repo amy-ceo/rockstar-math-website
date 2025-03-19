@@ -3,6 +3,7 @@ const Payment = require('../models/Payment')
 const Register = require('../models/registerModel') // Ensure Register Model is imported
 const sendEmail = require('../utils/emailSender')
 const paypalClient = require('../config/paypal')
+const generateOneTimeZoomLink = require('../utils/zoomLinkGenerator')
 
 // ✅ Define Zoom Course Links
 const zoomCourseMapping = [
@@ -553,14 +554,11 @@ function generateEmailHtml(user, zoomLinks, userCoupons, calendlyLinks, hasCommo
     detailsHtml += `<h3>🔗 Your Course Zoom Links:</h3><ul>`
 
     zoomLinks.forEach((course) => {
+      const oneTimeLink = generateOneTimeZoomLink(user._id, course.link)
       // ✅ Generate Proxy Zoom URL
-      const proxyLink = `${proxyZoomBaseUrl}?userId=${user._id}&session=${encodeURIComponent(
-        course.name,
-      )}`
-
       detailsHtml += `<li>📚 <b>${course.name}</b> – 
-       <a href="${proxyLink}" target="_blank"><b>Register Here</b></a> (One-time Access)
-     </li>`
+      <a href="${oneTimeLink}" target="_blank"><b>Register Here</b></a> (One-time Access)
+    </li>`
     })
 
     detailsHtml += `</ul>`
