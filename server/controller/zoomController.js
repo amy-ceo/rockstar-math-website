@@ -29,9 +29,9 @@ const archiveExpiredZoomSessions = async () => {
               name: session.eventName,
               description: "Session date has passed",
               archivedAt: new Date(),
-              sessionDate: date, // Save expired session date
+              sessionDate: new Date(date).toISOString(), // ✅ Ensure correct format
               zoomMeetingLink: session.zoomMeetingLink,
-              source: "zoom", // ✅ Mark it as a Zoom session
+              source: "zoom", // ✅ Identify as Zoom session
             });
           });
         }
@@ -44,6 +44,11 @@ const archiveExpiredZoomSessions = async () => {
 
       user.zoomBookings = updatedZoomBookings;
       user.archivedClasses.push(...archivedSessions);
+
+      // ✅ Mark fields as modified
+      user.markModified("archivedClasses");
+      user.markModified("zoomBookings");
+
       await user.save();
     });
 
@@ -55,8 +60,6 @@ const archiveExpiredZoomSessions = async () => {
 
 // ✅ Run the function daily at midnight
 cron.schedule("0 0 * * *", archiveExpiredZoomSessions);
-
-
 exports.zoomWebhook = async (req, res) => {
   try {
     console.log("📢 Headers:", req.headers);
@@ -227,30 +230,41 @@ exports.cancelZoomSession = async (req, res) => {
 
     let session = user.zoomBookings[sessionIndex];
 
-    // ✅ Remove the specific session date from sessionDates
+    // ✅ Ensure sessionDate is in correct format (to avoid timezone issues)
+    const formattedSessionDate = new Date(sessionDate).toISOString();
+
+    // ✅ Remove only the matching session date
     session.sessionDates = session.sessionDates.filter(
-      (date) => date !== sessionDate
+      (date) => new Date(date).toISOString() !== formattedSessionDate
     );
 
-    // ✅ If no more session dates left, move to archive
+    // ✅ If no session dates left, move session to archive and remove it from zoomBookings
     if (session.sessionDates.length === 0) {
+      console.log("✅ No more session dates left, moving session to archive...");
+
       user.archivedClasses.push({
         name: session.eventName,
         description: "Zoom session was canceled by user",
         archivedAt: new Date(),
-        sessionDate: sessionDate, // ✅ Store canceled session date
+        sessionDate: formattedSessionDate, // ✅ Store canceled session date
         zoomMeetingLink: session.zoomMeetingLink,
         source: "zoom", // ✅ Identify this as a Zoom session
       });
 
-      user.zoomBookings.splice(sessionIndex, 1); // ✅ Remove from zoomBookings
+      user.zoomBookings.splice(sessionIndex, 1); // ✅ Remove session from zoomBookings
     } else {
-      // ✅ Update the modified session back into zoomBookings
+      // ✅ Update the session in zoomBookings
       user.zoomBookings[sessionIndex] = session;
     }
 
-    // ✅ Save the updated user data
+    // ✅ Explicitly mark `archivedClasses` and `zoomBookings` as modified
+    user.markModified("archivedClasses");
+    user.markModified("zoomBookings");
+
+    // ✅ Save user data
     await user.save();
+
+    console.log("✅ Zoom session canceled and archived successfully!");
 
     res.status(200).json({
       message: "Zoom session canceled and archived successfully",
@@ -261,6 +275,3 @@ exports.cancelZoomSession = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
-
-
-
