@@ -265,11 +265,17 @@ exports.cancelZoomSession = async (req, res) => {
         user.archivedClasses = []; // ✅ Ensure array exists
       }
 
-      console.log("✅ Adding session to archive:", archivedSession);
-      user.archivedClasses.push(archivedSession);
-      user.zoomBookings.splice(sessionIndex, 1); // ✅ Remove session from zoomBookings
+      console.log("🔍 Before Pushing: ", JSON.stringify(user.archivedClasses, null, 2));
 
-      // ✅ Mark fields as modified to ensure proper database update
+      user.archivedClasses.push(archivedSession);
+
+      console.log("🔍 After Pushing: ", JSON.stringify(user.archivedClasses, null, 2));
+
+      user.zoomBookings.splice(sessionIndex, 1);
+
+      // ✅ Explicitly update archivedClasses in Mongoose
+      user.set("archivedClasses", [...user.archivedClasses]);
+
       user.markModified("archivedClasses");
       user.markModified("zoomBookings");
     } else {
@@ -281,12 +287,13 @@ exports.cancelZoomSession = async (req, res) => {
     // ✅ Save updated user data
     await user.save();
 
-    console.log("✅ Zoom session canceled and archived successfully!");
-    console.log("✅ Updated archivedClasses:", user.archivedClasses); // 🛠️ Debugging log
+    // ✅ Validate that archived data is saved
+    const updatedUser = await Register.findById(userId).select("archivedClasses");
+    console.log("✅ Final Archived Classes in DB:", JSON.stringify(updatedUser.archivedClasses, null, 2));
 
     res.status(200).json({
       message: "Zoom session canceled and archived successfully",
-      archivedClasses: user.archivedClasses,
+      archivedClasses: updatedUser.archivedClasses,
     });
   } catch (error) {
     console.error("❌ Error canceling Zoom session:", error);
