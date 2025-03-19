@@ -74,21 +74,6 @@ const CheckoutPage = () => {
     }
   }, [navigate])
 
-  // ✅ Function to clear the cart from localStorage and state
-const clearCart = () => {
-  console.log("🛒 Clearing Cart...");
-
-  // Reset State
-  setCart([]);
-  
-  // Clear both 'cart' and 'cartItems' from localStorage
-  localStorage.removeItem("cart"); // Remove 'cart' key
-  localStorage.removeItem("cartItems"); // Remove 'cartItems' key
-  
-  // Sync across tabs
-  window.dispatchEvent(new Event("storage"));
-};
-
 
   // ✅ Create PayPal Order
   const createPayPalOrder = async () => {
@@ -147,7 +132,6 @@ const clearCart = () => {
     const user = JSON.parse(localStorage.getItem('user'))
     if (!user || !user._id) {
       toast.error('User authentication required!')
-      navigate('/login') // Redirect to login if not logged in
       return
     }
 
@@ -299,84 +283,74 @@ const clearCart = () => {
     toast.error('Cannot process a payment of $0.00!')
   }
 
-  // ✅ Create Stripe Payment Intent
   const createPaymentIntent = async () => {
     if (total <= 0) {
-      handleZeroAmount()
-      return null
+      handleZeroAmount();
+      return null;
     }
-
+  
     try {
-      const user = JSON.parse(localStorage.getItem('user'))
+      const user = JSON.parse(localStorage.getItem('user'));
       if (!user || !user._id) {
-        toast.error('User authentication required!')
-        return
+        toast.error('User authentication required!');
+        return;
       }
-
-      const orderId = `order_${Date.now()}`
-      const currency = 'usd'
-
-      // ✅ Fix: Ensure cart items are properly formatted before sending
-      const formattedCartItems = cartItems.map((item) => ({
-        id: item.id || `prod_${Math.random().toString(36).substring(7)}`, // 🔹 Ensure each item has a valid ID
-        name: item.name,
-        description: item.description || 'No description available',
-        price: String(item.price), // 🔥 Convert price to string to avoid serialization issues
-        currency: item.currency || 'USD',
-        quantity: item.quantity || 1, // ✅ Ensure quantity is present
-      }))
-
+  
+      const orderId = `order_${Date.now()}`;
+      const currency = 'usd';
+  
       console.log('🔹 Sending Payment Request:', {
         amount: total,
         currency,
         userId: user._id,
         orderId,
         userEmail: user.billingEmail || 'no-email@example.com', // ✅ Ensure user email is included
-        cartItems: formattedCartItems, // ✅ Fix: Send formatted cart items
-      })
-
-      const response = await fetch(
-        'https://backend-production-cbe2.up.railway.app/api/stripe/create-payment-intent',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            amount: total,
-            currency,
-            userId: user._id,
-            orderId,
-            userEmail: user.billingEmail || 'no-email@example.com', // ✅ Ensure user email is included
-            cartItems: formattedCartItems, // ✅ Fix: Send full cart items array
-          }),
-        },
-      )
-
+      });
+  
+      // Step 1: Send Payment Request to Create Payment Intent
+      const response = await fetch('https://backend-production-cbe2.up.railway.app/api/stripe/create-payment-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: total,
+          currency,
+          userId: user._id,
+          orderId,
+          userEmail: user.billingEmail || 'no-email@example.com', // ✅ Ensure user email is included
+        }),
+      });
+  
       if (!response.ok) {
-        console.error('❌ Failed to create payment intent. Status:', response.status)
-        throw new Error(`Payment Intent creation failed. Server responded with ${response.status}`)
+        console.error('❌ Failed to create payment intent. Status:', response.status);
+        throw new Error(`Payment Intent creation failed. Server responded with ${response.status}`);
       }
-
-      const data = await response.json()
-      console.log('✅ Payment Intent Created:', data)
-
-      setPaymentIntentId(data.id)
-      setClientSecret(data.clientSecret)
-
-      return data.clientSecret
+  
+      const data = await response.json();
+      console.log('✅ Payment Intent Created:', data);
+  
+      setPaymentIntentId(data.id);
+      setClientSecret(data.clientSecret);
+  
+      // Step 2: Clear cart after payment intent is created
+      clearCarts();
+  
+      return data.clientSecret;
     } catch (error) {
-      console.error('❌ Payment Intent Error:', error)
-      toast.error(`Payment Error: ${error.message}`)
-      return null
+      console.error('❌ Payment Intent Error:', error);
+      toast.error(`Payment Error: ${error.message}`);
+      return null;
     }
-  }
-
-  const clearCartAfterPayment = () => {
-    console.log('🛒 Clearing Cart from LocalStorage...')
-    localStorage.setItem('cartItems', JSON.stringify([])) // 🛑 Ensure it's empty
-    setCartItems([])
-    window.dispatchEvent(new Event('storage'))
-  }
-
+  };
+  
+  
+  // Function to clear cart from localStorage and state
+  const clearCarts = () => {
+    console.log('🛒 Clearing Cart from LocalStorage and State...');
+    localStorage.removeItem('cartItems');  // Ensure cart is cleared from localStorage
+    setCartItems([]);  // Reset cart state
+    window.dispatchEvent(new Event('storage'));  // Ensure sync across tabs
+  };
+  
   const handlePaymentSuccess = async () => {
     try {
       const user = JSON.parse(localStorage.getItem('user'))
@@ -384,44 +358,44 @@ const clearCart = () => {
         toast.error('User authentication required!')
         return
       }
-
+  
       console.log('📡 Capturing Stripe Payment...')
-      const response = await fetch(
-        'https://backend-production-cbe2.up.railway.app/api/stripe/capture-stripe-payment',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            paymentIntentId,
-            user: {
-              _id: user._id,
-              username: user.username || 'Unknown User',
-              billingEmail: user.billingEmail || 'No email',
-              phone: user.phone || 'No phone',
-              cartItems: cartItems.map((item) => ({
-                id: item.id || `prod_${Math.random().toString(36).substring(7)}`,
-                name: item.name,
-                description: item.description || 'No description available',
-                price: String(item.price),
-                quantity: item.quantity || 1,
-              })),
-            },
-          }),
-        },
-      )
-
+      const response = await fetch('https://backend-production-cbe2.up.railway.app/api/stripe/capture-stripe-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          paymentIntentId,
+          user: {
+            _id: user._id,
+            username: user.username || 'Unknown User',
+            billingEmail: user.billingEmail || 'No email',
+            cartItems: cartItems.map((item) => ({
+              id: item.id,
+              name: item.name,
+              description: item.description || 'No description available',
+              price: item.price,
+              quantity: item.quantity || 1,
+            })),
+          },
+        }),
+      })
+  
       const result = await response.json()
-      console.log('📡 Stripe Capture Response:', result) // ADD THIS LINE
-      // Clear Cart after successful Stripe Payment
-      clearCart()
-      toast.success('🎉 Payment Successful! Redirecting...')
-      navigate('/dashboard')
+      console.log('Backend Response:', result)
+  
+      if (result.clearCart) {
+        // Clear cart in frontend after successful payment
+        clearCarts()
+        toast.success('🎉 Payment Successful! Cart cleared.')
+        navigate('/dashboard')
+      } else {
+        toast.error('❌ Failed to clear cart after payment intent creation!')
+      }
     } catch (error) {
       console.error('❌ Error in Payment Process:', error)
       toast.error(error.message || 'Payment processing error.')
     }
   }
-
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-32">
       <Toaster position="top-right" />

@@ -80,14 +80,13 @@ export const CartProvider = ({ children }) => {
     toast.success("Item removed from cart!");
   };
 
-  // ✅ Clear Cart Function
   const clearCart = () => {
     console.log("🛒 Clearing Cart...");
-    setCart([]); // ✅ Reset State
-    localStorage.removeItem("cartItems"); // ✅ Remove from LocalStorage
-    window.dispatchEvent(new Event("storage")); // ✅ Sync across tabs
+    setCart([]); // Reset cart state
+    localStorage.removeItem("cartItems"); // Remove from localStorage
+    window.dispatchEvent(new Event("storage")); // Sync across tabs
   };
-
+  
   return (
     <CartContext.Provider value={{ cart, addToCart, removeFromCart, clearCart }}>
       {children}
