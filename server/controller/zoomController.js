@@ -230,7 +230,7 @@ exports.cancelZoomSession = async (req, res) => {
 
     let session = user.zoomBookings[sessionIndex];
 
-    // ✅ Ensure sessionDate is in correct format (to avoid timezone issues)
+    // ✅ Ensure sessionDate is in correct format
     const formattedSessionDate = new Date(sessionDate).toISOString();
 
     // ✅ Remove only the matching session date
@@ -242,26 +242,27 @@ exports.cancelZoomSession = async (req, res) => {
     if (session.sessionDates.length === 0) {
       console.log("✅ No more session dates left, moving session to archive...");
 
-      user.archivedClasses.push({
+      const archivedSession = {
         name: session.eventName,
         description: "Zoom session was canceled by user",
         archivedAt: new Date(),
         sessionDate: formattedSessionDate, // ✅ Store canceled session date
-        zoomMeetingLink: session.zoomMeetingLink,
+        zoomMeetingLink: session.zoomMeetingLink || null, // ✅ Ensure zoom link is added
         source: "zoom", // ✅ Identify this as a Zoom session
-      });
+      };
 
+      user.archivedClasses.push(archivedSession);
       user.zoomBookings.splice(sessionIndex, 1); // ✅ Remove session from zoomBookings
     } else {
       // ✅ Update the session in zoomBookings
       user.zoomBookings[sessionIndex] = session;
     }
 
-    // ✅ Explicitly mark `archivedClasses` and `zoomBookings` as modified
+    // ✅ Mark fields as modified to ensure proper database update
     user.markModified("archivedClasses");
     user.markModified("zoomBookings");
 
-    // ✅ Save user data
+    // ✅ Save updated user data
     await user.save();
 
     console.log("✅ Zoom session canceled and archived successfully!");
