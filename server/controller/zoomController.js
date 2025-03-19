@@ -251,12 +251,15 @@ exports.cancelZoomSession = async (req, res) => {
         source: "zoom", // ✅ Identify this as a Zoom session
       };
 
-      if (!user.archivedClasses) {
-        user.archivedClasses = []; // ✅ Ensure array exists
+      // ✅ Ensure archivedClasses array exists before pushing
+      if (!Array.isArray(user.archivedClasses)) {
+        user.archivedClasses = [];
       }
 
       user.archivedClasses.push(archivedSession);
       user.zoomBookings.splice(sessionIndex, 1); // ✅ Remove session from zoomBookings
+
+      console.log("✅ Session moved to archive:", archivedSession);
     } else {
       // ✅ Update the session in zoomBookings
       user.zoomBookings[sessionIndex] = session;
