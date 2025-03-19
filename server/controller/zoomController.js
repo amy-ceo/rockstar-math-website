@@ -214,21 +214,30 @@ exports.cancelZoomSession = async (req, res) => {
       return res.status(400).json({ message: "Missing required parameters" });
     }
 
+    console.log(`🔍 Searching for user ${userId}...`);
+
     // ✅ Find User
     const user = await Register.findById(userId);
     if (!user) {
+      console.error("❌ User not found!");
       return res.status(404).json({ message: "User not found" });
     }
+
+    console.log(`🔍 Searching for Zoom Session with ID: ${sessionId}`);
 
     // ✅ Find Zoom Session
     const sessionIndex = user.zoomBookings.findIndex(
       (session) => session._id.toString() === sessionId
     );
+
     if (sessionIndex === -1) {
+      console.error("❌ Session not found!");
       return res.status(404).json({ message: "Session not found" });
     }
 
     let session = user.zoomBookings[sessionIndex];
+
+    console.log(`✅ Found session: ${session.eventName}`);
 
     // ✅ Ensure sessionDate is in correct format
     const formattedSessionDate = new Date(sessionDate).toISOString();
@@ -237,6 +246,8 @@ exports.cancelZoomSession = async (req, res) => {
     session.sessionDates = session.sessionDates.filter(
       (date) => new Date(date).toISOString() !== formattedSessionDate
     );
+
+    console.log(`🔹 Remaining session dates after removal:`, session.sessionDates);
 
     // ✅ If no session dates left, move session to archive and remove it from zoomBookings
     if (session.sessionDates.length === 0) {
@@ -251,15 +262,13 @@ exports.cancelZoomSession = async (req, res) => {
         source: "zoom", // ✅ Identify this as a Zoom session
       };
 
-      // ✅ Ensure archivedClasses array exists before pushing
-      if (!Array.isArray(user.archivedClasses)) {
-        user.archivedClasses = [];
+      if (!user.archivedClasses) {
+        user.archivedClasses = []; // ✅ Ensure array exists
       }
 
+      console.log("✅ Adding session to archive:", archivedSession);
       user.archivedClasses.push(archivedSession);
       user.zoomBookings.splice(sessionIndex, 1); // ✅ Remove session from zoomBookings
-
-      console.log("✅ Session moved to archive:", archivedSession);
     } else {
       // ✅ Update the session in zoomBookings
       user.zoomBookings[sessionIndex] = session;
