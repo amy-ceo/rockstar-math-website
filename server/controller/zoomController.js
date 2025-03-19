@@ -1,6 +1,7 @@
 
 const crypto = require("crypto");
 const Register = require("../models/registerModel");
+const cron = require("node-cron");
 
 exports.zoomWebhook = async (req, res) => {
   try {
@@ -147,3 +148,98 @@ exports.getUserZoomBookings = async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
+// ✅ Cancel Zoom Session & Move to Archive
+exports.cancelZoomSession = async (req, res) => {
+  try {
+    const { userId, sessionId, sessionDate } = req.body;
+
+    if (!userId || !sessionId || !sessionDate) {
+      return res.status(400).json({ message: "Missing required parameters" });
+    }
+
+    // ✅ Find User
+    const user = await Register.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // ✅ Find Zoom Session
+    const sessionIndex = user.zoomBookings.findIndex(
+      (session) => session._id.toString() === sessionId
+    );
+    if (sessionIndex === -1) {
+      return res.status(404).json({ message: "Session not found" });
+    }
+
+    // ✅ Remove the specific session date from sessionDates
+    const session = user.zoomBookings[sessionIndex];
+    session.sessionDates = session.sessionDates.filter(
+      (date) => date !== sessionDate
+    );
+
+    // ✅ Move to Archive if no dates left
+    if (session.sessionDates.length === 0) {
+      user.archivedClasses.push({
+        name: session.eventName,
+        description: "Zoom session was canceled",
+        archivedAt: new Date(),
+      });
+
+      user.zoomBookings.splice(sessionIndex, 1); // Remove session from zoomBookings
+    }
+
+    await user.save();
+
+    res.status(200).json({
+      message: "Zoom session canceled and archived successfully",
+      archivedClasses: user.archivedClasses,
+    });
+  } catch (error) {
+    console.error("❌ Error canceling Zoom session:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+// ✅ Auto Archive Expired Zoom Sessions
+const archiveExpiredZoomSessions = async () => {
+  try {
+    console.log("🔄 Running Zoom auto-archiving process...");
+
+    const users = await Register.find();
+    const currentDate = new Date();
+
+    users.forEach(async (user) => {
+      let updatedZoomBookings = [];
+      let archivedSessions = [];
+
+      user.zoomBookings.forEach((session) => {
+        let futureSessions = session.sessionDates.filter(
+          (date) => new Date(date) >= currentDate
+        );
+
+        if (futureSessions.length === 0) {
+          archivedSessions.push({
+            name: session.eventName,
+            description: "Session date has passed",
+            archivedAt: new Date(),
+          });
+        } else {
+          session.sessionDates = futureSessions;
+          updatedZoomBookings.push(session);
+        }
+      });
+
+      user.zoomBookings = updatedZoomBookings;
+      user.archivedClasses.push(...archivedSessions);
+      await user.save();
+    });
+
+    console.log("✅ Auto-archiving of expired Zoom sessions completed!");
+  } catch (error) {
+    console.error("❌ Error auto-archiving Zoom sessions:", error);
+  }
+};
+
+// ✅ Schedule the function to run daily at midnight
+cron.schedule("0 0 * * *", archiveExpiredZoomSessions);

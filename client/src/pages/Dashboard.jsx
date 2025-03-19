@@ -31,7 +31,6 @@ const Dashboard = () => {
   const [selectedZoomSession, setSelectedZoomSession] = useState(null)
   const [selectedZoomDate, setSelectedZoomDate] = useState(null)
   const [showZoomCancelPopup, setShowZoomCancelPopup] = useState(false)
-
   // ✅ Allowed Time Slots (3-6 PM, 7-8 PM, 8-9 PM with breaks)
   const allowedTimes = [
     new Date().setHours(15, 0, 0, 0), // 3:00 PM
@@ -407,7 +406,6 @@ const Dashboard = () => {
       console.error('❌ Error canceling Zoom session:', error.message)
     }
   }
-
   const renderBookNowButton = (session) => {
     console.log('Session Data:', session) // Check the session data
 
@@ -600,7 +598,6 @@ const Dashboard = () => {
               </div>
             </section>
           )}
-          {/* ✅ Display Zoom Sessions */}
           {/* ✅ Display Individual Zoom Session Dates as Cards */}
           {zoomBookings.length > 0 && (
             <section className="mt-6 p-6 bg-white shadow-lg rounded-lg">

@@ -1,10 +1,11 @@
-const express = require('express');
-const { zoomWebhook, getUserZoomBookings } = require('../controller/zoomController');
+    const express = require('express');
+    const { zoomWebhook, getUserZoomBookings , cancelZoomSession, } = require('../controller/zoomController');
 
-const router = express.Router();
+    const router = express.Router();
 
-// ✅ Zoom Webhook Route
-router.post('/webhook', zoomWebhook);
-router.get("/bookings/:userId", getUserZoomBookings);
+    // ✅ Zoom Webhook Route
+    router.post('/webhook', zoomWebhook);
+    router.get("/bookings/:userId", getUserZoomBookings);
+    router.post("/cancel-session", cancelZoomSession); // ✅ Add Cancel Route
 
-module.exports = router;
+    module.exports = router;
