@@ -27,6 +27,10 @@ const Dashboard = () => {
   const [newDateTime, setNewDateTime] = useState(null)
   const [zoomBookings, setZoomBookings] = useState([])
   const [popupKey, setPopupKey] = useState(0)
+  // ✅ Store Selected Zoom Session for Cancel
+  const [selectedZoomSession, setSelectedZoomSession] = useState(null)
+  const [selectedZoomDate, setSelectedZoomDate] = useState(null)
+  const [showZoomCancelPopup, setShowZoomCancelPopup] = useState(false)
 
   // ✅ Allowed Time Slots (3-6 PM, 7-8 PM, 8-9 PM with breaks)
   const allowedTimes = [
@@ -169,13 +173,13 @@ const Dashboard = () => {
 
         // ✅ Filter out only the excluded plans & ensure bookingLink exists
         const filteredSessions = (data.remainingSessions || [])
-        .filter((session) => !excludedPlans.includes(session.name))
-        .map((session) => ({
-          ...session,
-          proxyBookingLink: session.proxyBookingLink || session.bookingLink || null, // Ensure fallback
-        }));
-      
-      setRemainingSessions(filteredSessions);
+          .filter((session) => !excludedPlans.includes(session.name))
+          .map((session) => ({
+            ...session,
+            proxyBookingLink: session.proxyBookingLink || session.bookingLink || null, // Ensure fallback
+          }))
+
+        setRemainingSessions(filteredSessions)
       } catch (error) {
         console.error('❌ Error fetching remaining sessions:', error)
         setRemainingSessions([])
@@ -342,23 +346,85 @@ const Dashboard = () => {
       return 'Invalid Date'
     }
   }
+
+  // ✅ Confirm Cancel Zoom Session
+  const confirmZoomCancel = (sessionId, date) => {
+    setSelectedZoomSession(sessionId)
+    setSelectedZoomDate(date)
+    setShowZoomCancelPopup(true)
+  }
+
+  // ✅ Cancel Zoom Session API Call
+  const cancelZoomSession = async () => {
+    if (!selectedZoomSession || !selectedZoomDate) {
+      toast.error('Invalid Zoom session details!')
+      return
+    }
+
+    try {
+      console.log('📡 Sending cancel request to API...', {
+        userId: users._id,
+        sessionId: selectedZoomSession,
+        sessionDate: selectedZoomDate,
+      })
+
+      const response = await fetch(
+        `https://backend-production-cbe2.up.railway.app/api/zoom/cancel-session`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: users._id,
+            sessionId: selectedZoomSession,
+            sessionDate: selectedZoomDate,
+          }),
+        },
+      )
+
+      const data = await response.json()
+      console.log('📥 API Response:', data)
+
+      if (response.ok) {
+        toast.success('✅ Zoom Session Canceled!')
+
+        // ✅ Remove the canceled session from the UI
+        setZoomBookings((prev) =>
+          prev.map((session) =>
+            session._id === selectedZoomSession
+              ? {
+                  ...session,
+                  sessionDates: session.sessionDates.filter((date) => date !== selectedZoomDate),
+                }
+              : session,
+          ),
+        )
+
+        setShowZoomCancelPopup(false)
+      } else {
+        toast.error('❌ Error canceling session.')
+      }
+    } catch (error) {
+      console.error('❌ Error canceling Zoom session:', error.message)
+    }
+  }
+
   const renderBookNowButton = (session) => {
-    console.log("Session Data:", session); // Check the session data
-  
+    console.log('Session Data:', session) // Check the session data
+
     // Static proxy URL generation in the frontend
-    const proxyBaseUrl = "https://backend-production-cbe2.up.railway.app/api/proxy-calendly"; // Backend URL
-    const userId = user._id; // Make sure user._id is available
-    const sessionName = session.name;
-  
+    const proxyBaseUrl = 'https://backend-production-cbe2.up.railway.app/api/proxy-calendly' // Backend URL
+    const userId = user._id // Make sure user._id is available
+    const sessionName = session.name
+
     const proxyBookingLink = session.proxyBookingLink
       ? `${proxyBaseUrl}?userId=${userId}&session=${encodeURIComponent(sessionName)}`
-      : null; // Generate static proxy link directly in frontend
-  
+      : null // Generate static proxy link directly in frontend
+
     // Ensure the proxyBookingLink exists
     if (!proxyBookingLink) {
-      return <p className="text-red-500">No booking link available.</p>; // If no link available
+      return <p className="text-red-500">No booking link available.</p> // If no link available
     }
-  
+
     // If proxyBookingLink is available, show the "Book Now" button
     return (
       <div className="mt-3">
@@ -371,9 +437,9 @@ const Dashboard = () => {
           📅 Book Now
         </a>
       </div>
-    );
-  };
-  
+    )
+  }
+
   if (loading && !user) return <p>Loading dashboard...</p>
 
   if (error) return <p className="text-red-600">{error}</p>
@@ -535,6 +601,7 @@ const Dashboard = () => {
             </section>
           )}
           {/* ✅ Display Zoom Sessions */}
+          {/* ✅ Display Individual Zoom Session Dates as Cards */}
           {zoomBookings.length > 0 && (
             <section className="mt-6 p-6 bg-white shadow-lg rounded-lg">
               <h3 className="text-2xl font-bold mb-4 text-gray-800">
@@ -542,43 +609,49 @@ const Dashboard = () => {
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                {zoomBookings.map((session, index) => (
-                  <div
-                    key={index}
-                    className="p-5 bg-white rounded-xl shadow-lg border border-gray-200"
-                  >
-                    {/* Session Title */}
-                    <h4 className="text-xl font-semibold text-blue-700 mb-2">
-                      {session.eventName || 'Unnamed Session'}
-                    </h4>
+                {zoomBookings.map((session, index) =>
+                  session.sessionDates && session.sessionDates.length > 0 ? (
+                    session.sessionDates.map((date, i) => (
+                      <div
+                        key={`${index}-${i}`}
+                        className="p-5 bg-white rounded-xl shadow-lg border border-gray-200 transition transform hover:scale-105"
+                      >
+                        {/* Session Title */}
+                        <h4 className="text-xl font-semibold text-blue-700 mb-2">
+                          {session.eventName || 'Unnamed Session'}
+                        </h4>
 
-                    {/* Show all session dates */}
-                    <p className="font-semibold text-gray-700">📅 Session Dates:</p>
-                    {session.sessionDates && session.sessionDates.length > 0 ? (
-                      session.sessionDates.map((date, i) => (
-                        <p key={i} className="text-gray-600">
-                          🕒 {formatDateTime(date, session.timezone)}
-                        </p>
-                      ))
-                    ) : (
-                      <p className="text-red-500">⚠️ No scheduled dates found</p>
-                    )}
+                        {/* Session Date */}
+                        <p className="font-semibold text-gray-700">📅 Date:</p>
+                        <p className="text-gray-600">🕒 {formatDateTime(date, session.timezone)}</p>
 
-                    {/* Zoom Meeting Link */}
-                    {session.zoomMeetingLink && (
-                      <div className="mt-3">
-                        <a
-                          href={session.zoomMeetingLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 font-medium hover:underline"
+                        {/* Zoom Meeting Link */}
+                        {session.zoomMeetingLink && (
+                          <div className="mt-3">
+                            <a
+                              href={session.zoomMeetingLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 font-medium hover:underline"
+                            >
+                              🔗 Join Zoom Session
+                            </a>
+                          </div>
+                        )}
+
+                        {/* Cancel Button */}
+                        <button
+                          className="mt-3 bg-red-500 text-white font-medium px-4 py-2 rounded-lg transition hover:bg-red-600 w-full"
+                          onClick={() => confirmZoomCancel(session._id, date)}
                         >
-                          🔗 Join Zoom Session
-                        </a>
+                          ❌ Cancel Session
+                        </button>
                       </div>
-                    )}
-                  </div>
-                ))}
+                    ))
+                  ) : (
+                    <p className="text-red-500">⚠️ No scheduled dates found</p>
+                  ),
+                )}
               </div>
             </section>
           )}
@@ -641,6 +714,31 @@ const Dashboard = () => {
                 onClick={() => setShowReschedulePopup(false)}
               >
                 ❌ Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ✅ Zoom Session Cancel Confirmation Popup */}
+      {showZoomCancelPopup && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-6 rounded shadow-lg text-center">
+            <h3 className="text-lg font-bold">
+              Are you sure you want to cancel this Zoom session?
+            </h3>
+            <div className="mt-4 flex justify-center space-x-4">
+              <button
+                className="bg-red-500 text-white px-4 py-2 rounded"
+                onClick={cancelZoomSession}
+              >
+                Yes, Cancel
+              </button>
+              <button
+                className="bg-gray-400 text-white px-4 py-2 rounded"
+                onClick={() => setShowZoomCancelPopup(false)}
+              >
+                No, Keep It
               </button>
             </div>
           </div>
