@@ -206,72 +206,90 @@ exports.getUserZoomBookings = async (req, res) => {
 
 exports.cancelZoomSession = async (req, res) => {
   try {
-    const { userId, sessionId, sessionDate } = req.body
+    const { userId, sessionId, sessionDate } = req.body;
 
     if (!userId || !sessionId || !sessionDate) {
-      return res.status(400).json({ message: 'Missing required parameters' })
+      return res.status(400).json({ message: "Missing required parameters" });
     }
 
-    console.log(`🔍 Searching for user ${userId}...`)
+    console.log(`🔍 Searching for user ${userId}...`);
 
     // ✅ Find User
-    const user = await Register.findById(userId)
+    const user = await Register.findById(userId);
     if (!user) {
-      console.error('❌ User not found!')
-      return res.status(404).json({ message: 'User not found' })
+      console.error("❌ User not found!");
+      return res.status(404).json({ message: "User not found" });
     }
 
-    console.log(`🔍 Searching for Zoom Session with ID: ${sessionId}`)
+    console.log(`🔍 Searching for Zoom Session with ID: ${sessionId}`);
 
     // ✅ Find Zoom Session
     const sessionIndex = user.zoomBookings.findIndex(
-      (session) => session._id.toString() === sessionId,
-    )
+      (session) => session._id.toString() === sessionId
+    );
 
     if (sessionIndex === -1) {
-      console.error('❌ Session not found!')
-      return res.status(404).json({ message: 'Session not found' })
+      console.error("❌ Session not found!");
+      return res.status(404).json({ message: "Session not found" });
     }
 
-    let session = user.zoomBookings[sessionIndex]
+    let session = user.zoomBookings[sessionIndex];
 
-    console.log(`✅ Found session: ${session.eventName}`)
+    console.log(`✅ Found session: ${session.eventName}`);
 
     // ✅ Ensure sessionDate is in correct format
-    const formattedSessionDate = new Date(sessionDate).toISOString()
+    const formattedSessionDate = new Date(sessionDate).toISOString();
 
     // ✅ Remove only the matching session date
     session.sessionDates = session.sessionDates.filter(
-      (date) => new Date(date).toISOString() !== formattedSessionDate,
-    )
+      (date) => new Date(date).toISOString() !== formattedSessionDate
+    );
 
-    console.log(`🔹 Remaining session dates after removal:`, session.sessionDates)
+    console.log(`🔹 Remaining session dates after removal:`, session.sessionDates);
 
     // ✅ If no session dates left, move session to archive and remove it from zoomBookings
     if (session.sessionDates.length === 0) {
       console.log("✅ No more session dates left, moving session to archive...");
-    
+
+      // ✅ Define archived session object properly
+      const archivedSession = {
+        name: session.eventName,
+        description: "Zoom session was canceled by user",
+        archivedAt: new Date(),
+        sessionDate: formattedSessionDate,
+        zoomMeetingLink: session.zoomMeetingLink || null, // ✅ Ensure zoom link is added
+        source: "zoom", // ✅ Identify this as a Zoom session
+      };
+
+      if (!user.archivedClasses) {
+        user.archivedClasses = []; // ✅ Ensure array exists
+      }
+
+      console.log("✅ Adding session to archive:", archivedSession);
       user.archivedClasses.push(archivedSession);
       user.zoomBookings.splice(sessionIndex, 1); // ✅ Remove session from zoomBookings
-    
-      user.markModified("archivedClasses"); // ✅ Fix added
+
+      // ✅ Mark fields as modified to ensure proper database update
+      user.markModified("archivedClasses");
       user.markModified("zoomBookings");
     } else {
       // ✅ Update the session in zoomBookings
       user.zoomBookings[sessionIndex] = session;
       user.markModified("zoomBookings");
     }
+
+    // ✅ Save updated user data
     await user.save();
 
-    console.log('✅ Zoom session canceled and archived successfully!')
-    console.log('✅ Updated archivedClasses:', user.archivedClasses) // 🛠️ Debugging log
+    console.log("✅ Zoom session canceled and archived successfully!");
+    console.log("✅ Updated archivedClasses:", user.archivedClasses); // 🛠️ Debugging log
 
     res.status(200).json({
-      message: 'Zoom session canceled and archived successfully',
+      message: "Zoom session canceled and archived successfully",
       archivedClasses: user.archivedClasses,
-    })
+    });
   } catch (error) {
-    console.error('❌ Error canceling Zoom session:', error)
-    res.status(500).json({ message: 'Internal Server Error' })
+    console.error("❌ Error canceling Zoom session:", error);
+    res.status(500).json({ message: "Internal Server Error" });
   }
-}
+};
