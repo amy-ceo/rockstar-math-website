@@ -862,3 +862,10 @@ function generateEmailHtml(user, zoomLinks, userCoupons, calendlyLinks, hasCommo
 }
 
 module.exports = router
+
+
+
+
+
+
+
