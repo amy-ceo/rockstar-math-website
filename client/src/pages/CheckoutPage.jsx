@@ -34,7 +34,9 @@ const CheckoutPage = () => {
         const user = JSON.parse(localStorage.getItem('user'))
         if (!user || !user._id) return
 
-        const response = await fetch(`https://backend-production-cbe2.up.railway.app/api/user-coupons/${user._id}`)
+        const response = await fetch(
+          `https://backend-production-cbe2.up.railway.app/api/user-coupons/${user._id}`,
+        )
         const data = await response.json()
 
         console.log('✅ Coupons from Backend:', data.coupons)
@@ -87,19 +89,22 @@ const CheckoutPage = () => {
 
     try {
       console.log('📡 Creating PayPal Order...')
-      const response = await fetch(`https://backend-production-cbe2.up.railway.app/api/paypal/create-order`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: user._id,
-          amount: Number(total.toFixed(2)),
-          cartItems: cartItems.map((item) => ({
-            name: item.name,
-            price: (Number(item.price) || 0).toFixed(2),
-            quantity: item.quantity || 1,
-          })),
-        }),
-      })
+      const response = await fetch(
+        `https://backend-production-cbe2.up.railway.app/api/paypal/create-order`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user._id,
+            amount: Number(total.toFixed(2)),
+            cartItems: cartItems.map((item) => ({
+              name: item.name,
+              price: (Number(item.price) || 0).toFixed(2),
+              quantity: item.quantity || 1,
+            })),
+          }),
+        },
+      )
 
       if (!response.ok) {
         toast.error('❌ Failed to create PayPal order.')
@@ -131,24 +136,27 @@ const CheckoutPage = () => {
 
     try {
       console.log('📡 Capturing PayPal Order...')
-      const response = await fetch('https://backend-production-cbe2.up.railway.app/api/paypal/capture-order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          orderId: data.orderID,
-          user: {
-            _id: user._id,
-            username: user.username || 'Unknown User',
-            billingEmail: user.billingEmail || 'No email',
-            phone: user.phone || 'No phone',
-            cartItems: cartItems.map((item) => ({
-              name: item.name,
-              price: Number(item.price) || 0,
-              quantity: item.quantity || 1,
-            })),
-          },
-        }),
-      })
+      const response = await fetch(
+        'https://backend-production-cbe2.up.railway.app/api/paypal/capture-order',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId: data.orderID,
+            user: {
+              _id: user._id,
+              username: user.username || 'Unknown User',
+              billingEmail: user.billingEmail || 'No email',
+              phone: user.phone || 'No phone',
+              cartItems: cartItems.map((item) => ({
+                name: item.name,
+                price: Number(item.price) || 0,
+                quantity: item.quantity || 1,
+              })),
+            },
+          }),
+        },
+      )
 
       const result = await response.json()
       console.log('📡 PayPal Capture Response:', result)
@@ -158,18 +166,21 @@ const CheckoutPage = () => {
       }
 
       console.log('📡 Calling addPurchasedClass API...')
-      const purchaseResponse = await fetch('https://backend-production-cbe2.up.railway.app/api/add-purchased-class', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: user._id,
-          purchasedItems: cartItems.map((item) => ({
-            name: item.name,
-            description: item.description || 'No description available',
-          })),
-          userEmail: user.billingEmail || 'No email',
-        }),
-      })
+      const purchaseResponse = await fetch(
+        'https://backend-production-cbe2.up.railway.app/api/add-purchased-class',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user._id,
+            purchasedItems: cartItems.map((item) => ({
+              name: item.name,
+              description: item.description || 'No description available',
+            })),
+            userEmail: user.billingEmail || 'No email',
+          }),
+        },
+      )
 
       const purchaseResult = await purchaseResponse.json()
       console.log('✅ Purchased Classes API Response:', purchaseResult)
@@ -180,7 +191,9 @@ const CheckoutPage = () => {
 
       // ✅ Fetch updated user data and update localStorage
       console.log('📡 Fetching updated user data...')
-      const userResponse = await fetch(`https://backend-production-cbe2.up.railway.app/api/user/${users._id}`)
+      const userResponse = await fetch(
+        `https://backend-production-cbe2.up.railway.app/api/user/${users._id}`,
+      )
 
       if (!userResponse.ok) {
         console.warn('⚠️ Failed to fetch updated user data.')
@@ -270,49 +283,63 @@ const CheckoutPage = () => {
   }
   const createPaymentIntent = async () => {
     if (total <= 0) {
-      handleZeroAmount();
-      return null;
+      handleZeroAmount()
+      return null
     }
-  
+
     try {
-      const user = JSON.parse(localStorage.getItem("user"));
+      const user = JSON.parse(localStorage.getItem('user'))
       if (!user || !user._id) {
-        toast.error("User authentication required!");
-        return;
+        toast.error('User authentication required!')
+        return
       }
-  
-      console.log("🔹 Sending Payment Request with Amount:", total);
-  
-      const response = await fetch("https://backend-production-cbe2.up.railway.app/api/stripe/create-payment-intent", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          amount: total,
-          currency: "usd",
-          userId: user._id,
-          orderId: `order_${Date.now()}`,
-          userEmail: user.billingEmail || "no-email@example.com",
-          cartItems: cartItems.map((item) => ({
-            id: item.id || `prod_${Math.random().toString(36).substring(7)}`,
-            name: item.name,
-            price: String(item.price),
-            quantity: item.quantity || 1,
-          })),
-        }),
-      });
-  
-      const data = await response.json();
-      console.log("✅ Payment Intent Created:", data);
-  
-      setPaymentIntentId(data.id);
-      setClientSecret(data.clientSecret);
-      return data.clientSecret;
+
+      console.log('🔹 Sending Payment Request with Amount:', total)
+
+      const response = await fetch(
+        'https://backend-production-cbe2.up.railway.app/api/stripe/create-payment-intent',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount: total,
+            currency: 'usd',
+            userId: user._id,
+            orderId: `order_${Date.now()}`,
+            userEmail: user.billingEmail || 'no-email@example.com',
+            cartItems: cartItems.map((item) => ({
+              id: item.id || `prod_${Math.random().toString(36).substring(7)}`,
+              name: item.name,
+              price: String(item.price),
+              quantity: item.quantity || 1,
+            })),
+          }),
+        },
+      )
+
+      const data = await response.json()
+      console.log('✅ Payment Intent Created:', data)
+
+      setPaymentIntentId(data.id)
+      setClientSecret(data.clientSecret)
+      return data.clientSecret
     } catch (error) {
-      console.error("❌ Payment Intent Error:", error);
-      toast.error(`Payment Error: ${error.message}`);
-      return null;
+      console.error('❌ Payment Intent Error:', error)
+      toast.error(`Payment Error: ${error.message}`)
+      return null
     }
-  };
+  }
+
+  const handleStripePayment = async () => {
+    if (total > 0) {
+      const secret = await createPaymentIntent()
+      if (secret) {
+        setShowPaymentForm(true)
+      }
+    } else {
+      handleZeroAmount()
+    }
+  }
   
 
   // Function to clear cart from localStorage and state
@@ -324,63 +351,64 @@ const CheckoutPage = () => {
   }
 
   const handlePaymentSuccess = async () => {
-    console.log("🚀 handlePaymentSuccess function called!");
-  
+    console.log('🚀 handlePaymentSuccess function called!')
+
     try {
-      const user = JSON.parse(localStorage.getItem("user"));
+      const user = JSON.parse(localStorage.getItem('user'))
       if (!user || !user._id) {
-        console.error("❌ User authentication failed!");
-        toast.error("User authentication required!");
-        return;
+        console.error('❌ User authentication failed!')
+        toast.error('User authentication required!')
+        return
       }
-  
-      console.log("📡 Capturing Stripe Payment...");
-  
-      const response = await fetch("https://backend-production-cbe2.up.railway.app/api/stripe/capture-stripe-payment", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          paymentIntentId,
-          user: {
-            _id: user._id,
-            username: user.username || "Unknown User",
-            billingEmail: user.billingEmail || "No email",
-            cartItems: cartItems.map((item) => ({
-              id: item.id,
-              name: item.name,
-              description: item.description || "No description available",
-              price: item.price,
-              quantity: item.quantity || 1,
-            })),
-          },
-        }),
-      });
-  
-      console.log("📡 Backend Response:", response);
-  
-      const result = await response.json();
-  
+
+      console.log('📡 Capturing Stripe Payment...')
+
+      const response = await fetch(
+        'https://backend-production-cbe2.up.railway.app/api/stripe/capture-stripe-payment',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            paymentIntentId,
+            user: {
+              _id: user._id,
+              username: user.username || 'Unknown User',
+              billingEmail: user.billingEmail || 'No email',
+              cartItems: cartItems.map((item) => ({
+                id: item.id,
+                name: item.name,
+                description: item.description || 'No description available',
+                price: item.price,
+                quantity: item.quantity || 1,
+              })),
+            },
+          }),
+        },
+      )
+
+      console.log('📡 Backend Response:', response)
+
+      const result = await response.json()
+
       if (result.clearCart) {
-        console.log("🛒 Clearing cart from localStorage...");
-        localStorage.removeItem("cartItems");
-        setCartItems([]);
-        window.dispatchEvent(new Event("storage"));
-  
+        console.log('🛒 Clearing cart from localStorage...')
+        localStorage.removeItem('cartItems')
+        setCartItems([])
+        window.dispatchEvent(new Event('storage'))
+
         setTimeout(() => {
-          navigate("/dashboard");
-        }, 2000);
-  
-        toast.success("🎉 Payment Successful! Cart cleared.");
+          navigate('/dashboard')
+        }, 1000)
+
+        toast.success('🎉 Payment Successful! Cart cleared.')
       } else {
-        console.warn("⚠️ Backend did not send clearCart = true. Cart may not be cleared.");
+        console.warn('⚠️ Backend did not send clearCart = true. Cart may not be cleared.')
       }
     } catch (error) {
-      console.error("❌ Error in Payment Process:", error);
-      toast.error(error.message || "Payment processing error.");
+      console.error('❌ Error in Payment Process:', error)
+      toast.error(error.message || 'Payment processing error.')
     }
-  };
-  
-
+  }
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-32">
@@ -418,14 +446,7 @@ const CheckoutPage = () => {
             <>
               {/* Stripe Payment Button */}
               <button
-                onClick={() => {
-                  if (total > 0) {
-                    setShowPaymentForm(true)
-                    createPaymentIntent()
-                  } else {
-                    handleZeroAmount()
-                  }
-                }}
+                onClick={handleStripePayment}
                 className="w-full px-6 py-3 mt-5 text-lg font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-all duration-300 rounded-lg shadow-md flex items-center justify-center gap-2"
               >
                 <FaCreditCard /> Pay ${total.toFixed(2)} USD
@@ -499,14 +520,15 @@ const CheckoutPage = () => {
             >
               <div className="mt-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-3">Enter Card Details</h2>
-                <Elements stripe={stripePromise} options={{ clientSecret }}>
+                <Elements stripe={stripePromise} options={{ clientSecret }} key={clientSecret}>
                   <PaymentForm
                     totalAmount={total}
                     paymentIntentId={paymentIntentId}
                     createPaymentIntent={createPaymentIntent}
-                    handlePaymentSuccess={handlePaymentSuccess} // ✅ Pass the function
+                    handlePaymentSuccess={handlePaymentSuccess} // ✅ Ensure it's passed here
                   />
                 </Elements>
+
                 <button
                   onClick={() => setShowPaymentForm(false)} // ✅ Go Back to Coupon Form
                   className="w-full flex justify-center underline mt-5"
