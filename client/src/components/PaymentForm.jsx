@@ -1,56 +1,71 @@
-import React, { useState } from "react";
+import React, { useState,useEffect } from "react";
 import { useStripe, useElements, CardElement } from "@stripe/react-stripe-js";
 import toast, { Toaster } from 'react-hot-toast'
 import { FaCreditCard } from "react-icons/fa";
 
-// ✅ Pass `createPaymentIntent` as a prop
-const PaymentForm = ({ totalAmount, createPaymentIntent }) => {
+// ✅ Accept `handlePaymentSuccess` as a prop
+const PaymentForm = ({ totalAmount, createPaymentIntent, handlePaymentSuccess }) => {
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    console.log("✅ handlePaymentSuccess received in PaymentForm:", handlePaymentSuccess);
+  }, []);
+
   const handleSubmit = async (event) => {
     event.preventDefault();
-
+    console.log("🚀 handleSubmit triggered!");
+  
     if (!stripe || !elements) return;
     setLoading(true);
-
+  
     try {
-      // ✅ Ensure `createPaymentIntent` exists before calling it
       if (!createPaymentIntent) {
         console.error("❌ createPaymentIntent function is not provided.");
         toast.error("Payment initialization failed!");
         setLoading(false);
         return;
       }
-
+  
       const clientSecret = await createPaymentIntent();
       if (!clientSecret) {
         toast.error("❌ Payment initialization failed!");
         setLoading(false);
         return;
       }
-
+  
       console.log("🔹 Using clientSecret:", clientSecret);
-
+  
       const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
         payment_method: { card: elements.getElement(CardElement) },
-      });
-
-      setLoading(false);
-
-      if (error) {
+     });
+     
+     if (error) {
         toast.error(`Payment Failed: ${error.message}`);
-      } else if (paymentIntent.status === "succeeded") {
-        toast.success("✅ Payment Successful! Redirecting...");
-        setTimeout(() => (window.location.href = "/dashboard"), 2000);
-      }
+     } else if (paymentIntent.status === "requires_action") {
+        toast.info("Additional authentication required. Completing...");
+        const { error: authError, paymentIntent: updatedPaymentIntent } = await stripe.confirmCardPayment(clientSecret);
+        if (authError) {
+           toast.error(`Payment Failed: ${authError.message}`);
+           return;
+        }
+        if (updatedPaymentIntent.status === "succeeded") {
+           toast.success("✅ Payment Successful!");
+           await handlePaymentSuccess();
+        }
+     } else if (paymentIntent.status === "succeeded") {
+        toast.success("✅ Payment Successful!");
+        await handlePaymentSuccess();
+     }
+     
     } catch (error) {
       console.error("❌ Error in Payment Processing:", error);
       toast.error("Unexpected payment error. Please try again.");
       setLoading(false);
     }
   };
+  
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">

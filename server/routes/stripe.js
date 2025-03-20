@@ -206,7 +206,7 @@ router.get('/get-products', async (req, res) => {
 
 router.post('/create-payment-intent', async (req, res) => {
   try {
-    let { amount, currency, userId, orderId, cartItems, userEmail } = req.body;
+    let { amount, currency, userId, orderId, cartItems, userEmail } = req.body
     console.log('🔹 Received Payment Request:', {
       amount,
       currency,
@@ -214,22 +214,22 @@ router.post('/create-payment-intent', async (req, res) => {
       orderId,
       cartItems,
       userEmail,
-    });
+    })
 
     // Validate required fields
     if (!userId || !orderId || !cartItems || cartItems.length === 0) {
-      console.error('❌ Missing required fields:', { userId, orderId, cartItems });
-      return res.status(400).json({ error: 'Missing required fields: userId, orderId, cartItems.' });
+      console.error('❌ Missing required fields:', { userId, orderId, cartItems })
+      return res.status(400).json({ error: 'Missing required fields: userId, orderId, cartItems.' })
     }
     if (!amount || isNaN(amount) || amount <= 0) {
-      console.error('❌ Invalid amount received:', amount);
-      return res.status(400).json({ error: 'Invalid amount. Must be greater than 0.' });
+      console.error('❌ Invalid amount received:', amount)
+      return res.status(400).json({ error: 'Invalid amount. Must be greater than 0.' })
     }
-    amount = Math.round(amount * 100); // Convert to cents
-    const supportedCurrencies = ['usd', 'eur', 'gbp', 'cad', 'aud'];
+    amount = Math.round(amount * 100) // Convert to cents
+    const supportedCurrencies = ['usd', 'eur', 'gbp', 'cad', 'aud']
     if (!currency || !supportedCurrencies.includes(currency.toLowerCase())) {
-      console.error('❌ Unsupported currency:', currency);
-      return res.status(400).json({ error: 'Unsupported currency. Use USD, EUR, GBP, etc.' });
+      console.error('❌ Unsupported currency:', currency)
+      return res.status(400).json({ error: 'Unsupported currency. Use USD, EUR, GBP, etc.' })
     }
 
     // Prepare metadata
@@ -240,9 +240,9 @@ router.post('/create-payment-intent', async (req, res) => {
       cartSummary: cartItems.map((item) => item.name).join(', '),
       cartItemIds: JSON.stringify(cartItems.map((item) => item.id)),
       bookingLinks: JSON.stringify(cartItems.map((item) => calendlyMapping[item.name] || null)),
-    };
+    }
 
-    console.log('📡 Sending Payment Intent with Metadata:', metadata);
+    console.log('📡 Sending Payment Intent with Metadata:', metadata)
 
     // Create Payment Intent
     const paymentIntent = await stripe.paymentIntents.create({
@@ -250,35 +250,23 @@ router.post('/create-payment-intent', async (req, res) => {
       currency: currency.toLowerCase(),
       payment_method_types: ['card'],
       metadata,
-    });
+    })
 
     if (!paymentIntent.client_secret) {
-      console.error('❌ Missing client_secret in response:', paymentIntent);
-      return res.status(500).json({ error: 'Payment Intent creation failed. No client_secret returned.' });
+      console.error('❌ Missing client_secret in response:', paymentIntent)
+      return res
+        .status(500)
+        .json({ error: 'Payment Intent creation failed. No client_secret returned.' })
     }
 
-    console.log(`✅ PaymentIntent Created: ${paymentIntent.id} for User: ${userId}`);
-
-    // Step 1: Clear Cart in Database after Payment Intent Creation
-    try {
-      console.log('📡 Clearing cart for user:', userId);
-      // Clear cart immediately after Payment Intent creation
-      await Register.findByIdAndUpdate(userId, { $set: { cartItems: [] } }, { new: true });
-      console.log('✅ Cart cleared for user:', userId);
-    } catch (cartClearError) {
-      console.error('❌ Error clearing cart in database:', cartClearError);
-      return res.status(500).json({ error: 'Error clearing cart from database.' });
-    }
-
+    console.log(`✅ PaymentIntent Created: ${paymentIntent.id} for User: ${userId}`)
     // Return response with the clientSecret for frontend
-    res.json({ clientSecret: paymentIntent.client_secret, id: paymentIntent.id, clearCart: true });
-
+    res.json({ clientSecret: paymentIntent.client_secret, id: paymentIntent.id, clearCart: true })
   } catch (error) {
-    console.error('❌ Stripe Payment Intent Error:', error);
-    res.status(500).json({ error: 'Payment creation failed. Please try again later.' });
+    console.error('❌ Stripe Payment Intent Error:', error)
+    res.status(500).json({ error: 'Payment creation failed. Please try again later.' })
   }
-});
-
+})
 
 router.post('/capture-stripe-payment', async (req, res) => {
   try {
@@ -297,7 +285,6 @@ router.post('/capture-stripe-payment', async (req, res) => {
       console.error('❌ Payment Intent Failed or Incomplete:', paymentIntent.status)
       return res.status(400).json({ error: 'Payment not completed' })
     }
-
     console.log('✅ Stripe Payment Successful:', paymentIntentId)
 
     // ✅ Step 1: Save Payment in Database
@@ -322,6 +309,24 @@ router.post('/capture-stripe-payment', async (req, res) => {
       return res.status(500).json({ error: 'Database error while saving payment.' })
     }
 
+    try {
+      console.log("📡 Clearing cart for user:", user._id);
+      const updatedUser = await Register.findByIdAndUpdate(
+        user._id,
+        { $set: { cartItems: [] } },
+        { new: true }
+      );
+    
+      if (!updatedUser) {
+        console.warn("⚠️ Cart clearing failed, user not found:", user._id);
+      } else {
+        console.log("✅ Cart cleared successfully in database for user:", user._id);
+      }
+    } catch (cartClearError) {
+      console.error("❌ Error clearing cart in database:", cartClearError);
+      return res.status(500).json({ error: "Error clearing cart from database." });
+    }
+    
     // ✅ Step 2: Call addPurchasedClass API
     try {
       console.log('📡 Calling addPurchasedClass API with Data:', {
@@ -355,20 +360,9 @@ router.post('/capture-stripe-payment', async (req, res) => {
     } catch (purchaseError) {
       console.error('❌ Error calling addPurchasedClass API:', purchaseError)
     }
-    // After capturing payment
-    console.log('Cart clearing triggered for user:', user._id)
-    const updatedUser = await Register.findByIdAndUpdate(
-      user._id,
-      { $set: { cartItems: [] } }, // Clear cart
-      { new: true },
-    )
-    console.log('Cart cleared for user:', updatedUser)
 
-    // ✅ Step 3: Send Clear Cart Signal to Frontend
-    res.json({
-      message: 'Payment captured & cart cleared successfully.',
-      clearCart: true, // Ensure frontend knows to clear the cart
-    })
+    // ✅ Return `clearCart: true` to frontend
+    res.json({ message: 'Payment captured & cart cleared successfully.', clearCart: true })
   } catch (error) {
     console.error('❌ Error Capturing Stripe Payment:', error)
     res.status(500).json({ error: 'Internal Server Error', details: error.message || error })
@@ -449,6 +443,8 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
   console.log('🔔 Received Stripe Webhook Event:', event.type)
   if (event.type === 'payment_intent.succeeded') {
     console.log('✅ Payment Intent Succeeded Event Triggered')
+    // ✅ کارٹ کو ویب ہک کے ذریعے بھی صاف کریں
+
     const paymentIntent = event.data.object
     // ✅ Extract User & Cart Data
     const userId = paymentIntent.metadata?.userId
@@ -731,6 +727,17 @@ router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req
       )
       await sendEmail(recipientEmails, '📚 Your RockstarMath Purchase Details', '', emailHtml)
       console.log('✅ Purchase confirmation email sent successfully!')
+      if (!userId) {
+        console.error('❌ No user ID found in metadata. Skipping update.')
+        return res.status(400).json({ error: 'Invalid payment data' })
+      }
+
+      try {
+        await Register.findByIdAndUpdate(userId, { $set: { cartItems: [] } }, { new: true })
+        console.log('✅ Cart cleared via Webhook!')
+      } catch (error) {
+        console.error('❌ Webhook Cart Clear Error:', error)
+      }
       return res.status(200).json({ message: 'Purchase updated & all emails sent!' })
     } catch (error) {
       console.error('❌ Error processing purchase:', error)
