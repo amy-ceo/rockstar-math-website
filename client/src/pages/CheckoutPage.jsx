@@ -396,14 +396,14 @@ const CheckoutPage = () => {
         setCartItems([])
         window.dispatchEvent(new Event('storage'))
 
-        setTimeout(() => {
-          navigate('/dashboard')
-        }, 1000)
 
         toast.success('🎉 Payment Successful! Cart cleared.')
       } else {
         console.warn('⚠️ Backend did not send clearCart = true. Cart may not be cleared.')
       }
+      setTimeout(() => {
+        navigate('/dashboard')
+      }, 1000)
     } catch (error) {
       console.error('❌ Error in Payment Process:', error)
       toast.error(error.message || 'Payment processing error.')
