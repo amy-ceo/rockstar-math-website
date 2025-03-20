@@ -206,85 +206,73 @@ router.get('/get-products', async (req, res) => {
 
 router.post('/create-payment-intent', async (req, res) => {
   try {
-    let { amount, currency, userId, orderId, cartItems, userEmail } = req.body
-    console.log('🔹 Received Payment Request:', {
-      amount,
-      currency,
-      userId,
-      orderId,
-      cartItems,
-      userEmail,
-    })
+    let { amount, currency, userId, orderId, cartItems, userEmail } = req.body;
 
-    // Validate required fields
-    if (!userId || !orderId || !cartItems || cartItems.length === 0) {
-      console.error('❌ Missing required fields:', { userId, orderId, cartItems })
-      return res.status(400).json({ error: 'Missing required fields: userId, orderId, cartItems.' })
-    }
     if (!amount || isNaN(amount) || amount <= 0) {
-      console.error('❌ Invalid amount received:', amount)
-      return res.status(400).json({ error: 'Invalid amount. Must be greater than 0.' })
-    }
-    amount = Math.round(amount * 100) // Convert to cents
-    const supportedCurrencies = ['usd', 'eur', 'gbp', 'cad', 'aud']
-    if (!currency || !supportedCurrencies.includes(currency.toLowerCase())) {
-      console.error('❌ Unsupported currency:', currency)
-      return res.status(400).json({ error: 'Unsupported currency. Use USD, EUR, GBP, etc.' })
+      console.error('❌ Invalid amount received:', amount);
+      return res.status(400).json({ error: 'Invalid amount. Must be greater than 0.' });
     }
 
-    // Prepare metadata
+    if (!userId || !orderId || !cartItems || cartItems.length === 0) {
+      console.error('❌ Missing required fields:', { userId, orderId, cartItems });
+      return res.status(400).json({ error: 'Missing required fields: userId, orderId, cartItems.' });
+    }
+
+    amount = Math.round(amount * 100); // Convert to cents
+    const supportedCurrencies = ['usd', 'eur', 'gbp', 'cad', 'aud'];
+
+    if (!currency || !supportedCurrencies.includes(currency.toLowerCase())) {
+      console.error('❌ Unsupported currency:', currency);
+      return res.status(400).json({ error: 'Unsupported currency. Use USD, EUR, GBP, etc.' });
+    }
+
     const metadata = {
       userId: String(userId),
       orderId: String(orderId),
       userEmail: userEmail || 'no-email@example.com',
       cartSummary: cartItems.map((item) => item.name).join(', '),
       cartItemIds: JSON.stringify(cartItems.map((item) => item.id)),
-      bookingLinks: JSON.stringify(cartItems.map((item) => calendlyMapping[item.name] || null)),
-    }
+    };
 
-    console.log('📡 Sending Payment Intent with Metadata:', metadata)
+    console.log('📡 Creating Payment Intent:', metadata);
 
-    // Create Payment Intent
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amount,
       currency: currency.toLowerCase(),
       payment_method_types: ['card'],
       metadata,
-    })
+    });
 
     if (!paymentIntent.client_secret) {
-      console.error('❌ Missing client_secret in response:', paymentIntent)
-      return res
-        .status(500)
-        .json({ error: 'Payment Intent creation failed. No client_secret returned.' })
+      console.error('❌ No client_secret returned:', paymentIntent);
+      return res.status(500).json({ error: 'Payment Intent creation failed.' });
     }
 
-    console.log(`✅ PaymentIntent Created: ${paymentIntent.id} for User: ${userId}`)
-    // Return response with the clientSecret for frontend
-    res.json({ clientSecret: paymentIntent.client_secret, id: paymentIntent.id, clearCart: true })
+    console.log(`✅ PaymentIntent Created: ${paymentIntent.id}`);
+    res.json({ clientSecret: paymentIntent.client_secret, id: paymentIntent.id, clearCart: true });
+
   } catch (error) {
-    console.error('❌ Stripe Payment Intent Error:', error)
-    res.status(500).json({ error: 'Payment creation failed. Please try again later.' })
+    console.error('❌ Stripe Payment Intent Error:', error);
+    res.status(500).json({ error: 'Payment creation failed. Please try again later.' });
   }
-})
+});
+
 
 router.post('/capture-stripe-payment', async (req, res) => {
   try {
-    const { paymentIntentId, user } = req.body
-    console.log('📡 Received Stripe Payment Capture Request:', { paymentIntentId, user })
+    const { paymentIntentId, user } = req.body;
 
-    if (!user || !user._id || !Array.isArray(user.cartItems) || user.cartItems.length === 0) {
-      console.error('❌ Missing required fields in Stripe Capture:', { paymentIntentId, user })
-      return res.status(400).json({ error: 'Missing required fields or empty cart items' })
+    if (!paymentIntentId || !user || !user._id) {
+      return res.status(400).json({ error: 'Invalid request' });
     }
 
-    console.log('📡 Capturing Stripe Payment:', paymentIntentId)
-    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId)
-
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
     if (!paymentIntent || paymentIntent.status !== 'succeeded') {
-      console.error('❌ Payment Intent Failed or Incomplete:', paymentIntent.status)
-      return res.status(400).json({ error: 'Payment not completed' })
+      return res.status(400).json({ error: 'Payment not completed' });
     }
+
+    console.log('✅ Payment Successful:', paymentIntentId);
+   
     console.log('✅ Stripe Payment Successful:', paymentIntentId)
 
     // ✅ Step 1: Save Payment in Database

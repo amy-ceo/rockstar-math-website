@@ -1,9 +1,8 @@
-import React, { useState,useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useStripe, useElements, CardElement } from "@stripe/react-stripe-js";
-import toast, { Toaster } from 'react-hot-toast'
+import toast, { Toaster } from 'react-hot-toast';
 import { FaCreditCard } from "react-icons/fa";
 
-// ✅ Accept `handlePaymentSuccess` as a prop
 const PaymentForm = ({ totalAmount, createPaymentIntent, handlePaymentSuccess }) => {
   const stripe = useStripe();
   const elements = useElements();
@@ -11,65 +10,72 @@ const PaymentForm = ({ totalAmount, createPaymentIntent, handlePaymentSuccess })
 
   useEffect(() => {
     console.log("✅ handlePaymentSuccess received in PaymentForm:", handlePaymentSuccess);
-  }, []);
+  }, [handlePaymentSuccess]); // ✅ Dependency added
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     console.log("🚀 handleSubmit triggered!");
-  
+
     if (!stripe || !elements) return;
     setLoading(true);
-  
+
     try {
-      if (!createPaymentIntent) {
+      if (typeof createPaymentIntent !== 'function') {
         console.error("❌ createPaymentIntent function is not provided.");
         toast.error("Payment initialization failed!");
         setLoading(false);
         return;
       }
-  
+
       const clientSecret = await createPaymentIntent();
       if (!clientSecret) {
         toast.error("❌ Payment initialization failed!");
         setLoading(false);
         return;
       }
-  
+
       console.log("🔹 Using clientSecret:", clientSecret);
-  
+
       const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
         payment_method: { card: elements.getElement(CardElement) },
-     });
-     
-     if (error) {
+      });
+
+      if (error) {
         toast.error(`Payment Failed: ${error.message}`);
-     } else if (paymentIntent.status === "requires_action") {
+        setLoading(false); // ✅ Ensure state is reset
+        return;
+      }
+
+      if (paymentIntent.status === "requires_action") {
         toast.info("Additional authentication required. Completing...");
+        
         const { error: authError, paymentIntent: updatedPaymentIntent } = await stripe.confirmCardPayment(clientSecret);
+
         if (authError) {
-           toast.error(`Payment Failed: ${authError.message}`);
-           return;
+          toast.error(`Payment Failed: ${authError.message}`);
+          setLoading(false); // ✅ Reset loading
+          return;
         }
+
         if (updatedPaymentIntent.status === "succeeded") {
-           toast.success("✅ Payment Successful!");
-           await handlePaymentSuccess();
+          toast.success("✅ Payment Successful!");
+          await handlePaymentSuccess();
         }
-     } else if (paymentIntent.status === "succeeded") {
+      } else if (paymentIntent.status === "succeeded") {
         toast.success("✅ Payment Successful!");
         await handlePaymentSuccess();
-     }
-     
+      }
+      
     } catch (error) {
       console.error("❌ Error in Payment Processing:", error);
       toast.error("Unexpected payment error. Please try again.");
       setLoading(false);
     }
   };
-  
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-       <Toaster position="top-right" />
+      <Toaster position="top-right" />
       <CardElement className="p-3 border border-gray-300 rounded-lg w-full" />
       <button
         type="submit"
