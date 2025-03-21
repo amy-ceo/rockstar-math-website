@@ -205,61 +205,60 @@ const express = require('express')
  })
  
  router.post('/create-payment-intent', async (req, res) => {
-  try {
-    let { amount, currency, userId, orderId, cartItems, userEmail } = req.body;
-
-    console.log('🔹 Received Payment Request:', {
-      amount,
-      currency,
-      userId,
-      orderId,
-      cartItems,
-      userEmail,
-    });
-
-    if (!userId || !orderId || !cartItems || cartItems.length === 0) {
-      console.error('❌ Missing required fields:', { userId, orderId, cartItems });
-      return res.status(400).json({ error: 'Missing required fields: userId, orderId, cartItems.' });
-    }
-
-    // 🔴 Log user existence in the database
-    const userExists = await Register.findById(userId);
-    if (!userExists) {
-      console.error('❌ Error: User not found in database before PaymentIntent creation!');
-      return res.status(404).json({ error: 'User not found in database before PaymentIntent creation.' });
-    }
-
-    // Convert amount to cents
-    amount = Math.round(amount * 100);
-
-    // Create Stripe Payment Intent
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: amount,
-      currency: currency.toLowerCase(),
-      payment_method_types: ['card'],
-      metadata: {
-        userId: String(userId),
-        orderId: String(orderId),
-        userEmail: userEmail || 'no-email@example.com',
-        cartSummary: cartItems.map((item) => item.name).join(', '),
-      },
-    });
-
-    console.log(`✅ PaymentIntent Created: ${paymentIntent.id} for User: ${userId}`);
-
-    return res.json({
-      clientSecret: paymentIntent.client_secret,
-      id: paymentIntent.id,
-    });
-
-  } catch (error) {
-    console.error('❌ Stripe Payment Intent Error:', error);
-    return res.status(500).json({ error: 'Payment creation failed. Please try again later.' });
-  }
-});
-
-
-
+   try {
+     let { amount, currency, userId, orderId, cartItems, userEmail } = req.body
+     console.log('🔹 Received Payment Request:', {
+       amount,
+       currency,
+       userId,
+       orderId,
+       cartItems,
+       userEmail,
+     })
+     if (!userId || !orderId || !cartItems || cartItems.length === 0) {
+       console.error('❌ Missing required fields:', { userId, orderId, cartItems })
+       return res.status(400).json({ error: 'Missing required fields: userId, orderId, cartItems.' })
+     }
+     if (!amount || isNaN(amount) || amount <= 0) {
+       console.error('❌ Invalid amount received:', amount)
+       return res.status(400).json({ error: 'Invalid amount. Must be greater than 0.' })
+     }
+     amount = Math.round(amount * 100) // Convert to cents
+     const supportedCurrencies = ['usd', 'eur', 'gbp', 'cad', 'aud']
+     if (!currency || !supportedCurrencies.includes(currency.toLowerCase())) {
+       console.error('❌ Unsupported currency:', currency)
+       return res.status(400).json({ error: 'Unsupported currency. Use USD, EUR, GBP, etc.' })
+     }
+     // ✅ Optimize metadata
+     const metadata = {
+       userId: String(userId),
+       orderId: String(orderId),
+       userEmail: userEmail || 'no-email@example.com',
+       cartSummary: cartItems.map((item) => item.name).join(', '),
+       cartItemIds: JSON.stringify(cartItems.map((item) => item.id)),
+       bookingLinks: JSON.stringify(cartItems.map((item) => calendlyMapping[item.name] || null)),
+     }
+     console.log('📡 Sending Payment Intent with Metadata:', metadata)
+     const paymentIntent = await stripe.paymentIntents.create({
+       amount: amount,
+       currency: currency.toLowerCase(),
+       payment_method_types: ['card'],
+       metadata,
+     })
+     if (!paymentIntent.client_secret) {
+       console.error('❌ Missing client_secret in response:', paymentIntent)
+       return res
+         .status(500)
+         .json({ error: 'Payment Intent creation failed. No client_secret returned.' })
+     }
+     console.log(`✅ PaymentIntent Created: ${paymentIntent.id} for User: ${userId}`)
+     res.json({ clientSecret: paymentIntent.client_secret, id: paymentIntent.id })
+   } catch (error) {
+     console.error('❌ Stripe Payment Intent Error:', error)
+     res.status(500).json({ error: 'Payment creation failed. Please try again later.' })
+   }
+ })
+ 
  router.post('/capture-stripe-payment', async (req, res) => {
    try {
      const { paymentIntentId, user } = req.body
@@ -429,24 +428,20 @@ const express = require('express')
      const userId = paymentIntent.metadata?.userId
      const cartSummary = paymentIntent.metadata?.cartSummary?.split(', ') || []
      const userEmail = paymentIntent.metadata?.userEmail || 'No email provided'
-     console.log('🔹 Extracted userId from metadata:', userId);
+     console.log('🔹 User ID:', userId)
+     console.log('🛒 Purchased Items:', cartSummary)
+     if (!userId || cartSummary.length === 0) {
+       console.warn('⚠️ Missing user ID or cart summary. Skipping update.')
+       return res.status(400).json({ error: 'Invalid payment data' })
+     }
  
-     
      try {
-      if (!userId) {
-        console.error('❌ User ID is missing in payment metadata!');
-        return res.status(400).json({ error: 'Missing user ID in payment metadata' });
-      }
-  
-      // 🔴 Verify user in the database
-      const user = await Register.findById(userId);
-      if (!user) {
-        console.error(`❌ Error: User with ID ${userId} not found in database!`);
-        return res.status(404).json({ error: 'User not found' });
-      }
-  
-      console.log('✅ User Found:', user);
-      
+       // ✅ Fetch user first to check for existing purchases
+       const user = await Register.findById(userId)
+       if (!user) {
+         console.error('❌ Error: User not found in database!')
+         return res.status(404).json({ error: 'User not found' })
+       }
        // AFTER (FIXED):
        if (!user.cartItems || !Array.isArray(user.cartItems)) {
          console.warn('⚠️ user.cartItems not found. Initializing as empty array.')
@@ -742,6 +737,8 @@ const express = require('express')
    }
    res.sendStatus(200)
  })
+ 
+ // ✅ Function to Generate Email HTML
 // ✅ Function to Generate Email HTML
 function generateEmailHtml(user, zoomLinks, userCoupons, calendlyLinks, hasCommonCore) {
   // Use proxy link for Calendly bookings instead of direct links
@@ -855,12 +852,3 @@ function generateEmailHtml(user, zoomLinks, userCoupons, calendlyLinks, hasCommo
   detailsHtml += `</div>`
   return detailsHtml
 }
-
-module.exports = router
-
-
-
-
-
-
-
