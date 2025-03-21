@@ -384,6 +384,61 @@ exports.getAllBookedSessions = async (req, res) => {
   }
 };
 
+exports.cancelZoomSession = async (req, res) => {
+  try {
+    const { userId, sessionId, sessionDate } = req.body;
+
+    // ✅ Validate Input Fields
+    if (!userId || !sessionId || !sessionDate) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    // ✅ Validate `userId`
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ error: "Invalid userId format" });
+    }
+
+    // ✅ Find the User
+    const user = await Register.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // ✅ Find the Zoom Session
+    const sessionIndex = user.zoomBookings.findIndex(
+      (session) => session._id.toString() === sessionId
+    );
+
+    if (sessionIndex === -1) {
+      return res.status(404).json({ error: "Zoom session not found" });
+    }
+
+    // ✅ Check if the session contains the date
+    const session = user.zoomBookings[sessionIndex];
+    const dateIndex = session.sessionDates.indexOf(sessionDate);
+
+    if (dateIndex === -1) {
+      return res.status(404).json({ error: "Session date not found" });
+    }
+
+    // ✅ Remove the specific session date
+    session.sessionDates.splice(dateIndex, 1);
+
+    // ✅ If no dates remain, remove the session
+    if (session.sessionDates.length === 0) {
+      user.zoomBookings.splice(sessionIndex, 1);
+    }
+
+    // ✅ Save the updated document
+    await user.save({ validateBeforeSave: false });
+
+    res.json({ success: true, message: "Zoom session cancelled successfully!" });
+  } catch (error) {
+    console.error("Error cancelling Zoom session:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
 
 exports.addOrUpdateZoomNote = async (req, res) => {
   try {
