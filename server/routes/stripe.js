@@ -213,6 +213,8 @@ const express = require('express')
        userId,
        orderId,
        cartItems,
+
+       module.exports = router
        userEmail,
      })
      if (!userId || !orderId || !cartItems || cartItems.length === 0) {
@@ -852,3 +854,5 @@ function generateEmailHtml(user, zoomLinks, userCoupons, calendlyLinks, hasCommo
   detailsHtml += `</div>`
   return detailsHtml
 }
+
+module.exports = router
