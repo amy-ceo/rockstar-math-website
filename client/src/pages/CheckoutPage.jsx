@@ -406,11 +406,11 @@ const [isProcessing, setIsProcessing] = useState(false) // ✅ Prevent duplicate
         toast.success('🎉 Payment Successful! Cart cleared.');
   
         // ✅ Redirect to Dashboard after a short delay
-        setTimeout(() => navigate('/dashboard'), 2000);
       } else {
         toast.error('❌ Failed to clear cart after payment!');
         console.warn('⚠️ Backend did not send clearCart = true. Cart may not be cleared.');
       }
+      setTimeout(() => navigate('/dashboard'), 1000);
   
     } catch (error) {
       console.error('❌ Error in Payment Process:', error);
