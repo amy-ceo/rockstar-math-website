@@ -2,6 +2,7 @@ const Blog = require('../models/Blog');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const admin = require('firebase-admin'); // 🔥 Import Firebase Admin SDK
 
 // ✅ Firebase Admin Setup
 const serviceAccount = require('../firebaseServiceAccount.json'); // Ensure this file is present in your backend directory
