@@ -336,13 +336,15 @@ exports.resetAdminPassword = async (req, res) => {
 
 exports.getAllBookedSessions = async (req, res) => {
   try {
-    const users = await Register.find({}, "bookedSessions email username");
+    const users = await Register.find({}, "bookedSessions zoomBookings email username");
 
     let allSessions = [];
 
     users.forEach(user => {
+      // ✅ Add Calendly Sessions
       user.bookedSessions.forEach(session => {
         allSessions.push({
+          type: "calendly", // ✅ Identify as Calendly Session
           userId: user._id,
           userEmail: user.billingEmail,
           userName: user.username,
@@ -351,7 +353,26 @@ exports.getAllBookedSessions = async (req, res) => {
           startTime: session.startTime,
           endTime: session.endTime,
           status: session.status,
-          note: session.note || "" // ✅ Ensure note is included
+          note: session.note || ""
+        });
+      });
+
+      // ✅ Add Zoom Sessions
+      user.zoomBookings.forEach(session => {
+        session.sessionDates.forEach(date => {
+          allSessions.push({
+            type: "zoom", // ✅ Identify as Zoom Session
+            userId: user._id,
+            userEmail: user.billingEmail,
+            userName: user.username,
+            sessionId: session._id,
+            eventName: session.eventName,
+            startTime: date, // Zoom sessions have multiple dates
+            endTime: date, // Assuming end time is the same
+            status: "Confirmed",
+            note: session.note || "",
+            zoomMeetingLink: session.zoomMeetingLink || ""
+          });
         });
       });
     });
@@ -362,6 +383,7 @@ exports.getAllBookedSessions = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch booked sessions" });
   }
 };
+
 
 
 

@@ -644,6 +644,14 @@ const Dashboard = () => {
                           </div>
                         )}
 
+                          {/* ✅ Display Admin Notes Below View on Calendly */}
+                    {session.note && (
+                      <div className="mt-3 p-3 border border-gray-300 rounded bg-gray-100">
+                        <h5 className="text-gray-800 font-bold">📌 Admin Note:</h5>
+                        <p className="text-gray-700">{session.note}</p>
+                      </div>
+                    )}
+
                         {/* Cancel Button */}
                         <button
                           className="mt-3 bg-red-500 text-white font-medium px-4 py-2 rounded-lg transition hover:bg-red-600 w-full"

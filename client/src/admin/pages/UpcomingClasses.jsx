@@ -15,7 +15,7 @@ const UpcomingClasses = () => {
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(true);
 
-  // ✅ Fetch sessions with latest notes
+  // ✅ Fetch sessions with latest notes (Both Calendly & Zoom)
   useEffect(() => {
     const fetchSessions = async () => {
       try {
@@ -53,15 +53,22 @@ const UpcomingClasses = () => {
     setIsCancelModalOpen(false);
   };
 
-  // ✅ Cancel Session
+  // ✅ Cancel Session (Supports both Calendly & Zoom)
   const cancelSession = async () => {
     if (!selectedSession) return;
 
     try {
-      await axios.post(`${API_BASE_URL}/api/admin/cancel-session`, {
-        userId: selectedSession.userId,
-        sessionId: selectedSession.sessionId,
-      });
+      if (selectedSession.type === "zoom") {
+        await axios.post(`${API_BASE_URL}/api/admin/cancel-zoom-session`, {
+          userId: selectedSession.userId,
+          sessionId: selectedSession.sessionId,
+        });
+      } else {
+        await axios.post(`${API_BASE_URL}/api/admin/cancel-session`, {
+          userId: selectedSession.userId,
+          sessionId: selectedSession.sessionId,
+        });
+      }
 
       setSessions(sessions.filter((session) => session.sessionId !== selectedSession.sessionId));
       toast.success("Session cancelled successfully!");
@@ -86,21 +93,23 @@ const UpcomingClasses = () => {
     setNote("");
   };
 
-  // ✅ Save or Update Note
+  // ✅ Save or Update Note (Supports both Zoom & Calendly)
   const saveNote = async () => {
     if (!selectedSession) return;
 
     try {
-      const response = await axios.post(`${API_BASE_URL}/api/admin/add-note`, {
+      const endpoint = selectedSession.type === "zoom" ? "add-zoom-note" : "add-note";
+
+      const response = await axios.post(`${API_BASE_URL}/api/admin/${endpoint}`, {
         userId: selectedSession.userId,
-        startTime: selectedSession.startTime,
+        sessionId: selectedSession.sessionId,
         note,
       });
 
       if (response.data.success) {
         setSessions((prevSessions) =>
           prevSessions.map((session) =>
-            session.startTime === selectedSession.startTime ? { ...session, note } : session
+            session.sessionId === selectedSession.sessionId ? { ...session, note } : session
           )
         );
         toast.success(selectedSession?.note ? "Note updated successfully!" : "Note added successfully!");
@@ -113,30 +122,6 @@ const UpcomingClasses = () => {
     }
 
     closeNoteModal();
-  };
-
-  // ✅ Delete Note Function
-  const deleteNote = async (session) => {
-    if (!session) return;
-
-    try {
-      const response = await axios.post(`${API_BASE_URL}/api/admin/delete-note`, {
-        userId: session.userId,
-        startTime: session.startTime,
-      });
-
-      if (response.data.success) {
-        setSessions((prevSessions) =>
-          prevSessions.map((s) => (s.startTime === session.startTime ? { ...s, note: "" } : s))
-        );
-        toast.success("Note deleted successfully!");
-      } else {
-        toast.error("Failed to delete note.");
-      }
-    } catch (error) {
-      console.error("Error deleting note:", error);
-      toast.error("Failed to delete note.");
-    }
   };
 
   return (
@@ -172,16 +157,9 @@ const UpcomingClasses = () => {
                     <button onClick={() => openCancelModal(session)} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md flex items-center gap-2">
                       <FaTrash /> Cancel
                     </button>
-                    <button onClick={() => openNoteModal(session)} className={`px-4 py-2 rounded-md flex items-center gap-2 ${
-                      session.note ? "bg-blue-500 hover:bg-blue-600" : "bg-green-500 hover:bg-green-600"
-                    } text-white`}>
+                    <button onClick={() => openNoteModal(session)} className={`px-4 py-2 rounded-md flex items-center gap-2 ${session.note ? "bg-blue-500 hover:bg-blue-600" : "bg-green-500 hover:bg-green-600"} text-white`}>
                       <FaStickyNote /> {session.note ? "Edit Note" : "Add Note"}
                     </button>
-                    {session.note && (
-                      <button onClick={() => deleteNote(session)} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md flex items-center gap-2">
-                        <FaTrash /> Delete Note
-                      </button>
-                    )}
                   </td>
                 </tr>
               ))}
@@ -191,9 +169,8 @@ const UpcomingClasses = () => {
       ) : (
         <p className="text-center text-gray-500 text-lg">No upcoming sessions available.</p>
       )}
-
-      {/* Cancel Session Modal */}
-      {isCancelModalOpen && (
+        {/* Cancel Session Modal */}
+        {isCancelModalOpen && (
         <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center">
           <div className="bg-white p-6 rounded-md shadow-md w-96">
             <h3 className="text-lg font-semibold mb-4">Confirm Cancel</h3>

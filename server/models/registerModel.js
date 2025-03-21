@@ -44,6 +44,7 @@ const zoomBookingSchema = new mongoose.Schema({
   zoomMeetingId: { type: String, required: true, unique: true, sparse: true },
   zoomMeetingLink: { type: String, required: true },
   sessionDates: [{ type: Date, required: true }], // ✅ Array of session dates
+  note: { type: String, default: '' }, // ✅ New Field for Notes
   timezone: { type: String, default: 'UTC' },
   status: { type: String, enum: ['Booked', 'Completed', 'Cancelled'], default: 'Booked' },
   createdAt: { type: Date, default: Date.now },
