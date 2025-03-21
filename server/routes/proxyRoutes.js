@@ -35,19 +35,24 @@ router.get('/proxy-zoom', async (req, res) => {
       return res.status(403).json({ error: 'You have already accessed this Zoom registration link!' });
     }
 
-    // ✅ Add the session to `zoomAccess` without affecting others
-    await Register.findByIdAndUpdate(userId, {
-      $addToSet: { zoomAccess: session }
-    });
-
-    // ✅ Find the Zoom link
-    const foundCourse = zoomCourseMapping.find(course =>
+    // ✅ Find the Zoom link (including Common Core)
+    let foundCourse = zoomCourseMapping.find(course =>
       course.name.trim().toLowerCase() === session.trim().toLowerCase()
     );
+
+    // ✅ Special check for Common Core - Parents
+    if (!foundCourse && session.trim().toLowerCase() === COMMONCORE_ZOOM_LINK.name.trim().toLowerCase()) {
+      foundCourse = COMMONCORE_ZOOM_LINK;
+    }
 
     if (!foundCourse) {
       return res.status(404).json({ error: 'Invalid Zoom session name' });
     }
+
+    // ✅ Add the session to `zoomAccess` to prevent re-use
+    await Register.findByIdAndUpdate(userId, {
+      $addToSet: { zoomAccess: session }
+    });
 
     console.log(`✅ User ${userId} accessed Zoom session: ${session}`);
 
@@ -59,6 +64,7 @@ router.get('/proxy-zoom', async (req, res) => {
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 });
+
 
 
 module.exports = router;
