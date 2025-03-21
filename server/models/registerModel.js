@@ -117,7 +117,8 @@ const RegisterSchema = new mongoose.Schema(
     // ✅ Password Reset Fields
     resetPasswordToken: { type: String },
     resetPasswordExpires: { type: Date },
-  
+   // ✅ New Field: Track Zoom Access
+   zoomAccess: { type: [String], default: [] }, // ✅ Stores accessed Zoom sessions
     // ✅ Archived Classes (Now Supports Zoom & Calendly)
     // ✅ Store User Coupons
     coupons: [couponSchema],
