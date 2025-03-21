@@ -110,7 +110,8 @@ const AdminBlogs = () => {
                   <td className="py-3 px-4 border">{blog.title}</td>
                   <td className="py-3 px-4 border">{blog.description.substring(0, 50)}...</td>
                   <td className="py-3 px-4 border">
-                    <img src={`https://backend-production-cbe2.up.railway.app${blog.image}`} alt={blog.title} className="w-20 h-12 object-cover rounded-lg shadow-md" />
+                  <img src={blog.image} alt={blog.title} className="w-20 h-12 object-cover rounded-lg shadow-md" />
+
                   </td>
                   <td className="py-3 px-4 border">
                     <button
@@ -119,7 +120,7 @@ const AdminBlogs = () => {
                         setEditMode(true);
                         setSelectedBlog(blog);
                         setFormData(blog);
-                        setPreviewImage(`https://backend-production-cbe2.up.railway.app${blog.image}`);
+                        setPreviewImage(blog.image); // Direct Firebase Storage URL
                       }}
                       className="mr-2 bg-blue-500 text-white px-2 py-1 rounded shadow-md hover:bg-blue-600 transition-all"
                     >

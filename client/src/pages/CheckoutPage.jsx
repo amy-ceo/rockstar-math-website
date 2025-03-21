@@ -280,22 +280,88 @@ const [isProcessing, setIsProcessing] = useState(false) // ✅ Prevent duplicate
   const handleZeroAmount = () => {
     toast.error('Cannot process a payment of $0.00!')
   }
+  // const createPaymentIntent = async () => {
+  //   if (total <= 0) {
+  //     handleZeroAmount()
+  //     return null
+  //   }
+
+  //   if (isProcessing) return // ✅ Prevent duplicate calls
+  //   setIsProcessing(true) // ✅ Lock function execution
+
+  //   try {
+  //     const user = JSON.parse(localStorage.getItem('user'))
+  //     if (!user || !user._id) {
+  //       toast.error('User authentication required!')
+  //       return
+  //     }
+  //     const currency = 'usd'
+
+  //     const formattedCartItems = cartItems.map((item) => ({
+  //       id: item.id || `prod_${Math.random().toString(36).substring(7)}`,
+  //       name: item.name,
+  //       description: item.description || 'No description available',
+  //       price: String(item.price),
+  //       currency: item.currency || 'USD',
+  //       quantity: item.quantity || 1,
+  //     }))
+
+  //     console.log('🔹 Sending Payment Request with Amount:', total)
+
+  //     const orderId = `order_${Date.now()}`
+
+  //     const response = await fetch(
+  //       'https://backend-production-cbe2.up.railway.app/api/stripe/create-payment-intent',
+  //       {
+  //         method: 'POST',
+  //         headers: { 'Content-Type': 'application/json' },
+  //         body: JSON.stringify({
+  //           amount: total,
+  //           currency,
+  //           userId: user._id,
+  //           orderId,
+  //           userEmail: user.billingEmail || 'no-email@example.com',
+  //           cartItems: formattedCartItems,
+  //         }),
+  //       },
+  //     )
+
+  //     if (!response.ok) {
+  //       console.error('❌ Failed to create payment intent. Status:', response.status)
+  //       throw new Error(`Payment Intent creation failed. Server responded with ${response.status}`)
+  //     }
+
+  //     const data = await response.json()
+  //     console.log('✅ Payment Intent Created:', data)
+
+  //     setPaymentIntentId(data.id)
+  //     setClientSecret(data.clientSecret)
+  //     return data.clientSecret
+  //   } catch (error) {
+  //     console.error('❌ Payment Intent Error:', error)
+  //     toast.error(`Payment Error: ${error.message}`)
+  //     return null
+  //   } finally {
+  //     setIsProcessing(false) // ✅ Unlock function execution
+  //   }
+  // }
+
   const createPaymentIntent = async () => {
     if (total <= 0) {
-      handleZeroAmount()
-      return null
+      handleZeroAmount();
+      return null;
     }
 
-    if (isProcessing) return // ✅ Prevent duplicate calls
-    setIsProcessing(true) // ✅ Lock function execution
+    if (isProcessing) return; // ✅ Prevent duplicate calls
+    setIsProcessing(true); // ✅ Lock function execution
 
     try {
-      const user = JSON.parse(localStorage.getItem('user'))
+      const user = JSON.parse(localStorage.getItem('user'));
       if (!user || !user._id) {
-        toast.error('User authentication required!')
-        return
+        toast.error('User authentication required!');
+        return;
       }
-      const currency = 'usd'
+      const currency = 'usd';
 
       const formattedCartItems = cartItems.map((item) => ({
         id: item.id || `prod_${Math.random().toString(36).substring(7)}`,
@@ -304,11 +370,11 @@ const [isProcessing, setIsProcessing] = useState(false) // ✅ Prevent duplicate
         price: String(item.price),
         currency: item.currency || 'USD',
         quantity: item.quantity || 1,
-      }))
+      }));
 
-      console.log('🔹 Sending Payment Request with Amount:', total)
+      console.log('🔹 Sending Payment Request with Amount:', total);
 
-      const orderId = `order_${Date.now()}`
+      const orderId = `order_${Date.now()}`;
 
       const response = await fetch(
         'https://backend-production-cbe2.up.railway.app/api/stripe/create-payment-intent',
@@ -324,46 +390,117 @@ const [isProcessing, setIsProcessing] = useState(false) // ✅ Prevent duplicate
             cartItems: formattedCartItems,
           }),
         },
-      )
+      );
 
       if (!response.ok) {
-        console.error('❌ Failed to create payment intent. Status:', response.status)
-        throw new Error(`Payment Intent creation failed. Server responded with ${response.status}`)
+        console.error('❌ Failed to create payment intent. Status:', response.status);
+        throw new Error(`Payment Intent creation failed. Server responded with ${response.status}`);
       }
 
-      const data = await response.json()
-      console.log('✅ Payment Intent Created:', data)
+      const data = await response.json();
+      console.log('✅ Payment Intent Created:', data);
 
-      setPaymentIntentId(data.id)
-      setClientSecret(data.clientSecret)
-      return data.clientSecret
+      setPaymentIntentId(data.id);
+      setClientSecret(data.clientSecret);
+      return data.clientSecret;
     } catch (error) {
-      console.error('❌ Payment Intent Error:', error)
-      toast.error(`Payment Error: ${error.message}`)
-      return null
+      console.error('❌ Payment Intent Error:', error);
+      toast.error(`Payment Error: ${error.message}`);
+      return null;
     } finally {
-      setIsProcessing(false) // ✅ Unlock function execution
+      setIsProcessing(false); // ✅ Unlock function execution
     }
-  }
+  };
+  // // Function to clear cart from localStorage and state
+  // const clearCarts = () => {
+  //   console.log('🛒 Clearing Cart from LocalStorage and State...')
+  //   localStorage.removeItem('cartItems') // ✅ Ensure cart is cleared
+  //   setCartItems([]) // ✅ Reset state
+  //   window.dispatchEvent(new Event('storage')) // ✅ Sync across tabs
+  // }
 
-  // Function to clear cart from localStorage and state
-  const clearCarts = () => {
-    console.log('🛒 Clearing Cart from LocalStorage and State...')
-    localStorage.removeItem('cartItems') // ✅ Ensure cart is cleared
-    setCartItems([]) // ✅ Reset state
-    window.dispatchEvent(new Event('storage')) // ✅ Sync across tabs
-  }
+  // const handlePaymentSuccess = async () => {
+  //   console.log('🚀 handlePaymentSuccess function called!');
+  
+  //   try {
+  //     const user = JSON.parse(localStorage.getItem('user'));
+  //     if (!user || !user._id) {
+  //       toast.error('User authentication required!');
+  //       return;
+  //     }
+  
+  //     console.log('📡 Capturing Stripe Payment...');
+  //     const response = await fetch(
+  //       'https://backend-production-cbe2.up.railway.app/api/stripe/capture-stripe-payment',
+  //       {
+  //         method: 'POST',
+  //         headers: { 'Content-Type': 'application/json' },
+  //         body: JSON.stringify({
+  //           paymentIntentId,
+  //           user: {
+  //             _id: user._id,
+  //             username: user.username || 'Unknown User',
+  //             billingEmail: user.billingEmail || 'No email',
+  //             cartItems: cartItems.map((item) => ({
+  //               id: item.id,
+  //               name: item.name,
+  //               description: item.description || 'No description available',
+  //               price: item.price,
+  //               quantity: item.quantity || 1,
+  //             })),
+  //           },
+  //         }),
+  //       }
+  //     );
+  
+  //     const result = await response.json();
+  //     console.log('Backend Response:', result);
+  
+  //     if (result.clearCart) {
+  //       console.log('🛒 Clearing Cart from LocalStorage and State...');
+        
+  //       // ✅ Clear LocalStorage
+  //       localStorage.removeItem('cartItems'); 
+  
+  //       // ✅ Update React State
+  //       setCartItems([]); 
+  
+  //       // ✅ Dispatch Event to Sync Across Tabs
+  //       window.dispatchEvent(new Event('storage'));
+  
+  //       toast.success('🎉 Payment Successful! Cart cleared.');
+  
+  //       // ✅ Redirect to Dashboard after a short delay
+  //     } else {
+  //       toast.error('❌ Failed to clear cart after payment!');
+  //       console.warn('⚠️ Backend did not send clearCart = true. Cart may not be cleared.');
+  //     }
+  //     setTimeout(() => navigate('/dashboard'), 1000);
+  
+  //   } catch (error) {
+  //     console.error('❌ Error in Payment Process:', error);
+  //     toast.error(error.message || 'Payment processing error.');
+  //   }
+  // };
+  
+   // Function to clear cart from localStorage and state
+   const clearCarts = () => {
+    console.log('🛒 Clearing Cart from LocalStorage and State...');
+    localStorage.removeItem('cartItems'); // ✅ Ensure cart is cleared
+    setCartItems([]); // ✅ Reset state
+    window.dispatchEvent(new Event('storage')); // ✅ Sync across tabs
+  };
 
   const handlePaymentSuccess = async () => {
     console.log('🚀 handlePaymentSuccess function called!');
-  
+
     try {
       const user = JSON.parse(localStorage.getItem('user'));
       if (!user || !user._id) {
         toast.error('User authentication required!');
         return;
       }
-  
+
       console.log('📡 Capturing Stripe Payment...');
       const response = await fetch(
         'https://backend-production-cbe2.up.railway.app/api/stripe/capture-stripe-payment',
@@ -385,39 +522,38 @@ const [isProcessing, setIsProcessing] = useState(false) // ✅ Prevent duplicate
               })),
             },
           }),
-        }
+        },
       );
-  
+
       const result = await response.json();
       console.log('Backend Response:', result);
-  
+
       if (result.clearCart) {
         console.log('🛒 Clearing Cart from LocalStorage and State...');
-        
+
         // ✅ Clear LocalStorage
-        localStorage.removeItem('cartItems'); 
-  
+        localStorage.removeItem('cartItems');
+
         // ✅ Update React State
-        setCartItems([]); 
-  
+        setCartItems([]);
+
         // ✅ Dispatch Event to Sync Across Tabs
         window.dispatchEvent(new Event('storage'));
-  
+
         toast.success('🎉 Payment Successful! Cart cleared.');
-  
+
         // ✅ Redirect to Dashboard after a short delay
+        setTimeout(() => navigate('/dashboard'), 1000);
       } else {
         toast.error('❌ Failed to clear cart after payment!');
         console.warn('⚠️ Backend did not send clearCart = true. Cart may not be cleared.');
       }
-      setTimeout(() => navigate('/dashboard'), 1000);
-  
     } catch (error) {
       console.error('❌ Error in Payment Process:', error);
       toast.error(error.message || 'Payment processing error.');
     }
   };
-  
+
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-32">
