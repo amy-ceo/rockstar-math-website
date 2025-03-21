@@ -385,6 +385,52 @@ exports.getAllBookedSessions = async (req, res) => {
 };
 
 
+exports.addOrUpdateZoomNote = async (req, res) => {
+  try {
+    const { userId, sessionId, startTime, note } = req.body;
+
+    // ✅ Validate Input Fields
+    if (!userId || !sessionId || !startTime || note === undefined) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    // ✅ Validate userId format
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ error: "Invalid userId format" });
+    }
+
+    // ✅ Find User
+    const user = await Register.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // ✅ Find the Zoom Session
+    const session = user.zoomBookings.find(
+      (session) => session._id.toString() === sessionId
+    );
+
+    if (!session) {
+      return res.status(404).json({ error: "Zoom session not found" });
+    }
+
+    // ✅ Ensure the session date exists
+    if (!session.sessionDates.includes(startTime)) {
+      return res.status(404).json({ error: "Session date not found" });
+    }
+
+    // ✅ Save Note to Zoom Session
+    session.note = note;
+
+    // ✅ Save the updated document
+    await user.save({ validateBeforeSave: false });
+
+    res.json({ success: true, message: "Zoom session note updated successfully!", updatedSession: session });
+  } catch (error) {
+    console.error("Error updating Zoom session note:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
 
 
 exports.cancelSession = async (req, res) => {

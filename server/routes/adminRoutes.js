@@ -1,5 +1,5 @@
 const express = require("express");
-const { loginAdmin, getAdminStats,getAnalytics ,updateUser,deleteUser,addOrUpdateNoteToSession,deleteNoteFromSession,getAllBookedSessions,cancelSession,getAllUsers,getStripePayments,refundPayment,requestAdminPasswordReset, resetAdminPassword} = require("../controller/adminController");
+const { loginAdmin, getAdminStats,getAnalytics ,updateUser,deleteUser,  addOrUpdateZoomNote,addOrUpdateNoteToSession,deleteNoteFromSession,getAllBookedSessions,cancelSession,getAllUsers,getStripePayments,refundPayment,requestAdminPasswordReset, resetAdminPassword} = require("../controller/adminController");
 const { protectAdmin } = require("../middlewares/authMiddleware");
 
 const router = express.Router();
@@ -25,6 +25,8 @@ router.post("/reset-password/:token", resetAdminPassword);
 router.get("/booked-sessions", getAllBookedSessions);
 router.post("/cancel-session", cancelSession);
 // ✅ Route for adding note to a booked session
+// ✅ New route for adding Zoom session notes
+router.post("/add-zoom-note", addOrUpdateZoomNote);
 router.post("/delete-note", deleteNoteFromSession);
 
 module.exports = router;
