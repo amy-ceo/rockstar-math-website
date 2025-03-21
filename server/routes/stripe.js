@@ -213,8 +213,6 @@ const express = require('express')
        userId,
        orderId,
        cartItems,
-
-       module.exports = router
        userEmail,
      })
      if (!userId || !orderId || !cartItems || cartItems.length === 0) {
