@@ -14,7 +14,7 @@ if (!admin.apps.length) {
 
       client_email: "firebase-adminsdk-fbsvc@rockstarmath-image-base.iam.gserviceaccount.com", // 🔹 Replace with your Firebase service account email
     }),
-    storageBucket: "rockstarmath-image-base.firebasestorage.app", // 🔹 Replace with your Firebase Storage bucket name
+    storageBucket: "rockstarmath-image-base.appspot.com", // 🔹 Replace with your Firebase Storage bucket name
   });
 }
 
@@ -42,9 +42,11 @@ const upload = multer({
 
 async function uploadToFirebase(file) {
   try {
-    if (!file) throw new Error("No file provided for upload");
+    if (!file || !file.originalname) {
+      throw new Error("No file provided for upload or filename is missing.");
+    }
 
-    const destination = `blogs/${Date.now()}-${file.originalname}`;
+    const destination = `blogs/${Date.now()}-${file.originalname}`; // ✅ Ensure a valid filename
     const blob = bucket.file(destination);
 
     const blobStream = blob.createWriteStream({
@@ -65,13 +67,14 @@ async function uploadToFirebase(file) {
         resolve(publicUrl);
       });
 
-      blobStream.end(file.buffer); // 🔥 Use buffer to write file to Firebase
+      blobStream.end(file.buffer);
     });
   } catch (error) {
     console.error("🔥 Firebase Upload Error:", error);
     throw new Error("Failed to upload image to Firebase");
   }
 }
+
 
 
 
