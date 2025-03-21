@@ -46,7 +46,7 @@ async function uploadToFirebase(file) {
       throw new Error("No file provided for upload or filename is missing.");
     }
 
-    const destination = `blogs/${Date.now()}-${file.originalname}`; // ✅ Ensure a valid filename
+    const destination = `blogs/${Date.now()}-${file.originalname}`; // ✅ Unique filename
     const blob = bucket.file(destination);
 
     const blobStream = blob.createWriteStream({
@@ -62,9 +62,13 @@ async function uploadToFirebase(file) {
       });
 
       blobStream.on("finish", async () => {
-        const publicUrl = `https://storage.googleapis.com/${bucket.name}/${destination}`;
-        console.log("✅ Image Successfully Uploaded:", publicUrl);
-        resolve(publicUrl);
+        const [url] = await blob.getSignedUrl({
+          action: "read",
+          expires: "03-01-2030", // ✅ Set expiration date
+        });
+
+        console.log("✅ Image Successfully Uploaded:", url);
+        resolve(url);
       });
 
       blobStream.end(file.buffer);
@@ -75,6 +79,16 @@ async function uploadToFirebase(file) {
   }
 }
 
+async function deleteImageFromFirebase(imageUrl) {
+  try {
+    const filePath = decodeURIComponent(imageUrl.split(`/${bucket.name}/`)[1]).replace(/\?.*$/, "");
+    const file = bucket.file(filePath);
+    await file.delete();
+    console.log("✅ Image deleted from Firebase:", filePath);
+  } catch (error) {
+    console.error("🔥 Error deleting image from Firebase:", error);
+  }
+}
 
 
 
@@ -127,24 +141,10 @@ exports.updateBlog = async (req, res) => {
 
     if (req.file) {
       if (blog.image) {
-        try {
-          const filePath = decodeURIComponent(blog.image.split(`${bucket.name}/`)[1]).replace(/\?.*$/, ""); // ✅ Proper Path Extraction
-          const file = bucket.file(filePath);
-          await file.delete();
-          console.log("✅ Old image deleted from Firebase:", filePath);
-        } catch (error) {
-          console.error("🔥 Error deleting old image from Firebase:", error);
-        }
+        await deleteImageFromFirebase(blog.image); // ✅ Delete old image before updating
       }
-
-      // ✅ Ensure the new image is uploaded before updating the blog
-      try {
-        const newImageUrl = await uploadToFirebase(req.file);
-        updatedData.image = newImageUrl;
-      } catch (error) {
-        return res.status(500).json({ message: 'Error uploading new image', error: error.message });
-      }
-      
+      const newImageUrl = await uploadToFirebase(req.file);
+      updatedData.image = newImageUrl;
     }
 
     const updatedBlog = await Blog.findByIdAndUpdate(req.params.id, updatedData, { new: true });
@@ -157,7 +157,7 @@ exports.updateBlog = async (req, res) => {
 };
 
 
-// ✅ Delete a blog and remove image from Firebase
+
 exports.deleteBlog = async (req, res) => {
   try {
     const blog = await Blog.findById(req.params.id);
@@ -165,18 +165,11 @@ exports.deleteBlog = async (req, res) => {
     if (!blog) {
       return res.status(404).json({ message: 'Blog not found' });
     }
+
     if (blog.image) {
-      try {
-        const filePath = decodeURIComponent(blog.image.split(`${bucket.name}/`)[1]).replace(/\?.*$/, ""); // ✅ Removes query params
-        const file = bucket.file(filePath);
-        await file.delete();
-        console.log("✅ Image deleted from Firebase:", filePath);
-      } catch (error) {
-        console.error("🔥 Error deleting image from Firebase:", error);
-      }
+      await deleteImageFromFirebase(blog.image); // ✅ Securely delete image
     }
-    
-    // ✅ Delete blog from database
+
     await Blog.findByIdAndDelete(req.params.id);
 
     res.json({ message: 'Blog and image deleted successfully' });
