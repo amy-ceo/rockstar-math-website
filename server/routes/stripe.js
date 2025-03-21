@@ -204,7 +204,8 @@ const express = require('express')
    }
  })
  
- router.post('/create-payment-intent', async (req, res) => {
+ // Create Stripe Payment Intent
+router.post('/create-payment-intent', async (req, res) => {
   try {
     let { amount, currency, userId, orderId, cartItems, userEmail } = req.body;
 
@@ -214,54 +215,43 @@ const express = require('express')
       userId,
       orderId,
       cartItems,
-      userEmail
+      userEmail,
     });
 
-    // 🔴 Fix 1: Check if required fields are missing or cart is empty
-    if (!userId || !orderId || !cartItems || !Array.isArray(cartItems) || cartItems.length === 0) {
+    // 🔴 1. Validate Required Fields
+    if (!userId || !orderId || !cartItems || cartItems.length === 0) {
       console.error('❌ Missing required fields:', { userId, orderId, cartItems });
-      return res.status(400).json({ error: 'Cart cannot be empty. Please add items to cart.' });
+      return res.status(400).json({ error: 'Missing required fields: userId, orderId, cartItems.' });
     }
 
-    // 🔴 Fix 2: Validate amount
     if (!amount || isNaN(amount) || amount <= 0) {
       console.error('❌ Invalid amount received:', amount);
       return res.status(400).json({ error: 'Invalid amount. Must be greater than 0.' });
     }
 
-    // 🔴 Fix 3: Convert amount to cents (Stripe requires amount in cents)
+    // 🔴 2. Convert amount to cents (Stripe requires amount in cents)
     amount = Math.round(amount * 100);
 
-    // 🔴 Fix 4: Validate supported currencies
+    // 🔴 3. Validate Currency
     const supportedCurrencies = ['usd', 'eur', 'gbp', 'cad', 'aud'];
     if (!currency || !supportedCurrencies.includes(currency.toLowerCase())) {
       console.error('❌ Unsupported currency:', currency);
       return res.status(400).json({ error: 'Unsupported currency. Use USD, EUR, GBP, etc.' });
     }
 
-    // ✅ Fix 5: Ensure cart items have valid structure before sending to Stripe
-    const formattedCartItems = cartItems.map((item) => ({
-      id: item.id || `prod_${Math.random().toString(36).substring(7)}`, // 🔹 Generate unique ID if missing
-      name: item.name || 'Unnamed Product',
-      description: item.description || 'No description available',
-      price: String(item.price || '0'), // 🔥 Convert price to string
-      currency: item.currency || 'USD',
-      quantity: item.quantity || 1 // ✅ Ensure quantity is always at least 1
-    }));
-
-    // ✅ Fix 6: Handle metadata correctly
+    // 🔴 4. Prepare Metadata
     const metadata = {
       userId: String(userId),
       orderId: String(orderId),
       userEmail: userEmail || 'no-email@example.com',
-      cartSummary: formattedCartItems.map(item => item.name).join(', '),
-      cartItemIds: JSON.stringify(formattedCartItems.map(item => item.id)),
-      bookingLinks: JSON.stringify(formattedCartItems.map(item => calendlyMapping[item.name] || null))
+      cartSummary: cartItems.map((item) => item.name).join(', '),
+      cartItemIds: JSON.stringify(cartItems.map((item) => item.id)),
+      bookingLinks: JSON.stringify(cartItems.map((item) => calendlyMapping[item.name] || null)),
     };
 
     console.log('📡 Sending Payment Intent with Metadata:', metadata);
 
-    // ✅ Fix 7: Create Stripe Payment Intent
+    // 🔴 5. Create Payment Intent
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amount,
       currency: currency.toLowerCase(),
@@ -276,12 +266,26 @@ const express = require('express')
 
     console.log(`✅ PaymentIntent Created: ${paymentIntent.id} for User: ${userId}`);
 
-    // ✅ Fix 8: Return clientSecret to frontend
-    res.json({ clientSecret: paymentIntent.client_secret, id: paymentIntent.id });
+    // 🔴 6. Clear Cart in Database (AFTER Payment Intent is created)
+    try {
+      console.log('📡 Clearing cart for user:', userId);
+      await Register.findByIdAndUpdate(userId, { $set: { cartItems: [] } }, { new: true });
+      console.log('✅ Cart cleared for user:', userId);
+    } catch (cartClearError) {
+      console.error('❌ Error clearing cart in database:', cartClearError);
+      return res.status(500).json({ error: 'Error clearing cart from database.' });
+    }
+
+    // 🔴 7. Return Payment Intent Client Secret
+    return res.json({
+      clientSecret: paymentIntent.client_secret,
+      id: paymentIntent.id,
+      clearCart: true,
+    });
 
   } catch (error) {
     console.error('❌ Stripe Payment Intent Error:', error);
-    res.status(500).json({ error: 'Payment creation failed. Please try again later.', details: error.message });
+    return res.status(500).json({ error: 'Payment creation failed. Please try again later.' });
   }
 });
 
