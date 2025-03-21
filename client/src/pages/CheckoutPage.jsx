@@ -81,9 +81,6 @@ import React, { useEffect, useState, Suspense, lazy } from 'react'
  
    // Reset State using setCartItems (since you are using this state for cart items)
    setCartItems([]); // Reset cart state
-   // Reset State
-   setCart([]);
- 
    // Clear both 'cart' and 'cartItems' from localStorage
    localStorage.removeItem("cart"); // Remove 'cart' key
    localStorage.removeItem("cartItems"); // Remove 'cartItems' key
