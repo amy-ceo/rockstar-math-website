@@ -103,6 +103,7 @@ const UpcomingClasses = () => {
       const response = await axios.post(`${API_BASE_URL}/api/admin/${endpoint}`, {
         userId: selectedSession.userId,
         sessionId: selectedSession.sessionId,
+        startTime: selectedSession.startTime, // ✅ Add missing startTime field
         note,
       });
 
