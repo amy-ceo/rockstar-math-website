@@ -355,16 +355,16 @@ const [isProcessing, setIsProcessing] = useState(false) // ✅ Prevent duplicate
   }
 
   const handlePaymentSuccess = async () => {
-    console.log('🚀 handlePaymentSuccess function called!')
-
+    console.log('🚀 handlePaymentSuccess function called!');
+  
     try {
-      const user = JSON.parse(localStorage.getItem('user'))
+      const user = JSON.parse(localStorage.getItem('user'));
       if (!user || !user._id) {
-        toast.error('User authentication required!')
-        return
+        toast.error('User authentication required!');
+        return;
       }
-
-      console.log('📡 Capturing Stripe Payment...')
+  
+      console.log('📡 Capturing Stripe Payment...');
       const response = await fetch(
         'https://backend-production-cbe2.up.railway.app/api/stripe/capture-stripe-payment',
         {
@@ -385,26 +385,39 @@ const [isProcessing, setIsProcessing] = useState(false) // ✅ Prevent duplicate
               })),
             },
           }),
-        },
-      )
-
-      const result = await response.json()
-      console.log('Backend Response:', result)
-
+        }
+      );
+  
+      const result = await response.json();
+      console.log('Backend Response:', result);
+  
       if (result.clearCart) {
-        // Clear cart in frontend after successful payment
-        clearCarts()
-        toast.success('🎉 Payment Successful! Cart cleared.')
+        console.log('🛒 Clearing Cart from LocalStorage and State...');
+        
+        // ✅ Clear LocalStorage
+        localStorage.removeItem('cartItems'); 
+  
+        // ✅ Update React State
+        setCartItems([]); 
+  
+        // ✅ Dispatch Event to Sync Across Tabs
+        window.dispatchEvent(new Event('storage'));
+  
+        toast.success('🎉 Payment Successful! Cart cleared.');
+  
+        // ✅ Redirect to Dashboard after a short delay
+        setTimeout(() => navigate('/dashboard'), 2000);
       } else {
-        toast.error('❌ Failed to clear cart after payment intent creation!')
-        console.warn('⚠️ Backend did not send clearCart = true. Cart may not be cleared.')
+        toast.error('❌ Failed to clear cart after payment!');
+        console.warn('⚠️ Backend did not send clearCart = true. Cart may not be cleared.');
       }
-      navigate('/dashboard')
+  
     } catch (error) {
-      console.error('❌ Error in Payment Process:', error)
-      toast.error(error.message || 'Payment processing error.')
+      console.error('❌ Error in Payment Process:', error);
+      toast.error(error.message || 'Payment processing error.');
     }
-  }
+  };
+  
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-32">

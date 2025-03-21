@@ -301,6 +301,16 @@ router.post('/capture-stripe-payment', async (req, res) => {
       return res.status(500).json({ error: 'Database error while saving payment.' })
     }
 
+        // ✅ Step 2: Clear Cart in the Database
+        try {
+          console.log('🛒 Clearing Cart in DB for User:', user._id);
+          await Register.findByIdAndUpdate(user._id, {
+            $set: { cartItems: [] }, // ✅ Set cart to empty
+          });
+          console.log('✅ Cart Cleared in DB');
+        } catch (cartError) {
+          console.error('❌ Error Clearing Cart in DB:', cartError);
+        }
     // ✅ Step 2: Call addPurchasedClass API
     try {
       console.log('📡 Calling addPurchasedClass API with Data:', {
