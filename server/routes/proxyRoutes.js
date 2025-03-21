@@ -16,7 +16,6 @@ const COMMONCORE_ZOOM_LINK = {
   link: 'https://us06web.zoom.us/meeting/register/XsYhADVmQcK8BIT3Sfbpyg#/registration',
 };
 
-
 router.get('/proxy-zoom', async (req, res) => {
   try {
     const { userId, session } = req.query;
@@ -25,14 +24,15 @@ router.get('/proxy-zoom', async (req, res) => {
       return res.status(400).json({ error: 'Missing userId or session' });
     }
 
-    // ✅ Check if user already accessed this session
+    // ✅ Check if user exists
     const user = await Register.findById(userId);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    if (user.zoomAccess.includes(session)) {
-      return res.status(403).json({ error: 'You have already accessed this Zoom registration link!' });
+    // ✅ Check if user has already accessed another session
+    if (user.zoomAccess.length > 0) {
+      return res.status(403).json({ error: 'You have already accessed a Zoom session. You cannot access another session at the same time!' });
     }
 
     // ✅ Find the Zoom link (including Common Core)
@@ -64,7 +64,5 @@ router.get('/proxy-zoom', async (req, res) => {
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 });
-
-
 
 module.exports = router;

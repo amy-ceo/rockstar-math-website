@@ -554,26 +554,32 @@ function generateEmailHtml(user, zoomLinks, userCoupons, calendlyLinks, hasCommo
     detailsHtml += `<h3>🔗 Your Course Zoom Links:</h3><ul>`
 
     zoomLinks.forEach((course) => {
-      const oneTimeLink = generateOneTimeZoomLink(user._id, course.link)
       // ✅ Generate Proxy Zoom URL
+      const proxyLink = `${proxyZoomBaseUrl}?userId=${user._id}&session=${encodeURIComponent(
+        course.name,
+      )}`
+
       detailsHtml += `<li>📚 <b>${course.name}</b> – 
-      <a href="${oneTimeLink}" target="_blank"><b>Register Here</b></a> (One-time Access)
-    </li>`
+         <a href="${proxyLink}" target="_blank"><b>Register Here</b></a> (One-time Access)
+       </li>`
     })
 
     detailsHtml += `</ul>`
   }
-
-  // ✅ Special Section for "Common Core for Parents"
+  // ✅ Add Common Core Proxy URL if Purchased
   if (hasCommonCore) {
+    const commonCoreProxyLink = `${proxyZoomBaseUrl}?userId=${
+      user._id
+    }&session=${encodeURIComponent(COMMONCORE_ZOOM_LINK.name)}`
+
     detailsHtml += `
-       <h3 style="color: #007bff;">📚 Welcome to Common Core Math for Parents!! Register below!:</h3>
-       <p>
-         <a href="${COMMONCORE_ZOOM_LINK.link}" target="_blank" style="display: inline-block; padding: 10px 15px; background: #007bff; color: #fff; border-radius: 5px; text-decoration: none;">
-           🔗 ${COMMONCORE_ZOOM_LINK.name} – Register Here
-         </a>
-       </p>
-     `
+      <h3 style="color: #007bff;">📚 Welcome to Common Core Math for Parents!! Register below:</h3>
+      <p>
+        <a href="${commonCoreProxyLink}" target="_blank" style="display: inline-block; padding: 10px 15px; background: #007bff; color: #fff; border-radius: 5px; text-decoration: none;">
+          🔗 ${COMMONCORE_ZOOM_LINK.name} – Register Here (One-time Access)
+        </a>
+      </p>
+    `
   }
   // ✅ Add Discount Coupons (if available)
   if (userCoupons.length > 0) {
