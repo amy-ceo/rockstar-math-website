@@ -27,6 +27,8 @@ const CheckoutPage = () => {
   const [subtotal, setSubtotal] = useState(0)
   const [total, setTotal] = useState(0)
   const navigate = useNavigate()
+const [isProcessing, setIsProcessing] = useState(false) // ✅ Prevent duplicate API calls
+
 
   // ✅ Fetch Coupons (Fixed `data` Undefined Error)
   useEffect(() => {
@@ -70,7 +72,7 @@ const CheckoutPage = () => {
       setSubtotal(calculatedSubtotal)
       setTotal(calculatedSubtotal) // ✅ Initially, total = subtotal
     }
-  }, [navigate]) // ✅ Fix: `navigate` included to prevent infinite render
+  }, []) // ✅ Fix: `navigate` included to prevent infinite render
 
   // ✅ Create PayPal Order
   const createPayPalOrder = async () => {
@@ -284,6 +286,9 @@ const CheckoutPage = () => {
       return null
     }
 
+    if (isProcessing) return // ✅ Prevent duplicate calls
+    setIsProcessing(true) // ✅ Lock function execution
+
     try {
       const user = JSON.parse(localStorage.getItem('user'))
       if (!user || !user._id) {
@@ -292,18 +297,18 @@ const CheckoutPage = () => {
       }
       const currency = 'usd'
 
-      // ✅ Fix: Ensure cart items are properly formatted before sending
       const formattedCartItems = cartItems.map((item) => ({
-        id: item.id || `prod_${Math.random().toString(36).substring(7)}`, // 🔹 Ensure each item has a valid ID
+        id: item.id || `prod_${Math.random().toString(36).substring(7)}`,
         name: item.name,
         description: item.description || 'No description available',
-        price: String(item.price), // 🔥 Convert price to string to avoid serialization issues
+        price: String(item.price),
         currency: item.currency || 'USD',
-        quantity: item.quantity || 1, // ✅ Ensure quantity is present
+        quantity: item.quantity || 1,
       }))
+
       console.log('🔹 Sending Payment Request with Amount:', total)
 
-      const orderId = `order_${Date.now()}` // ✅ Define before the request
+      const orderId = `order_${Date.now()}`
 
       const response = await fetch(
         'https://backend-production-cbe2.up.railway.app/api/stripe/create-payment-intent',
@@ -314,7 +319,7 @@ const CheckoutPage = () => {
             amount: total,
             currency,
             userId: user._id,
-            orderId, // ✅ Only ONE definition remains
+            orderId,
             userEmail: user.billingEmail || 'no-email@example.com',
             cartItems: formattedCartItems,
           }),
@@ -336,17 +341,18 @@ const CheckoutPage = () => {
       console.error('❌ Payment Intent Error:', error)
       toast.error(`Payment Error: ${error.message}`)
       return null
+    } finally {
+      setIsProcessing(false) // ✅ Unlock function execution
     }
   }
 
   // Function to clear cart from localStorage and state
   const clearCarts = () => {
     console.log('🛒 Clearing Cart from LocalStorage and State...')
-    localStorage.removeItem('cartItems') // Ensure cart is cleared from localStorage
-    setCartItems([]) // Reset cart state
-    window.dispatchEvent(new Event('storage')) // Ensure sync across tabs
+    localStorage.removeItem('cartItems') // ✅ Ensure cart is cleared
+    setCartItems([]) // ✅ Reset state
+    window.dispatchEvent(new Event('storage')) // ✅ Sync across tabs
   }
-
 
   const handlePaymentSuccess = async () => {
     console.log('🚀 handlePaymentSuccess function called!')
@@ -394,7 +400,6 @@ const CheckoutPage = () => {
         console.warn('⚠️ Backend did not send clearCart = true. Cart may not be cleared.')
       }
       navigate('/dashboard')
-
     } catch (error) {
       console.error('❌ Error in Payment Process:', error)
       toast.error(error.message || 'Payment processing error.')
@@ -509,7 +514,6 @@ const CheckoutPage = () => {
             </>
           )}
 
-          {/* Stripe Payment */}
           {showPaymentForm && clientSecret && (
             <Suspense
               fallback={
@@ -528,7 +532,7 @@ const CheckoutPage = () => {
                   />
                 </Elements>
                 <button
-                  onClick={() => setShowPaymentForm(false)} // ✅ Go Back to Coupon Form
+                  onClick={() => setShowPaymentForm(false)}
                   className="w-full flex justify-center underline mt-5"
                 >
                   Go Back
