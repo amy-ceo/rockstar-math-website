@@ -3,22 +3,19 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 require('dotenv').config(); // Load .env file
-const admin = require('firebase-admin'); // 🔥 Import Firebase Admin SDK
-
-// ✅ Firebase Admin Setup
-const serviceAccount = require('../firebaseServiceAccount.json'); // Ensure this file is present in your backend directory
-
+const admin = require('firebase-admin');
 
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert({
       project_id: process.env.FIREBASE_PROJECT_ID,
-      private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+      private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n').replace(/^"(.*)"$/, '$1'),
       client_email: process.env.FIREBASE_CLIENT_EMAIL,
     }),
     storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
   });
 }
+
 console.log("🔹 FIREBASE_PROJECT_ID:", process.env.FIREBASE_PROJECT_ID);
 console.log("🔹 FIREBASE_CLIENT_EMAIL:", process.env.FIREBASE_CLIENT_EMAIL);
 
