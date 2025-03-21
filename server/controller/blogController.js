@@ -14,7 +14,7 @@ if (!admin.apps.length) {
 
       client_email: "firebase-adminsdk-fbsvc@rockstarmath-image-base.iam.gserviceaccount.com", // 🔹 Replace with your Firebase service account email
     }),
-    storageBucket: "rockstarmath-image-base.appspot.com", // 🔹 Replace with your Firebase Storage bucket name
+    storageBucket: "rockstarmath-image-base.firebasestorage.app", // 🔹 Replace with your Firebase Storage bucket name
   });
 }
 
