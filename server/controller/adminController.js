@@ -460,8 +460,9 @@ exports.addOrUpdateZoomNote = async (req, res) => {
     }
 
     const session = user.zoomBookings.find(
-      (session) => session._id.toString() === sessionId
+      (session) => session.zoomMeetingId === sessionId
     );
+    
 
     if (!session) {
       return res.status(404).json({ error: "Zoom session not found" });
