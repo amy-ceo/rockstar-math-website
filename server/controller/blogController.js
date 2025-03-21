@@ -3,7 +3,6 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 require('dotenv').config(); // Load .env file
-const admin = require('firebase-admin');
 
 const admin = require('firebase-admin');
 
