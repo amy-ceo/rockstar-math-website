@@ -1,7 +1,7 @@
 // routes/blogRoutes.js
 const express = require('express');
 const router = express.Router();
-const blogController = require('../controllers/blogController');
+const blogController = require('../controller/blogController');
 
 // GET all blogs
 router.get('/', blogController.getAllBlogs);
