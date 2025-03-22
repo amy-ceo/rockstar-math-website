@@ -68,14 +68,17 @@ const AdminBlogs = () => {
     e.preventDefault();
 
     const formDataToSend = new FormData();
-    formDataToSend.append('title', formData.title);
-    formDataToSend.append('description', formData.description);
+  formDataToSend.append('title', formData.title);
+  formDataToSend.append('description', formData.description);
+  
+  if (formData.image) {
+    formDataToSend.append('image', formData.image);
+  }
 
-    // Only append 'image' if user actually selected a file
-    if (formData.image) {
-      formDataToSend.append('image', formData.image); // Must match .single('image') in backend
-    }
-
+  // Debugging FormData
+  for (let pair of formDataToSend.entries()) {
+    console.log(pair[0] + ', ' + pair[1]); // Log FormData contents
+  }
     try {
       if (editMode) {
         // Update existing blog

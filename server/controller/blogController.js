@@ -29,8 +29,16 @@ const storage = new CloudinaryStorage({
 });
 
 // 4. Create the Multer middleware using Cloudinary storage
-const upload = multer({ storage });
-
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max size
+  fileFilter: (req, file, cb) => {
+    if (!file.mimetype.startsWith('image/')) {
+      return cb(new Error('Only image files are allowed!'), false);
+    }
+    cb(null, true);
+  },
+});
 // ========== Controller Methods ==========
 
 // GET all blogs
@@ -47,8 +55,7 @@ exports.getAllBlogs = async (req, res) => {
 // CREATE a new blog
 exports.createBlog = async (req, res) => {
   try {
-    console.log("DEBUG createBlog -> req.body:", req.body);
-    console.log("DEBUG createBlog -> req.file:", req.file);
+    console.log("DEBUG multer file object:", req.file);
 
     const { title, description } = req.body;
     let imageUrl = '';
