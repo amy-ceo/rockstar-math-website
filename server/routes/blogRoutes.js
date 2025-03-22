@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const blogController = require('../controllers/blogController'); // ✅ Ensure correct path
+const blogController = require('../controller/blogController'); // ✅ Ensure correct path
 
 console.log("DEBUG: blogController", blogController); // 🔍 Debug to check the imported object
 
