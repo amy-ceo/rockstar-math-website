@@ -1,12 +1,13 @@
 // routes/blogRoutes.js
 const express = require('express');
 const router = express.Router();
-const blogController = require('../controller/blogController');
+const blogController = require('../controllers/blogController');
 
 // GET all blogs
 router.get('/', blogController.getAllBlogs);
 
-// CREATE a new blog (using 'image' as the form field name)
+// CREATE a new blog
+// "image" is the field name from your frontend's FormData
 router.post('/', blogController.upload.single('image'), blogController.createBlog);
 
 // UPDATE an existing blog
