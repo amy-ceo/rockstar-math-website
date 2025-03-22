@@ -48,7 +48,7 @@ const streamUpload = (buffer) => {
 };
 
 // ✅ 5. GET all blogs
-exports.getAllBlogs = async (req, res) => {
+const getAllBlogs = async (req, res) => {
   try {
     console.log("DEBUG: Fetching all blogs...");
     const blogs = await Blog.find();
@@ -60,7 +60,7 @@ exports.getAllBlogs = async (req, res) => {
 };
 
 // ✅ 6. CREATE a new blog
-exports.createBlog = async (req, res) => {
+const createBlog = async (req, res) => {
   try {
     console.log("DEBUG: Incoming File Object:", req.file);
     console.log("DEBUG: Incoming Form Data:", req.body);
@@ -99,7 +99,7 @@ exports.createBlog = async (req, res) => {
 };
 
 // ✅ 7. UPDATE an existing blog
-exports.updateBlog = async (req, res) => {
+const updateBlog = async (req, res) => {
   try {
     console.log("DEBUG updateBlog -> req.body:", req.body);
     console.log("DEBUG updateBlog -> req.file:", req.file);
@@ -145,7 +145,7 @@ exports.updateBlog = async (req, res) => {
 };
 
 // ✅ 8. DELETE a blog
-exports.deleteBlog = async (req, res) => {
+const deleteBlog = async (req, res) => {
   try {
     const blog = await Blog.findById(req.params.id);
     if (!blog) {
@@ -172,9 +172,9 @@ exports.deleteBlog = async (req, res) => {
 
 // ✅ 9. Export all functions
 module.exports = {
-  getAllBlogs,
+  getAllBlogs,   // ✅ Function is now defined BEFORE export
   createBlog,
   updateBlog,
   deleteBlog,
-  upload, // ✅ Ensure Multer upload is exported
+  upload, 
 };
