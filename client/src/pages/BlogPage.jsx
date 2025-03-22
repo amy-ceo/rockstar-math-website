@@ -121,7 +121,7 @@ function BlogPage() {
                   >
                     <div className="relative w-full h-48 sm:h-56 overflow-hidden rounded-t-lg">
                       <img
-                        src={`https://backend-production-cbe2.up.railway.app${item.image}`}
+                        src={item.image}
                         loading="lazy"
                         alt={item.title}
                         className="w-full h-full object-cover"
