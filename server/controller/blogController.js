@@ -4,21 +4,21 @@ const multer = require('multer');
 const Blog = require('../models/Blog');
 const streamifier = require('streamifier'); // ✅ Needed to handle Buffer streams
 
-// 1️⃣ ✅ DEBUG: Log Cloudinary environment variables
+// ✅ 1. DEBUG: Log Cloudinary environment variables
 console.log("DEBUG Cloudinary ENV:", {
   cloudName: process.env.CLOUDINARY_CLOUD_NAME,
   apiKey: process.env.CLOUDINARY_API_KEY,
   apiSecretPresent: !!process.env.CLOUDINARY_API_SECRET,
 });
 
-// 2️⃣ ✅ Configure Cloudinary
+// ✅ 2. Configure Cloudinary
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// 3️⃣ ✅ Multer Setup - Store Files in Memory
+// ✅ 3. Multer Setup - Store Files in Memory (For Direct Cloudinary Upload)
 const storage = multer.memoryStorage(); 
 
 const upload = multer({
@@ -33,7 +33,7 @@ const upload = multer({
   },
 });
 
-// 4️⃣ ✅ Cloudinary Stream Upload Function
+// ✅ 4. Cloudinary Stream Upload Function
 const streamUpload = (buffer) => {
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
@@ -47,7 +47,19 @@ const streamUpload = (buffer) => {
   });
 };
 
-// 5️⃣ ✅ CREATE a new blog (with Cloudinary Fix)
+// ✅ 5. GET all blogs
+exports.getAllBlogs = async (req, res) => {
+  try {
+    console.log("DEBUG: Fetching all blogs...");
+    const blogs = await Blog.find();
+    res.json(blogs);
+  } catch (error) {
+    console.error("❌ Error fetching blogs:", error);
+    res.status(500).json({ message: "Error fetching blogs", error: error.message });
+  }
+};
+
+// ✅ 6. CREATE a new blog
 exports.createBlog = async (req, res) => {
   try {
     console.log("DEBUG: Incoming File Object:", req.file);
@@ -86,7 +98,7 @@ exports.createBlog = async (req, res) => {
   }
 };
 
-// 6️⃣ ✅ UPDATE an existing blog (Fix `req.file.filename` issue)
+// ✅ 7. UPDATE an existing blog
 exports.updateBlog = async (req, res) => {
   try {
     console.log("DEBUG updateBlog -> req.body:", req.body);
@@ -132,7 +144,7 @@ exports.updateBlog = async (req, res) => {
   }
 };
 
-// 7️⃣ ✅ DELETE a blog
+// ✅ 8. DELETE a blog
 exports.deleteBlog = async (req, res) => {
   try {
     const blog = await Blog.findById(req.params.id);
@@ -158,5 +170,11 @@ exports.deleteBlog = async (req, res) => {
   }
 };
 
-// 8️⃣ ✅ Export Multer Middleware
-exports.upload = upload;
+// ✅ 9. Export all functions
+module.exports = {
+  getAllBlogs,
+  createBlog,
+  updateBlog,
+  deleteBlog,
+  upload, // ✅ Ensure Multer upload is exported
+};

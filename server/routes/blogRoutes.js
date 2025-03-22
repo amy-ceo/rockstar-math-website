@@ -4,7 +4,7 @@ const blogController = require('../controller/blogController'); // ✅ Ensure co
 
 console.log("DEBUG: blogController", blogController); // 🔍 Debug to check the imported object
 
-// Check if required functions exist
+// ✅ Check if required functions exist
 if (!blogController.getAllBlogs) {
   console.error("❌ ERROR: getAllBlogs function is missing from blogController");
 }
@@ -18,16 +18,16 @@ if (!blogController.deleteBlog) {
   console.error("❌ ERROR: deleteBlog function is missing from blogController");
 }
 
-// GET all blogs
+// ✅ GET all blogs
 router.get('/', blogController.getAllBlogs);
 
-// CREATE a new blog
-router.post('/', blogController.upload?.single('image'), blogController.createBlog);
+// ✅ CREATE a new blog
+router.post('/', blogController.upload.single('image'), blogController.createBlog);
 
-// UPDATE an existing blog
-router.put('/:id', blogController.upload?.single('image'), blogController.updateBlog);
+// ✅ UPDATE an existing blog
+router.put('/:id', blogController.upload.single('image'), blogController.updateBlog);
 
-// DELETE a blog
+// ✅ DELETE a blog
 router.delete('/:id', blogController.deleteBlog);
 
 module.exports = router;
