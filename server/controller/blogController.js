@@ -18,6 +18,26 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+// ✅ 1. DEBUG: Log Cloudinary environment variables
+console.log("DEBUG Cloudinary ENV:", {
+  cloudName: process.env.CLOUDINARY_CLOUD_NAME,
+  apiKey: process.env.CLOUDINARY_API_KEY,
+  apiSecretPresent: !!process.env.CLOUDINARY_API_SECRET, // ✅ Checks if secret exists but does NOT log it
+});
+
+// ✅ 2. Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// ✅ 3. Test Cloudinary Authentication
+cloudinary.api.ping()
+  .then(result => console.log("✅ Cloudinary Authentication Successful:", result))
+  .catch(error => console.error("❌ Cloudinary Authentication Failed:", error));
+
+
 // ✅ 3. Multer Setup - Store Files in Memory (For Direct Cloudinary Upload)
 const storage = multer.memoryStorage(); 
 
