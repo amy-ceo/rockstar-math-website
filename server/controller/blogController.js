@@ -38,11 +38,6 @@ const upload = multer({
     cb(null, true);
   },
 });
-const cloudinaryResponse = await cloudinary.uploader.upload(req.file.path, {
-  folder: "blogs",
-});
-console.log("Cloudinary Response:", cloudinaryResponse);
-
 
 // ========== Controller Methods ==========
 
@@ -67,6 +62,14 @@ exports.createBlog = async (req, res) => {
     }
 
     const { title, description } = req.body;
+
+       // Cloudinary Upload
+       const cloudinaryResponse = await cloudinary.uploader.upload(req.file.path, {
+        folder: "blogs",
+      });
+  
+      console.log("Cloudinary Response:", cloudinaryResponse);
+
     const imageUrl = req.file.path; // Cloudinary image URL
     const imageId = req.file.filename; // Cloudinary public_id
 
