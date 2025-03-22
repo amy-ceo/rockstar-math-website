@@ -28,17 +28,22 @@ const storage = new CloudinaryStorage({
   },
 });
 
-// 4. Create the Multer middleware using Cloudinary storage
 const upload = multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max size
   fileFilter: (req, file, cb) => {
-    if (!file.mimetype.startsWith('image/')) {
-      return cb(new Error('Only image files are allowed!'), false);
+    if (!file.mimetype.startsWith("image/")) {
+      return cb(new Error("Only image files are allowed!"), false);
     }
     cb(null, true);
   },
 });
+const cloudinaryResponse = await cloudinary.uploader.upload(req.file.path, {
+  folder: "blogs",
+});
+console.log("Cloudinary Response:", cloudinaryResponse);
+
+
 // ========== Controller Methods ==========
 
 // GET all blogs
@@ -55,36 +60,26 @@ exports.getAllBlogs = async (req, res) => {
 // CREATE a new blog
 exports.createBlog = async (req, res) => {
   try {
-    console.log("DEBUG multer file object:", req.file);
+    console.log("DEBUG multer file object:", req.file); // Check if file is received
 
-    const { title, description } = req.body;
-    let imageUrl = '';
-    let imageId = '';
-
-    // Multer-Cloudinary automatically sets req.file.path (URL) and req.file.filename (public_id)
-    if (req.file) {
-      imageUrl = req.file.path;
-      imageId = req.file.filename;
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded!" });
     }
 
-    const newBlog = new Blog({
-      title,
-      description,
-      image: imageUrl,
-      imageId: imageId,
-    });
+    const { title, description } = req.body;
+    const imageUrl = req.file.path; // Cloudinary image URL
+    const imageId = req.file.filename; // Cloudinary public_id
 
+    const newBlog = new Blog({ title, description, image: imageUrl, imageId });
     await newBlog.save();
-    res.status(201).json({ message: 'Blog created successfully', newBlog });
+    res.status(201).json({ message: "Blog created successfully", newBlog });
+
   } catch (error) {
     console.error("Error creating blog:", error);
-    res.status(500).json({
-      message: 'Error creating blog',
-      error: error.message,
-      stack: error.stack
-    });
+    res.status(500).json({ message: "Error creating blog", error: error.message });
   }
 };
+
 
 // UPDATE an existing blog
 exports.updateBlog = async (req, res) => {
