@@ -63,12 +63,16 @@ exports.createBlog = async (req, res) => {
 
     const { title, description } = req.body;
 
-       // Cloudinary Upload
-       const cloudinaryResponse = await cloudinary.uploader.upload(req.file.path, {
-        folder: "blogs",
-      });
-  
-      console.log("Cloudinary Response:", cloudinaryResponse);
+    const cloudinaryResponse = await cloudinary.uploader.upload(req.file.path, {
+      folder: "blogs",
+    });
+    
+    if (!cloudinaryResponse || !cloudinaryResponse.secure_url) {
+      return res.status(500).json({ message: "Cloudinary upload failed!", response: cloudinaryResponse });
+    }
+    
+    console.log("Cloudinary Response:", JSON.stringify(cloudinaryResponse, null, 2));
+    
 
     const imageUrl = req.file.path; // Cloudinary image URL
     const imageId = req.file.filename; // Cloudinary public_id

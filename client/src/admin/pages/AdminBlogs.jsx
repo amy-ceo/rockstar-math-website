@@ -67,19 +67,20 @@ const AdminBlogs = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const formDataToSend = new FormData();
-    formDataToSend.append("title", formData.title);
-    formDataToSend.append("description", formData.description);
+   
+  const formDataToSend = new FormData();
+  formDataToSend.append("title", formData.title);
+  formDataToSend.append("description", formData.description);
+
+  if (formData.image) {
+    formDataToSend.append("image", formData.image);
+  }
+
+  // Debug FormData
+  for (let pair of formDataToSend.entries()) {
+    console.log("FORMDATA:", pair[0], pair[1]);
+  }
   
-    if (formData.image) {
-      formDataToSend.append("image", formData.image);
-    }
-  
-    // Debugging FormData contents
-    console.log("DEBUG: FormData Contents:");
-    for (let pair of formDataToSend.entries()) {
-      console.log(pair[0] + ": ", pair[1]);
-    }
     try {
       if (editMode) {
         // Update existing blog
