@@ -14,9 +14,9 @@ console.log("DEBUG Cloudinary ENV:", {
 
 // 2. Configure Cloudinary with your .env credentials
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
+  cloud_name: 'myapp', 
+  api_key: '813831155681172',
+  api_secret: 'QBbSy-eu93agoJp9a7YGRAd1GtA',
 });
 
 // 3. Create a Cloudinary storage instance for Multer
