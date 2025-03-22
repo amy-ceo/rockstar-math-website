@@ -32,6 +32,7 @@ const upload = multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max size
   fileFilter: (req, file, cb) => {
+    console.log("DEBUG: File received in Multer:", file);
     if (!file.mimetype.startsWith("image/")) {
       return cb(new Error("Only image files are allowed!"), false);
     }
@@ -55,7 +56,8 @@ exports.getAllBlogs = async (req, res) => {
 // CREATE a new blog
 exports.createBlog = async (req, res) => {
   try {
-    console.log("DEBUG multer file object:", req.file); // Check if file is received
+    console.log("DEBUG: Incoming File Object:", req.file);
+    console.log("DEBUG: Incoming Form Data:", req.body);
 
     if (!req.file) {
       return res.status(400).json({ message: "No file uploaded!" });
@@ -63,26 +65,27 @@ exports.createBlog = async (req, res) => {
 
     const { title, description } = req.body;
 
+    // Upload file to Cloudinary
     const cloudinaryResponse = await cloudinary.uploader.upload(req.file.path, {
       folder: "blogs",
     });
-    
+
+    console.log("DEBUG: Cloudinary Response:", JSON.stringify(cloudinaryResponse, null, 2));
+
     if (!cloudinaryResponse || !cloudinaryResponse.secure_url) {
       return res.status(500).json({ message: "Cloudinary upload failed!", response: cloudinaryResponse });
     }
-    
-    console.log("Cloudinary Response:", JSON.stringify(cloudinaryResponse, null, 2));
-    
 
-    const imageUrl = req.file.path; // Cloudinary image URL
-    const imageId = req.file.filename; // Cloudinary public_id
+    const imageUrl = cloudinaryResponse.secure_url;
+    const imageId = cloudinaryResponse.public_id;
 
     const newBlog = new Blog({ title, description, image: imageUrl, imageId });
     await newBlog.save();
+
     res.status(201).json({ message: "Blog created successfully", newBlog });
 
   } catch (error) {
-    console.error("Error creating blog:", error);
+    console.error("❌ Error creating blog:", error);
     res.status(500).json({ message: "Error creating blog", error: error.message });
   }
 };
