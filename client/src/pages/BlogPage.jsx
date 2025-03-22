@@ -15,14 +15,16 @@ function BlogPage() {
   useEffect(() => {
     const fetchBlogs = async () => {
       try {
-        const response = await axios.get('https://backend-production-cbe2.up.railway.app/api/blogs') // Adjust URL as needed
-        setBlogs(response.data)
+        const response = await axios.get('https://backend-production-cbe2.up.railway.app/api/blogs')
+        console.log("DEBUG: Fetched Blogs Data:", response.data); // ✅ Debugging line
+        setBlogs(response.data);
       } catch (error) {
-        console.error('Error fetching blogs:', error)
+        console.error('Error fetching blogs:', error);
       }
     }
     fetchBlogs()
   }, [])
+  
 
   // ✅ Open & Close Modal
   const handleOpenModal = (blog) => {
@@ -162,7 +164,7 @@ function BlogPage() {
               {/* ✅ Image Section */}
               <div className="md:w-1/2 h-64 md:h-auto bg-gray-100">
                 <img
-                  src={`https://backend-production-cbe2.up.railway.app${selectedBlog.image}`}
+                  src={selectedBlog.image}
                   alt={selectedBlog.title}
                   className="w-full h-full object-cover"
                 />

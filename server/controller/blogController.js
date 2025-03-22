@@ -104,10 +104,9 @@ const createBlog = async (req, res) => {
     const newBlog = new Blog({
       title: req.body.title, 
       description: req.body.description, 
-      image: imageUrl, 
-      imageId
+      image: cloudinaryResponse.secure_url, // ✅ Ensure it's the full URL
+      imageId: cloudinaryResponse.public_id
     });
-
     await newBlog.save();
 
     res.status(201).json({ message: "Blog created successfully", newBlog });
