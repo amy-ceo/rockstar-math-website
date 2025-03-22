@@ -1,36 +1,29 @@
-// controllers/blogController.js
 require('dotenv').config();
 const cloudinary = require('cloudinary').v2;
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const multer = require('multer');
 const Blog = require('../models/Blog');
+const streamifier = require('streamifier'); // ✅ Needed to handle Buffer streams
 
-// 1. DEBUG: Log environment variables to ensure they're loaded
+// 1️⃣ ✅ DEBUG: Log Cloudinary environment variables
 console.log("DEBUG Cloudinary ENV:", {
   cloudName: process.env.CLOUDINARY_CLOUD_NAME,
   apiKey: process.env.CLOUDINARY_API_KEY,
-  apiSecretPresent: !!process.env.CLOUDINARY_API_SECRET, // just to check if it's not empty
+  apiSecretPresent: !!process.env.CLOUDINARY_API_SECRET,
 });
 
-// 2. Configure Cloudinary with your .env credentials
+// 2️⃣ ✅ Configure Cloudinary
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// 3. Create a Cloudinary storage instance for Multer
-const storage = new CloudinaryStorage({
-  cloudinary,
-  params: {
-    folder: 'blogs', // Cloudinary folder name
-    allowed_formats: ['jpg', 'jpeg', 'png'],
-  },
-});
+// 3️⃣ ✅ Multer Setup - Store Files in Memory
+const storage = multer.memoryStorage(); 
 
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max size
+  limits: { fileSize: 5 * 1024 * 1024 }, // ✅ 5MB max size
   fileFilter: (req, file, cb) => {
     console.log("DEBUG: File received in Multer:", file);
     if (!file.mimetype.startsWith("image/")) {
@@ -40,20 +33,21 @@ const upload = multer({
   },
 });
 
-// ========== Controller Methods ==========
-
-// GET all blogs
-exports.getAllBlogs = async (req, res) => {
-  try {
-    const blogs = await Blog.find();
-    res.json(blogs);
-  } catch (error) {
-    console.error("Error fetching blogs:", error);
-    res.status(500).json({ message: 'Error fetching blogs', error: error.message });
-  }
+// 4️⃣ ✅ Cloudinary Stream Upload Function
+const streamUpload = (buffer) => {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { folder: "blogs" }, 
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result);
+      }
+    );
+    streamifier.createReadStream(buffer).pipe(stream);
+  });
 };
 
-// CREATE a new blog
+// 5️⃣ ✅ CREATE a new blog (with Cloudinary Fix)
 exports.createBlog = async (req, res) => {
   try {
     console.log("DEBUG: Incoming File Object:", req.file);
@@ -63,12 +57,8 @@ exports.createBlog = async (req, res) => {
       return res.status(400).json({ message: "No file uploaded!" });
     }
 
-    const { title, description } = req.body;
-
-    // Upload file to Cloudinary
-    const cloudinaryResponse = await cloudinary.uploader.upload(req.file.path, {
-      folder: "blogs",
-    });
+    // ✅ Upload to Cloudinary via Stream
+    const cloudinaryResponse = await streamUpload(req.file.buffer);
 
     console.log("DEBUG: Cloudinary Response:", JSON.stringify(cloudinaryResponse, null, 2));
 
@@ -79,7 +69,13 @@ exports.createBlog = async (req, res) => {
     const imageUrl = cloudinaryResponse.secure_url;
     const imageId = cloudinaryResponse.public_id;
 
-    const newBlog = new Blog({ title, description, image: imageUrl, imageId });
+    const newBlog = new Blog({
+      title: req.body.title, 
+      description: req.body.description, 
+      image: imageUrl, 
+      imageId
+    });
+
     await newBlog.save();
 
     res.status(201).json({ message: "Blog created successfully", newBlog });
@@ -90,8 +86,7 @@ exports.createBlog = async (req, res) => {
   }
 };
 
-
-// UPDATE an existing blog
+// 6️⃣ ✅ UPDATE an existing blog (Fix `req.file.filename` issue)
 exports.updateBlog = async (req, res) => {
   try {
     console.log("DEBUG updateBlog -> req.body:", req.body);
@@ -101,59 +96,67 @@ exports.updateBlog = async (req, res) => {
     const blog = await Blog.findById(req.params.id);
 
     if (!blog) {
-      return res.status(404).json({ message: 'Blog not found' });
+      return res.status(404).json({ message: "Blog not found" });
     }
 
-    // If a new image is uploaded, delete the old one from Cloudinary
     if (req.file) {
+      // ✅ If there's an existing image, delete it from Cloudinary
       if (blog.imageId) {
-        // Delete old image from Cloudinary
         await cloudinary.uploader.destroy(blog.imageId);
       }
-      // Update with new image data
-      blog.image = req.file.path;
-      blog.imageId = req.file.filename;
+
+      // ✅ Upload the new image
+      const cloudinaryResponse = await streamUpload(req.file.buffer);
+
+      if (!cloudinaryResponse || !cloudinaryResponse.secure_url) {
+        return res.status(500).json({ message: "Cloudinary upload failed!", response: cloudinaryResponse });
+      }
+
+      blog.image = cloudinaryResponse.secure_url;
+      blog.imageId = cloudinaryResponse.public_id;
     }
 
     blog.title = title;
     blog.description = description;
 
     const updatedBlog = await blog.save();
-    res.json({ message: 'Blog updated successfully', updatedBlog });
+    res.json({ message: "Blog updated successfully", updatedBlog });
+
   } catch (error) {
     console.error("Error updating blog:", error);
     res.status(500).json({
-      message: 'Error updating blog',
+      message: "Error updating blog",
       error: error.message,
       stack: error.stack
     });
   }
 };
 
-// DELETE a blog
+// 7️⃣ ✅ DELETE a blog
 exports.deleteBlog = async (req, res) => {
   try {
     const blog = await Blog.findById(req.params.id);
     if (!blog) {
-      return res.status(404).json({ message: 'Blog not found' });
+      return res.status(404).json({ message: "Blog not found" });
     }
 
-    // Delete the image from Cloudinary if it exists
+    // ✅ Delete the image from Cloudinary if it exists
     if (blog.imageId) {
       await cloudinary.uploader.destroy(blog.imageId);
     }
 
     await Blog.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Blog and image deleted successfully' });
+    res.json({ message: "Blog and image deleted successfully" });
+
   } catch (error) {
     console.error("Error deleting blog:", error);
     res.status(500).json({
-      message: 'Error deleting blog',
+      message: "Error deleting blog",
       error: error.message,
       stack: error.stack
     });
   }
 };
 
-// Export the Multer upload middleware for routes
+// 8️⃣ ✅ Export Multer Middleware
 exports.upload = upload;
