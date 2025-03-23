@@ -8,72 +8,77 @@ import 'react-toastify/dist/ReactToastify.css'
 const API_BASE_URL = 'https://backend-production-cbe2.up.railway.app' // ✅ Ensure correct API URL
 
 const UpcomingClasses = () => {
-  const [sessions, setSessions] = useState([])
-  const [selectedSession, setSelectedSession] = useState(null)
-  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false)
-  const [isNoteModalOpen, setIsNoteModalOpen] = useState(false)
-  const [note, setNote] = useState('')
-  const [showNoteModal, setShowNoteModal] = useState(false)
-  const [noteText, setNoteText] = useState('')
-  const [selectedZoomSessionId, setSelectedZoomSessionId] = useState('')
-  const [selectedZoomDate, setSelectedZoomDate] = useState('')
+  const [sessions, setSessions] = useState([]);
+  const [selectedSession, setSelectedSession] = useState(null);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
 
-  const [loading, setLoading] = useState(true)
+  // Calendly Note Modal
+  const [isCalendlyNoteModalOpen, setIsCalendlyNoteModalOpen] = useState(false);
+  const [calendlyNoteText, setCalendlyNoteText] = useState('');
 
-  // ✅ Fetch sessions with latest notes (Both Calendly & Zoom)
+  // Zoom Note Modal
+  const [isZoomNoteModalOpen, setIsZoomNoteModalOpen] = useState(false);
+  const [zoomNoteText, setZoomNoteText] = useState('');
+  const [selectedZoomSessionId, setSelectedZoomSessionId] = useState('');
+  const [selectedZoomDate, setSelectedZoomDate] = useState('');
+
+  const [loading, setLoading] = useState(true);
+
+  // ✅ Fetch sessions (Calendly + Zoom) from your backend
   useEffect(() => {
     const fetchSessions = async () => {
       try {
-        const response = await axios.get(`${API_BASE_URL}/api/admin/booked-sessions`)
-        console.log('📢 API Response:', response.data)
+        const response = await axios.get(`${API_BASE_URL}/api/admin/booked-sessions`);
+        console.log('📢 API Response:', response.data);
 
         if (response.data && Array.isArray(response.data.sessions)) {
-          setSessions(response.data.sessions)
+          setSessions(response.data.sessions);
         } else {
-          console.error('❌ Invalid API response:', response.data)
-          setSessions([])
+          console.error('❌ Invalid API response:', response.data);
+          setSessions([]);
         }
       } catch (error) {
-        console.error('❌ Error fetching sessions:', error)
-        setSessions([])
+        console.error('❌ Error fetching sessions:', error);
+        setSessions([]);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
+    fetchSessions();
+  }, []);
 
-    fetchSessions()
-  }, [])
+  console.log('🔍 Current Sessions:', sessions);
 
-  console.log('🔍 Current Sessions:', sessions)
-
-  // ✅ Open Cancel Modal
+  // -------------------------------------------
+  // CANCEL SESSION
+  // -------------------------------------------
   const openCancelModal = (session) => {
-    setSelectedSession(session)
-    setIsCancelModalOpen(true)
-  }
+    setSelectedSession(session);
+    setIsCancelModalOpen(true);
+  };
 
-  // ✅ Close Cancel Modal
   const closeCancelModal = () => {
-    setSelectedSession(null)
-    setIsCancelModalOpen(false)
-  }
+    setSelectedSession(null);
+    setIsCancelModalOpen(false);
+  };
 
-  // ✅ Cancel Session (Supports both Calendly & Zoom)
   const cancelSession = async () => {
-    if (!selectedSession) return
+    if (!selectedSession) return;
 
     try {
       if (selectedSession.type === 'zoom') {
+        // For Zoom, we pass sessionDate
         await axios.post(`${API_BASE_URL}/api/admin/cancel-zoom-session`, {
           userId: selectedSession.userId,
           sessionId: selectedSession.sessionId,
-          sessionDate: selectedSession.startTime, // Pass the exact date for Zoom
-        })
+          sessionDate: selectedSession.startTime,
+        });
       } else {
+        // For Calendly
         await axios.post(`${API_BASE_URL}/api/admin/cancel-session`, {
           userId: selectedSession.userId,
           sessionId: selectedSession.sessionId,
-        })
+        });
       }
 
       // Remove the canceled session from local state
@@ -81,135 +86,128 @@ const UpcomingClasses = () => {
         prev.filter(
           (s) =>
             !(
-              s.sessionId === selectedSession.sessionId && s.startTime === selectedSession.startTime
-            ),
-        ),
-      )
+              s.sessionId === selectedSession.sessionId &&
+              s.startTime === selectedSession.startTime
+            )
+        )
+      );
 
-      toast.success('Session cancelled successfully!')
-      closeCancelModal()
+      toast.success('Session cancelled successfully!');
+      closeCancelModal();
     } catch (error) {
-      console.error('Error cancelling session:', error)
-      toast.error('Failed to cancel session.')
+      console.error('Error cancelling session:', error);
+      toast.error('Failed to cancel session.');
     }
-  }
+  };
 
-  // ✅ Open Note Modal
-  const openNoteModal = (session) => {
-    setSelectedSession(session)
-    setNote(session.note || '')
-    setIsNoteModalOpen(true)
-  }
+  // -------------------------------------------
+  // CALENDLY NOTE MODAL & SAVE
+  // -------------------------------------------
+  const openCalendlyNoteModal = (session) => {
+    setSelectedSession(session);
+    setCalendlyNoteText(session.note || '');
+    setIsCalendlyNoteModalOpen(true);
+  };
 
-  // ✅ Close Note Modal
-  const closeNoteModal = () => {
-    setSelectedSession(null)
-    setIsNoteModalOpen(false)
-    setNote('')
-  }
+  const closeCalendlyNoteModal = () => {
+    setSelectedSession(null);
+    setCalendlyNoteText('');
+    setIsCalendlyNoteModalOpen(false);
+  };
 
-  // 2) openZoomNoteModal function
-  const openZoomNoteModal = (sessionId, date, existingNote = '') => {
-    setSelectedZoomSessionId(sessionId)
-    setSelectedZoomDate(date)
-    setNoteText(existingNote)
-    setShowNoteModal(true)
-  }
-
-  // 3) saveZoomNote function
-  const saveZoomNote = async () => {
-    if (!selectedZoomSessionId || !selectedZoomDate) {
-      toast.error('Missing session info!')
-      return
-    }
-    try {
-      const response = await fetch(
-        'https://backend-production-cbe2.up.railway.app/api/admin/add-zoom-note',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId: users._id,
-            sessionId: selectedZoomSessionId,
-            date: selectedZoomDate,
-            note: noteText,
-          }),
-        },
-      )
-      const data = await response.json()
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to save note')
-      }
-      toast.success('Note saved successfully!')
-      // Update local state so the new note shows instantly
-      setZoomBookings((prev) =>
-        prev.map((booking) => {
-          if (booking._id === selectedZoomSessionId) {
-            return {
-              ...booking,
-              sessionDates: booking.sessionDates.map((dObj) =>
-                new Date(dObj.date).toISOString() === new Date(selectedZoomDate).toISOString()
-                  ? { ...dObj, note: noteText }
-                  : dObj,
-              ),
-            }
-          }
-          return booking
-        }),
-      )
-      setShowNoteModal(false)
-    } catch (error) {
-      console.error('❌ Error saving note:', error)
-      toast.error('Failed to save note')
-    }
-  }
-
-  // ✅ Save or Update Note (Supports both Zoom & Calendly)
-  const saveNote = async () => {
-    if (!selectedSession) return
+  const saveCalendlyNote = async () => {
+    if (!selectedSession) return;
 
     try {
-      let endpoint = ''
+      // POST /api/admin/add-note for Calendly
       const payload = {
         userId: selectedSession.userId,
         sessionId: selectedSession.sessionId,
-        note,
-      }
+        startTime: selectedSession.startTime,
+        note: calendlyNoteText,
+      };
 
-      // For Zoom, we pass `startTime` so the backend knows which date sub-document to update
-      if (selectedSession.type === 'zoom') {
-        endpoint = 'add-zoom-note'
-        payload.startTime = selectedSession.startTime
-      } else {
-        endpoint = 'add-note'
-        payload.startTime = selectedSession.startTime
-      }
-
-      const response = await axios.post(`${API_BASE_URL}/api/admin/${endpoint}`, payload)
-
+      const response = await axios.post(`${API_BASE_URL}/api/admin/add-note`, payload);
       if (response.data.success) {
-        // Update local state with the new note
-        setSessions((prevSessions) =>
-          prevSessions.map((s) =>
+        // Update local sessions array
+        setSessions((prev) =>
+          prev.map((s) =>
             s.sessionId === selectedSession.sessionId && s.startTime === selectedSession.startTime
-              ? { ...s, note }
-              : s,
-          ),
-        )
-        toast.success(
-          selectedSession?.note ? 'Note updated successfully!' : 'Note added successfully!',
-        )
+              ? { ...s, note: calendlyNoteText }
+              : s
+          )
+        );
+        toast.success(selectedSession.note ? 'Note updated successfully!' : 'Note added successfully!');
       } else {
-        toast.error('Failed to save note.')
+        toast.error('Failed to save note.');
       }
     } catch (error) {
-      console.error('Error saving note:', error)
-      toast.error('Failed to save note.')
+      console.error('Error saving Calendly note:', error);
+      toast.error('Failed to save note.');
     }
 
-    closeNoteModal()
-  }
+    closeCalendlyNoteModal();
+  };
 
+  // -------------------------------------------
+  // ZOOM NOTE MODAL & SAVE
+  // -------------------------------------------
+  const openZoomNoteModal = (session) => {
+    setSelectedZoomSessionId(session.sessionId);
+    setSelectedZoomDate(session.startTime);
+    setZoomNoteText(session.note || '');
+    setIsZoomNoteModalOpen(true);
+  };
+
+  const closeZoomNoteModal = () => {
+    setSelectedZoomSessionId('');
+    setSelectedZoomDate('');
+    setZoomNoteText('');
+    setIsZoomNoteModalOpen(false);
+  };
+
+  const saveZoomNote = async () => {
+    if (!selectedZoomSessionId || !selectedZoomDate) {
+      toast.error('Missing session info!');
+      return;
+    }
+    try {
+      // POST /api/admin/add-zoom-note for Zoom
+      const payload = {
+        userId: selectedSession?.userId, // or store userId separately
+        sessionId: selectedZoomSessionId,
+        date: selectedZoomDate,
+        note: zoomNoteText,
+      };
+
+      const response = await axios.post(`${API_BASE_URL}/api/admin/add-zoom-note`, payload);
+      if (!response.data.success) {
+        toast.error('Failed to save note.');
+        return;
+      }
+
+      toast.success('Note saved successfully!');
+
+      // Update local state so the new note shows instantly
+      setSessions((prev) =>
+        prev.map((s) =>
+          // Match by sessionId + startTime
+          s.sessionId === selectedZoomSessionId && s.startTime === selectedZoomDate
+            ? { ...s, note: zoomNoteText }
+            : s
+        )
+      );
+
+      closeZoomNoteModal();
+    } catch (error) {
+      console.error('❌ Error saving zoom note:', error);
+      toast.error('Failed to save note.');
+    }
+  };
+
+  // -------------------------------------------
+  // RENDER
+  // -------------------------------------------
   return (
     <div className="container mx-auto p-6">
       <Toaster position="top-right" />
@@ -256,16 +254,25 @@ const UpcomingClasses = () => {
                     </button>
 
                     {/* Add/Edit Note Button */}
-                    <button
-                      onClick={() => openNoteModal(session)}
-                      className={`px-4 py-2 rounded-md flex items-center gap-2 ${
-                        session.note
-                          ? 'bg-blue-500 hover:bg-blue-600'
-                          : 'bg-green-500 hover:bg-green-600'
-                      } text-white`}
-                    >
-                      <FaStickyNote /> {session.note ? 'Edit Note' : 'Add Note'}
-                    </button>
+                    {session.type === 'zoom' ? (
+                      <button
+                        onClick={() => openZoomNoteModal(session)}
+                        className={`px-4 py-2 rounded-md flex items-center gap-2 ${
+                          session.note ? 'bg-blue-500 hover:bg-blue-600' : 'bg-green-500 hover:bg-green-600'
+                        } text-white`}
+                      >
+                        <FaStickyNote /> {session.note ? 'Edit Note' : 'Add Note'}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => openCalendlyNoteModal(session)}
+                        className={`px-4 py-2 rounded-md flex items-center gap-2 ${
+                          session.note ? 'bg-blue-500 hover:bg-blue-600' : 'bg-green-500 hover:bg-green-600'
+                        } text-white`}
+                      >
+                        <FaStickyNote /> {session.note ? 'Edit Note' : 'Add Note'}
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -276,7 +283,9 @@ const UpcomingClasses = () => {
         <p className="text-center text-gray-500 text-lg">No upcoming sessions available.</p>
       )}
 
-      {/* Cancel Session Modal */}
+      {/* ---------------------------------------------------------------- */}
+      {/* CANCEL SESSION MODAL */}
+      {/* ---------------------------------------------------------------- */}
       {isCancelModalOpen && (
         <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center">
           <div className="bg-white p-6 rounded-md shadow-md w-96">
@@ -300,54 +309,59 @@ const UpcomingClasses = () => {
         </div>
       )}
 
-// 4) Render the modal if showNoteModal is true:
-{showNoteModal && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-    <div className="bg-white p-6 rounded shadow-md w-96">
-      <h3 className="text-lg font-bold mb-4">Add/Edit Note</h3>
-      <textarea
-        className="w-full p-2 border rounded"
-        value={noteText}
-        onChange={(e) => setNoteText(e.target.value)}
-      />
-      <div className="mt-4 flex justify-end space-x-3">
-        <button
-          className="bg-gray-400 text-white px-4 py-2 rounded"
-          onClick={() => setShowNoteModal(false)}
-        >
-          Cancel
-        </button>
-        <button
-          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
-          onClick={saveZoomNote}
-        >
-          Save Note
-        </button>
-      </div>
-    </div>
-  </div>
-)}
-
-      {/* Note Modal */}
-      {isNoteModalOpen && (
+      {/* ---------------------------------------------------------------- */}
+      {/* CALENDLY NOTE MODAL */}
+      {/* ---------------------------------------------------------------- */}
+      {isCalendlyNoteModalOpen && selectedSession && (
         <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center">
           <div className="bg-white p-6 rounded-md shadow-md w-96">
-            <h3 className="text-lg font-semibold mb-4">Add/Edit Note</h3>
+            <h3 className="text-lg font-semibold mb-4">Add/Edit Note (Calendly)</h3>
             <textarea
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
               className="w-full p-2 border rounded-md"
               placeholder="Enter note here..."
-            ></textarea>
+              value={calendlyNoteText}
+              onChange={(e) => setCalendlyNoteText(e.target.value)}
+            />
             <div className="mt-4 flex justify-end gap-3">
               <button
-                onClick={closeNoteModal}
+                onClick={closeCalendlyNoteModal}
                 className="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded-md"
               >
                 Close
               </button>
               <button
-                onClick={saveNote}
+                onClick={saveCalendlyNote}
+                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md"
+              >
+                Save Note
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ---------------------------------------------------------------- */}
+      {/* ZOOM NOTE MODAL */}
+      {/* ---------------------------------------------------------------- */}
+      {isZoomNoteModalOpen && (
+        <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center">
+          <div className="bg-white p-6 rounded-md shadow-md w-96">
+            <h3 className="text-lg font-semibold mb-4">Add/Edit Note (Zoom)</h3>
+            <textarea
+              className="w-full p-2 border rounded-md"
+              placeholder="Enter note here..."
+              value={zoomNoteText}
+              onChange={(e) => setZoomNoteText(e.target.value)}
+            />
+            <div className="mt-4 flex justify-end gap-3">
+              <button
+                onClick={closeZoomNoteModal}
+                className="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded-md"
+              >
+                Close
+              </button>
+              <button
+                onClick={saveZoomNote}
                 className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md"
               >
                 Save Note
@@ -357,7 +371,7 @@ const UpcomingClasses = () => {
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default UpcomingClasses
+export default UpcomingClasses;
