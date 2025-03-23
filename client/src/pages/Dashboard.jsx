@@ -606,68 +606,84 @@ const Dashboard = () => {
               </div>
             </section>
           )}
-          {/* ✅ Display Individual Zoom Session Dates as Cards */}
-          {zoomBookings.length > 0 && (
-            <section className="mt-6 p-6 bg-white shadow-lg rounded-lg">
-              <h3 className="text-2xl font-bold mb-4 text-gray-800">
-                🎥 Your Registered Zoom Sessions
-              </h3>
+       {zoomBookings.length > 0 && (
+  <section className="mt-6 p-6 bg-white shadow-lg rounded-lg">
+    <h3 className="text-2xl font-bold mb-4 text-gray-800">
+      🎥 Your Registered Zoom Sessions
+    </h3>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                {zoomBookings.map((session, index) =>
-                  session.sessionDates && session.sessionDates.length > 0 ? (
-                    session.sessionDates.map((date, i) => (
-                      <div
-                        key={`${index}-${i}`}
-                        className="p-5 bg-white rounded-xl shadow-lg border border-gray-200 transition transform hover:scale-105"
-                      >
-                        {/* Session Title */}
-                        <h4 className="text-xl font-semibold text-blue-700 mb-2">
-                          {session.eventName || 'Unnamed Session'}
-                        </h4>
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+      {zoomBookings.map((session, index) =>
+        session.sessionDates && session.sessionDates.length > 0 ? (
+          // Rename 'date' to 'dateObj'
+          session.sessionDates.map((dateObj, i) => (
+            <div
+              key={`${session._id}-${i}`}
+              className="p-5 bg-white rounded-xl shadow-lg border border-gray-200 transition transform hover:scale-105"
+            >
+              {/* Session Title */}
+              <h4 className="text-xl font-semibold text-blue-700 mb-2">
+                {session.eventName || "Unnamed Session"}
+              </h4>
 
-                        {/* Session Date */}
-                        <p className="font-semibold text-gray-700">📅 Date:</p>
-                        <p className="text-gray-600">🕒 {formatDateTime(date, session.timezone)}</p>
+              {/* Session Date */}
+              <p className="font-semibold text-gray-700">📅 Date:</p>
+              <p className="text-gray-600">
+                🕒 {formatDateTime(dateObj.date, session.timezone)}
+              </p>
 
-                        {/* Zoom Meeting Link */}
-                        {session.zoomMeetingLink && (
-                          <div className="mt-3">
-                            <a
-                              href={session.zoomMeetingLink}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 font-medium hover:underline"
-                            >
-                              🔗 Join Zoom Session
-                            </a>
-                          </div>
-                        )}
+              {/* Zoom Meeting Link */}
+              {session.zoomMeetingLink && (
+                <div className="mt-3">
+                  <a
+                    href={session.zoomMeetingLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 font-medium hover:underline"
+                  >
+                    🔗 Join Zoom Session
+                  </a>
+                </div>
+              )}
 
-                          {/* ✅ Display Admin Notes Below View on Calendly */}
-                    {session.note && (
-                      <div className="mt-3 p-3 border border-gray-300 rounded bg-gray-100">
-                        <h5 className="text-gray-800 font-bold">📌 Admin Note:</h5>
-                        <p className="text-gray-700">{session.note}</p>
-                      </div>
-                    )}
+              {/* Admin Note (Per-Date) */}
+              {dateObj.note && (
+                <div className="mt-3 p-3 border border-gray-300 rounded bg-gray-100">
+                  <h5 className="text-gray-800 font-bold">📌 Admin Note:</h5>
+                  <p className="text-gray-700">{dateObj.note}</p>
+                </div>
+              )}
 
-                        {/* Cancel Button */}
-                        <button
-                          className="mt-3 bg-red-500 text-white font-medium px-4 py-2 rounded-lg transition hover:bg-red-600 w-full"
-                          onClick={() => confirmZoomCancel(session._id, date)}
-                        >
-                          ❌ Cancel Session
-                        </button>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-red-500">⚠️ No scheduled dates found</p>
-                  ),
-                )}
-              </div>
-            </section>
-          )}
+              {/* Add/Edit Note Button */}
+              <button
+                className={`mt-3 w-full px-4 py-2 rounded-lg text-white ${
+                  dateObj.note
+                    ? "bg-blue-500 hover:bg-blue-600"
+                    : "bg-green-500 hover:bg-green-600"
+                }`}
+                onClick={() =>
+                  openZoomNoteModal(session._id, dateObj.date, dateObj.note)
+                }
+              >
+                {dateObj.note ? "Edit Note" : "Add Note"}
+              </button>
+
+              {/* Cancel Button */}
+              <button
+                className="mt-3 bg-red-500 text-white font-medium px-4 py-2 rounded-lg transition hover:bg-red-600 w-full"
+                onClick={() => confirmZoomCancel(session._id, dateObj.date)}
+              >
+                ❌ Cancel Session
+              </button>
+            </div>
+          ))
+        ) : (
+          <p className="text-red-500">⚠️ No scheduled dates found</p>
+        )
+      )}
+    </div>
+  </section>
+)}
 
           {/* ✅ Show Remaining Sessions - Hide "Learn", but display other sessions */}
           {remainingSessions.length > 0 && (

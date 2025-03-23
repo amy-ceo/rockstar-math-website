@@ -1,74 +1,79 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
-import { FaTrash, FaStickyNote } from "react-icons/fa";
-import { MdClose } from "react-icons/md";
-import toast, { Toaster } from "react-hot-toast";
-import "react-toastify/dist/ReactToastify.css";
+import React, { useEffect, useState } from 'react'
+import axios from 'axios'
+import { FaTrash, FaStickyNote } from 'react-icons/fa'
+import { MdClose } from 'react-icons/md'
+import toast, { Toaster } from 'react-hot-toast'
+import 'react-toastify/dist/ReactToastify.css'
 
-const API_BASE_URL = "https://backend-production-cbe2.up.railway.app"; // ✅ Ensure correct API URL
+const API_BASE_URL = 'https://backend-production-cbe2.up.railway.app' // ✅ Ensure correct API URL
 
 const UpcomingClasses = () => {
-  const [sessions, setSessions] = useState([]);
-  const [selectedSession, setSelectedSession] = useState(null);
-  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
-  const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
-  const [note, setNote] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [sessions, setSessions] = useState([])
+  const [selectedSession, setSelectedSession] = useState(null)
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false)
+  const [isNoteModalOpen, setIsNoteModalOpen] = useState(false)
+  const [note, setNote] = useState('')
+  const [showNoteModal, setShowNoteModal] = useState(false)
+  const [noteText, setNoteText] = useState('')
+  const [selectedZoomSessionId, setSelectedZoomSessionId] = useState('')
+  const [selectedZoomDate, setSelectedZoomDate] = useState('')
+
+  const [loading, setLoading] = useState(true)
 
   // ✅ Fetch sessions with latest notes (Both Calendly & Zoom)
   useEffect(() => {
     const fetchSessions = async () => {
       try {
-        const response = await axios.get(`${API_BASE_URL}/api/admin/booked-sessions`);
-        console.log("📢 API Response:", response.data);
+        const response = await axios.get(`${API_BASE_URL}/api/admin/booked-sessions`)
+        console.log('📢 API Response:', response.data)
 
         if (response.data && Array.isArray(response.data.sessions)) {
-          setSessions(response.data.sessions);
+          setSessions(response.data.sessions)
         } else {
-          console.error("❌ Invalid API response:", response.data);
-          setSessions([]);
+          console.error('❌ Invalid API response:', response.data)
+          setSessions([])
         }
       } catch (error) {
-        console.error("❌ Error fetching sessions:", error);
-        setSessions([]);
+        console.error('❌ Error fetching sessions:', error)
+        setSessions([])
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
+    }
 
-    fetchSessions();
-  }, []);
+    fetchSessions()
+  }, [])
 
-  console.log("🔍 Current Sessions:", sessions);
+  console.log('🔍 Current Sessions:', sessions)
 
   // ✅ Open Cancel Modal
   const openCancelModal = (session) => {
-    setSelectedSession(session);
-    setIsCancelModalOpen(true);
-  };
+    setSelectedSession(session)
+    setIsCancelModalOpen(true)
+  }
 
   // ✅ Close Cancel Modal
   const closeCancelModal = () => {
-    setSelectedSession(null);
-    setIsCancelModalOpen(false);
-  };
+    setSelectedSession(null)
+    setIsCancelModalOpen(false)
+  }
 
   // ✅ Cancel Session (Supports both Calendly & Zoom)
   const cancelSession = async () => {
-    if (!selectedSession) return;
+    if (!selectedSession) return
 
     try {
-      if (selectedSession.type === "zoom") {
+      if (selectedSession.type === 'zoom') {
         await axios.post(`${API_BASE_URL}/api/admin/cancel-zoom-session`, {
           userId: selectedSession.userId,
           sessionId: selectedSession.sessionId,
           sessionDate: selectedSession.startTime, // Pass the exact date for Zoom
-        });
+        })
       } else {
         await axios.post(`${API_BASE_URL}/api/admin/cancel-session`, {
           userId: selectedSession.userId,
           sessionId: selectedSession.sessionId,
-        });
+        })
       }
 
       // Remove the canceled session from local state
@@ -76,56 +81,111 @@ const UpcomingClasses = () => {
         prev.filter(
           (s) =>
             !(
-              s.sessionId === selectedSession.sessionId &&
-              s.startTime === selectedSession.startTime
-            )
-        )
-      );
+              s.sessionId === selectedSession.sessionId && s.startTime === selectedSession.startTime
+            ),
+        ),
+      )
 
-      toast.success("Session cancelled successfully!");
-      closeCancelModal();
+      toast.success('Session cancelled successfully!')
+      closeCancelModal()
     } catch (error) {
-      console.error("Error cancelling session:", error);
-      toast.error("Failed to cancel session.");
+      console.error('Error cancelling session:', error)
+      toast.error('Failed to cancel session.')
     }
-  };
+  }
 
   // ✅ Open Note Modal
   const openNoteModal = (session) => {
-    setSelectedSession(session);
-    setNote(session.note || "");
-    setIsNoteModalOpen(true);
-  };
+    setSelectedSession(session)
+    setNote(session.note || '')
+    setIsNoteModalOpen(true)
+  }
 
   // ✅ Close Note Modal
   const closeNoteModal = () => {
-    setSelectedSession(null);
-    setIsNoteModalOpen(false);
-    setNote("");
-  };
+    setSelectedSession(null)
+    setIsNoteModalOpen(false)
+    setNote('')
+  }
+
+  // 2) openZoomNoteModal function
+  const openZoomNoteModal = (sessionId, date, existingNote = '') => {
+    setSelectedZoomSessionId(sessionId)
+    setSelectedZoomDate(date)
+    setNoteText(existingNote)
+    setShowNoteModal(true)
+  }
+
+  // 3) saveZoomNote function
+  const saveZoomNote = async () => {
+    if (!selectedZoomSessionId || !selectedZoomDate) {
+      toast.error('Missing session info!')
+      return
+    }
+    try {
+      const response = await fetch(
+        'https://backend-production-cbe2.up.railway.app/api/admin/add-zoom-note',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: users._id,
+            sessionId: selectedZoomSessionId,
+            date: selectedZoomDate,
+            note: noteText,
+          }),
+        },
+      )
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to save note')
+      }
+      toast.success('Note saved successfully!')
+      // Update local state so the new note shows instantly
+      setZoomBookings((prev) =>
+        prev.map((booking) => {
+          if (booking._id === selectedZoomSessionId) {
+            return {
+              ...booking,
+              sessionDates: booking.sessionDates.map((dObj) =>
+                new Date(dObj.date).toISOString() === new Date(selectedZoomDate).toISOString()
+                  ? { ...dObj, note: noteText }
+                  : dObj,
+              ),
+            }
+          }
+          return booking
+        }),
+      )
+      setShowNoteModal(false)
+    } catch (error) {
+      console.error('❌ Error saving note:', error)
+      toast.error('Failed to save note')
+    }
+  }
 
   // ✅ Save or Update Note (Supports both Zoom & Calendly)
   const saveNote = async () => {
-    if (!selectedSession) return;
+    if (!selectedSession) return
 
     try {
-      let endpoint = "";
+      let endpoint = ''
       const payload = {
         userId: selectedSession.userId,
         sessionId: selectedSession.sessionId,
         note,
-      };
-
-      // For Zoom, we pass `startTime` so the backend knows which date sub-document to update
-      if (selectedSession.type === "zoom") {
-        endpoint = "add-zoom-note";
-        payload.startTime = selectedSession.startTime;
-      } else {
-        endpoint = "add-note";
-        payload.startTime = selectedSession.startTime;
       }
 
-      const response = await axios.post(`${API_BASE_URL}/api/admin/${endpoint}`, payload);
+      // For Zoom, we pass `startTime` so the backend knows which date sub-document to update
+      if (selectedSession.type === 'zoom') {
+        endpoint = 'add-zoom-note'
+        payload.startTime = selectedSession.startTime
+      } else {
+        endpoint = 'add-note'
+        payload.startTime = selectedSession.startTime
+      }
+
+      const response = await axios.post(`${API_BASE_URL}/api/admin/${endpoint}`, payload)
 
       if (response.data.success) {
         // Update local state with the new note
@@ -133,22 +193,22 @@ const UpcomingClasses = () => {
           prevSessions.map((s) =>
             s.sessionId === selectedSession.sessionId && s.startTime === selectedSession.startTime
               ? { ...s, note }
-              : s
-          )
-        );
+              : s,
+          ),
+        )
         toast.success(
-          selectedSession?.note ? "Note updated successfully!" : "Note added successfully!"
-        );
+          selectedSession?.note ? 'Note updated successfully!' : 'Note added successfully!',
+        )
       } else {
-        toast.error("Failed to save note.");
+        toast.error('Failed to save note.')
       }
     } catch (error) {
-      console.error("Error saving note:", error);
-      toast.error("Failed to save note.");
+      console.error('Error saving note:', error)
+      toast.error('Failed to save note.')
     }
 
-    closeNoteModal();
-  };
+    closeNoteModal()
+  }
 
   return (
     <div className="container mx-auto p-6">
@@ -177,9 +237,7 @@ const UpcomingClasses = () => {
                   className="border-b hover:bg-gray-100"
                 >
                   <td className="px-4 py-3">{session.eventName}</td>
-                  <td className="px-4 py-3">
-                    {new Date(session.startTime).toLocaleString()}
-                  </td>
+                  <td className="px-4 py-3">{new Date(session.startTime).toLocaleString()}</td>
                   <td className="px-4 py-3">
                     {session.endTime
                       ? new Date(session.endTime).toLocaleString()
@@ -202,11 +260,11 @@ const UpcomingClasses = () => {
                       onClick={() => openNoteModal(session)}
                       className={`px-4 py-2 rounded-md flex items-center gap-2 ${
                         session.note
-                          ? "bg-blue-500 hover:bg-blue-600"
-                          : "bg-green-500 hover:bg-green-600"
+                          ? 'bg-blue-500 hover:bg-blue-600'
+                          : 'bg-green-500 hover:bg-green-600'
                       } text-white`}
                     >
-                      <FaStickyNote /> {session.note ? "Edit Note" : "Add Note"}
+                      <FaStickyNote /> {session.note ? 'Edit Note' : 'Add Note'}
                     </button>
                   </td>
                 </tr>
@@ -242,6 +300,34 @@ const UpcomingClasses = () => {
         </div>
       )}
 
+// 4) Render the modal if showNoteModal is true:
+{showNoteModal && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+    <div className="bg-white p-6 rounded shadow-md w-96">
+      <h3 className="text-lg font-bold mb-4">Add/Edit Note</h3>
+      <textarea
+        className="w-full p-2 border rounded"
+        value={noteText}
+        onChange={(e) => setNoteText(e.target.value)}
+      />
+      <div className="mt-4 flex justify-end space-x-3">
+        <button
+          className="bg-gray-400 text-white px-4 py-2 rounded"
+          onClick={() => setShowNoteModal(false)}
+        >
+          Cancel
+        </button>
+        <button
+          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+          onClick={saveZoomNote}
+        >
+          Save Note
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
       {/* Note Modal */}
       {isNoteModalOpen && (
         <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center">
@@ -271,7 +357,7 @@ const UpcomingClasses = () => {
         </div>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default UpcomingClasses;
+export default UpcomingClasses
