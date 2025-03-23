@@ -14,7 +14,16 @@ const courseHeadings = {
   "discrete-math": "Understanding Discrete Mathematics",
   "linear-algebra": "Introduction to Linear Algebra",
   "differential-equations": "Solving Differential Equations",
+
 };
+
+[
+
+
+
+
+  
+]
 
 function CourseDetail() {
   const { id } = useParams(); // Get the dynamic ID from the URL

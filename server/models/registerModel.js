@@ -36,17 +36,26 @@ const bookedSessionSchema = new mongoose.Schema({
   updatedAt: { type: Date, required: false }, // ✅ When Last Updated
 })
 
-// ✅ Zoom Booking Schema (NEW SEPARATE SCHEMA)
+// Zoom Booking Sub-Schema
+const sessionDateSchema = new mongoose.Schema({
+  date: { type: Date, required: true },
+  note: { type: String, default: "" },
+  status: {
+    type: String,
+    enum: ["Booked", "Completed", "Cancelled"],
+    default: "Booked",
+  },
+});
+
+
 const zoomBookingSchema = new mongoose.Schema({
   eventName: { type: String, required: true },
   firstName: { type: String, required: true },
   lastName: { type: String, required: true },
   zoomMeetingId: { type: String, required: true, unique: true, sparse: true },
   zoomMeetingLink: { type: String, required: true },
-  sessionDates: [{ type: Date, required: true }], // ✅ Array of session dates
-  note: { type: String, default: '' }, // ✅ New Field for Notes
+  sessionDates: [sessionDateSchema],
   timezone: { type: String, default: 'UTC' },
-  status: { type: String, enum: ['Booked', 'Completed', 'Cancelled'], default: 'Booked' },
   createdAt: { type: Date, default: Date.now },
 })
 

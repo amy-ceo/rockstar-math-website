@@ -62,6 +62,7 @@ const UpcomingClasses = () => {
         await axios.post(`${API_BASE_URL}/api/admin/cancel-zoom-session`, {
           userId: selectedSession.userId,
           sessionId: selectedSession.sessionId,
+          sessionDate: selectedSession.startTime, // Pass the exact date for Zoom
         });
       } else {
         await axios.post(`${API_BASE_URL}/api/admin/cancel-session`, {
@@ -70,7 +71,17 @@ const UpcomingClasses = () => {
         });
       }
 
-      setSessions(sessions.filter((session) => session.sessionId !== selectedSession.sessionId));
+      // Remove the canceled session from local state
+      setSessions((prev) =>
+        prev.filter(
+          (s) =>
+            !(
+              s.sessionId === selectedSession.sessionId &&
+              s.startTime === selectedSession.startTime
+            )
+        )
+      );
+
       toast.success("Session cancelled successfully!");
       closeCancelModal();
     } catch (error) {
@@ -98,22 +109,36 @@ const UpcomingClasses = () => {
     if (!selectedSession) return;
 
     try {
-      const endpoint = selectedSession.type === "zoom" ? "add-zoom-note" : "add-note";
-
-      const response = await axios.post(`${API_BASE_URL}/api/admin/${endpoint}`, {
+      let endpoint = "";
+      const payload = {
         userId: selectedSession.userId,
         sessionId: selectedSession.sessionId,
-        startTime: selectedSession.startTime, // ✅ Add missing startTime field
         note,
-      });
+      };
+
+      // For Zoom, we pass `startTime` so the backend knows which date sub-document to update
+      if (selectedSession.type === "zoom") {
+        endpoint = "add-zoom-note";
+        payload.startTime = selectedSession.startTime;
+      } else {
+        endpoint = "add-note";
+        payload.startTime = selectedSession.startTime;
+      }
+
+      const response = await axios.post(`${API_BASE_URL}/api/admin/${endpoint}`, payload);
 
       if (response.data.success) {
+        // Update local state with the new note
         setSessions((prevSessions) =>
-          prevSessions.map((session) =>
-            session.sessionId === selectedSession.sessionId ? { ...session, note } : session
+          prevSessions.map((s) =>
+            s.sessionId === selectedSession.sessionId && s.startTime === selectedSession.startTime
+              ? { ...s, note }
+              : s
           )
         );
-        toast.success(selectedSession?.note ? "Note updated successfully!" : "Note added successfully!");
+        toast.success(
+          selectedSession?.note ? "Note updated successfully!" : "Note added successfully!"
+        );
       } else {
         toast.error("Failed to save note.");
       }
@@ -147,18 +172,40 @@ const UpcomingClasses = () => {
             </thead>
             <tbody>
               {sessions.map((session) => (
-                <tr key={session.sessionId} className="border-b hover:bg-gray-100">
+                <tr
+                  key={`${session.sessionId}-${session.startTime}`} // Unique key for multi-date Zoom
+                  className="border-b hover:bg-gray-100"
+                >
                   <td className="px-4 py-3">{session.eventName}</td>
-                  <td className="px-4 py-3">{new Date(session.startTime).toLocaleString()}</td>
-                  <td className="px-4 py-3">{new Date(session.endTime || session.startTime).toLocaleString()}</td>
+                  <td className="px-4 py-3">
+                    {new Date(session.startTime).toLocaleString()}
+                  </td>
+                  <td className="px-4 py-3">
+                    {session.endTime
+                      ? new Date(session.endTime).toLocaleString()
+                      : new Date(session.startTime).toLocaleString()}
+                  </td>
                   <td className="px-4 py-3">
                     <span className="font-semibold">{session.userName}</span>
                   </td>
                   <td className="px-4 py-3 text-center flex gap-3 justify-center">
-                    <button onClick={() => openCancelModal(session)} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md flex items-center gap-2">
+                    {/* Cancel Button */}
+                    <button
+                      onClick={() => openCancelModal(session)}
+                      className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md flex items-center gap-2"
+                    >
                       <FaTrash /> Cancel
                     </button>
-                    <button onClick={() => openNoteModal(session)} className={`px-4 py-2 rounded-md flex items-center gap-2 ${session.note ? "bg-blue-500 hover:bg-blue-600" : "bg-green-500 hover:bg-green-600"} text-white`}>
+
+                    {/* Add/Edit Note Button */}
+                    <button
+                      onClick={() => openNoteModal(session)}
+                      className={`px-4 py-2 rounded-md flex items-center gap-2 ${
+                        session.note
+                          ? "bg-blue-500 hover:bg-blue-600"
+                          : "bg-green-500 hover:bg-green-600"
+                      } text-white`}
+                    >
                       <FaStickyNote /> {session.note ? "Edit Note" : "Add Note"}
                     </button>
                   </td>
@@ -170,17 +217,24 @@ const UpcomingClasses = () => {
       ) : (
         <p className="text-center text-gray-500 text-lg">No upcoming sessions available.</p>
       )}
-        {/* Cancel Session Modal */}
-        {isCancelModalOpen && (
+
+      {/* Cancel Session Modal */}
+      {isCancelModalOpen && (
         <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center">
           <div className="bg-white p-6 rounded-md shadow-md w-96">
             <h3 className="text-lg font-semibold mb-4">Confirm Cancel</h3>
             <p>Are you sure you want to cancel this session?</p>
             <div className="mt-4 flex justify-end gap-3">
-              <button onClick={closeCancelModal} className="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded-md">
+              <button
+                onClick={closeCancelModal}
+                className="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded-md"
+              >
                 No
               </button>
-              <button onClick={cancelSession} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md">
+              <button
+                onClick={cancelSession}
+                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md"
+              >
                 Yes, Cancel
               </button>
             </div>
@@ -193,12 +247,23 @@ const UpcomingClasses = () => {
         <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center">
           <div className="bg-white p-6 rounded-md shadow-md w-96">
             <h3 className="text-lg font-semibold mb-4">Add/Edit Note</h3>
-            <textarea value={note} onChange={(e) => setNote(e.target.value)} className="w-full p-2 border rounded-md" placeholder="Enter note here..."></textarea>
+            <textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              className="w-full p-2 border rounded-md"
+              placeholder="Enter note here..."
+            ></textarea>
             <div className="mt-4 flex justify-end gap-3">
-              <button onClick={closeNoteModal} className="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded-md">
+              <button
+                onClick={closeNoteModal}
+                className="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded-md"
+              >
                 Close
               </button>
-              <button onClick={saveNote} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md">
+              <button
+                onClick={saveNote}
+                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md"
+              >
                 Save Note
               </button>
             </div>

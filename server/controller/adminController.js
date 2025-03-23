@@ -336,42 +336,44 @@ exports.resetAdminPassword = async (req, res) => {
 
 exports.getAllBookedSessions = async (req, res) => {
   try {
-    const users = await Register.find({}, "bookedSessions zoomBookings email username");
+    // Include any fields you need (like billingEmail) in the projection
+    const users = await Register.find({}, "bookedSessions zoomBookings username billingEmail");
 
     let allSessions = [];
 
-    users.forEach(user => {
-      // ✅ Add Calendly Sessions
-      user.bookedSessions.forEach(session => {
+    users.forEach((user) => {
+      // 1) Calendly Sessions
+      user.bookedSessions.forEach((session) => {
         allSessions.push({
-          type: "calendly", // ✅ Identify as Calendly Session
+          type: "calendly",
           userId: user._id,
           userEmail: user.billingEmail,
           userName: user.username,
-          sessionId: session._id,
+          sessionId: session._id,          // Calendly booking _id
           eventName: session.eventName,
           startTime: session.startTime,
           endTime: session.endTime,
           status: session.status,
-          note: session.note || ""
+          note: session.note || "",
         });
       });
 
-      // ✅ Add Zoom Sessions
-      user.zoomBookings.forEach(session => {
-        session.sessionDates.forEach(date => {
+      // 2) Zoom Sessions
+      user.zoomBookings.forEach((zoomBooking) => {
+        // For each date sub-document, push a separate session
+        zoomBooking.sessionDates.forEach((dateObj) => {
           allSessions.push({
-            type: "zoom", // ✅ Identify as Zoom Session
+            type: "zoom",
             userId: user._id,
             userEmail: user.billingEmail,
             userName: user.username,
-            sessionId: session._id,
-            eventName: session.eventName,
-            startTime: date, // Zoom sessions have multiple dates
-            endTime: date, // Assuming end time is the same
-            status: "Confirmed",
-            note: session.note || "",
-            zoomMeetingLink: session.zoomMeetingLink || ""
+            sessionId: zoomBooking._id,           // The parent booking _id
+            eventName: zoomBooking.eventName,
+            startTime: dateObj.date,              // Each date in sessionDates
+            endTime: dateObj.date,                // Or store a separate end time if needed
+            status: dateObj.status || "Booked",   // e.g. "Booked", "Cancelled"
+            note: dateObj.note || "",             // Note stored per-date
+            zoomMeetingLink: zoomBooking.zoomMeetingLink || "",
           });
         });
       });
@@ -442,45 +444,52 @@ exports.cancelZoomSession = async (req, res) => {
 
 exports.addOrUpdateZoomNote = async (req, res) => {
   try {
-    const { userId, sessionId, startTime, note } = req.body;
+    const { userId, sessionId, date, note } = req.body;
 
-    console.log("📢 Incoming request data:", req.body); // ✅ Debugging Log
-
-    if (!userId || !sessionId || !startTime || note === undefined) {
-      return res.status(400).json({ error: "Missing required fields" });
+    if (!userId || !sessionId || !date) {
+      return res.status(400).json({ error: "Missing required fields (userId, sessionId, date, note)" });
     }
 
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(400).json({ error: "Invalid userId format" });
-    }
-
+    // 1. Find User
     const user = await Register.findById(userId);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    const session = user.zoomBookings.find(
-      (session) => session.zoomMeetingId === sessionId
+    // 2. Find Zoom Booking by _id
+    const zoomBooking = user.zoomBookings.find(
+      (booking) => booking._id.toString() === sessionId
     );
-    
-
-    if (!session) {
-      return res.status(404).json({ error: "Zoom session not found" });
+    if (!zoomBooking) {
+      return res.status(404).json({ error: "Zoom booking not found" });
     }
 
-    if (!session.sessionDates.includes(startTime)) {
-      return res.status(404).json({ error: "Session date not found" });
+    // 3. Find the exact date object inside sessionDates
+    //    Compare ISO strings to ensure an exact match
+    const dateObj = zoomBooking.sessionDates.find(
+      (d) => d.date.toISOString() === new Date(date).toISOString()
+    );
+    if (!dateObj) {
+      return res.status(404).json({ error: "Date not found in sessionDates" });
     }
 
-    session.note = note;
+    // 4. Update the note
+    dateObj.note = note;
+
+    // 5. Save user
     await user.save({ validateBeforeSave: false });
 
-    res.json({ success: true, message: "Zoom session note updated successfully!", updatedSession: session });
+    return res.json({
+      success: true,
+      message: "Note updated successfully!",
+      updatedSessionDate: dateObj
+    });
   } catch (error) {
     console.error("❌ Error updating Zoom session note:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
 
 
 
