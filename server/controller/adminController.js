@@ -386,53 +386,60 @@ exports.getAllBookedSessions = async (req, res) => {
 };
 
 
-// 3) CANCEL ZOOM SESSION (Remove or archive the date)
+// In adminController.js (or wherever you define cancelZoomSession)
 exports.cancelZoomSession = async (req, res) => {
   try {
     const { userId, sessionId, sessionDate } = req.body;
 
+    // Validate input
     if (!userId || !sessionId || !sessionDate) {
-      return res.status(400).json({ error: 'Missing required fields' });
+      return res.status(400).json({ error: "Missing required fields" });
     }
 
+    // Find the user
     const user = await Register.findById(userId);
     if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ error: "User not found" });
     }
 
-    // Find the correct zoomBooking
-    const bookingIndex = user.zoomBookings.findIndex(
-      (b) => b._id.toString() === sessionId
+    // Find the correct Zoom booking by _id
+    const zoomIndex = user.zoomBookings.findIndex(
+      (zb) => zb._id.toString() === sessionId
     );
-    if (bookingIndex === -1) {
-      return res.status(404).json({ error: 'Zoom booking not found' });
+    if (zoomIndex === -1) {
+      return res.status(404).json({ error: "Zoom session not found" });
     }
 
-    const booking = user.zoomBookings[bookingIndex];
-    // If sessionDates is an array of sub-docs, find the date sub-doc
-    const dateIndex = booking.sessionDates.findIndex(
-      (d) => new Date(d.date).toISOString() === new Date(sessionDate).toISOString()
+    // Grab the booking
+    const zoomBooking = user.zoomBookings[zoomIndex];
+
+    // Find the sub-document date by matching the ISO string
+    const dateIndex = zoomBooking.sessionDates.findIndex(
+      (d) =>
+        new Date(d.date).toISOString() === new Date(sessionDate).toISOString()
     );
     if (dateIndex === -1) {
-      return res.status(404).json({ error: 'Session date not found' });
+      return res.status(404).json({ error: "Session date not found" });
     }
 
-    // Remove that date from the array
-    booking.sessionDates.splice(dateIndex, 1);
+    // Remove that specific date from the sessionDates array
+    zoomBooking.sessionDates.splice(dateIndex, 1);
 
-    // If no dates remain, remove the entire booking or archive it
-    if (booking.sessionDates.length === 0) {
-      user.zoomBookings.splice(bookingIndex, 1);
+    // If no dates remain, remove the entire booking
+    if (zoomBooking.sessionDates.length === 0) {
+      user.zoomBookings.splice(zoomIndex, 1);
     }
 
+    // Save
     await user.save({ validateBeforeSave: false });
 
-    res.json({ success: true, message: 'Zoom session cancelled successfully!' });
+    res.json({ success: true, message: "Zoom session cancelled successfully!" });
   } catch (error) {
-    console.error('Error cancelling Zoom session:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Error cancelling Zoom session:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
+
 
 
 // 2) ADD OR UPDATE ZOOM NOTE
