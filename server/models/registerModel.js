@@ -36,23 +36,26 @@ const bookedSessionSchema = new mongoose.Schema({
   updatedAt: { type: Date, required: false }, // ✅ When Last Updated
 })
 
+
+// 1) Sub-Schema for each Zoom date
 const sessionDateSchema = new mongoose.Schema({
   date: { type: Date, required: true },
-  note: { type: String, default: "" },
-  status: {
-    type: String,
-    enum: ["Booked", "Completed", "Cancelled"],
-    default: "Booked"
+  note: { type: String, default: '' },
+  status: { 
+    type: String, 
+    enum: ['Booked', 'Completed', 'Cancelled'], 
+    default: 'Booked' 
   },
 });
 
+// 2) Zoom Booking Schema
 const zoomBookingSchema = new mongoose.Schema({
   eventName: { type: String, required: true },
   firstName: { type: String, required: true },
   lastName: { type: String, required: true },
   zoomMeetingId: { type: String, required: true, unique: true, sparse: true },
   zoomMeetingLink: { type: String, required: true },
-  sessionDates: [sessionDateSchema], // Updated to store sub-documents
+  sessionDates: [sessionDateSchema], // each date is a sub-document
   timezone: { type: String, default: 'UTC' },
   createdAt: { type: Date, default: Date.now },
 });

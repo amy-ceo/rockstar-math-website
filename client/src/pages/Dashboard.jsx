@@ -654,19 +654,7 @@ const Dashboard = () => {
                 </div>
               )}
 
-              {/* Add/Edit Note Button */}
-              <button
-                className={`mt-3 w-full px-4 py-2 rounded-lg text-white ${
-                  dateObj.note
-                    ? "bg-blue-500 hover:bg-blue-600"
-                    : "bg-green-500 hover:bg-green-600"
-                }`}
-                onClick={() =>
-                  openZoomNoteModal(session._id, dateObj.date, dateObj.note)
-                }
-              >
-                {dateObj.note ? "Edit Note" : "Add Note"}
-              </button>
+            
 
               {/* Cancel Button */}
               <button

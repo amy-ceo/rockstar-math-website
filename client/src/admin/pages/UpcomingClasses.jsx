@@ -1,16 +1,19 @@
-import React, { useEffect, useState } from 'react'
-import axios from 'axios'
-import { FaTrash, FaStickyNote } from 'react-icons/fa'
-import { MdClose } from 'react-icons/md'
-import toast, { Toaster } from 'react-hot-toast'
-import 'react-toastify/dist/ReactToastify.css'
+// src/components/UpcomingClasses.jsx
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import { FaTrash, FaStickyNote } from 'react-icons/fa';
+import toast, { Toaster } from 'react-hot-toast';
+import 'react-toastify/dist/ReactToastify.css';
 
-const API_BASE_URL = 'https://backend-production-cbe2.up.railway.app' // ✅ Ensure correct API URL
+const API_BASE_URL = 'https://backend-production-cbe2.up.railway.app';
 
 const UpcomingClasses = () => {
   const [sessions, setSessions] = useState([]);
-  const [selectedSession, setSelectedSession] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // Cancel Modal
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [selectedSession, setSelectedSession] = useState(null);
 
   // Calendly Note Modal
   const [isCalendlyNoteModalOpen, setIsCalendlyNoteModalOpen] = useState(false);
@@ -19,26 +22,22 @@ const UpcomingClasses = () => {
   // Zoom Note Modal
   const [isZoomNoteModalOpen, setIsZoomNoteModalOpen] = useState(false);
   const [zoomNoteText, setZoomNoteText] = useState('');
-  const [selectedZoomSessionId, setSelectedZoomSessionId] = useState('');
-  const [selectedZoomDate, setSelectedZoomDate] = useState('');
 
-  const [loading, setLoading] = useState(true);
-
-  // ✅ Fetch sessions (Calendly + Zoom) from your backend
+  // -------------------------------------------
+  // 1) Fetch All Sessions on Mount
+  // -------------------------------------------
   useEffect(() => {
     const fetchSessions = async () => {
       try {
         const response = await axios.get(`${API_BASE_URL}/api/admin/booked-sessions`);
-        console.log('📢 API Response:', response.data);
-
-        if (response.data && Array.isArray(response.data.sessions)) {
+        if (response.data && response.data.success && Array.isArray(response.data.sessions)) {
           setSessions(response.data.sessions);
         } else {
-          console.error('❌ Invalid API response:', response.data);
+          console.error('Invalid sessions response:', response.data);
           setSessions([]);
         }
       } catch (error) {
-        console.error('❌ Error fetching sessions:', error);
+        console.error('Error fetching sessions:', error);
         setSessions([]);
       } finally {
         setLoading(false);
@@ -47,10 +46,8 @@ const UpcomingClasses = () => {
     fetchSessions();
   }, []);
 
-  console.log('🔍 Current Sessions:', sessions);
-
   // -------------------------------------------
-  // CANCEL SESSION
+  // 2) Cancel Session
   // -------------------------------------------
   const openCancelModal = (session) => {
     setSelectedSession(session);
@@ -67,21 +64,21 @@ const UpcomingClasses = () => {
 
     try {
       if (selectedSession.type === 'zoom') {
-        // For Zoom, we pass sessionDate
+        // Zoom
         await axios.post(`${API_BASE_URL}/api/admin/cancel-zoom-session`, {
           userId: selectedSession.userId,
           sessionId: selectedSession.sessionId,
           sessionDate: selectedSession.startTime,
         });
       } else {
-        // For Calendly
+        // Calendly
         await axios.post(`${API_BASE_URL}/api/admin/cancel-session`, {
           userId: selectedSession.userId,
           sessionId: selectedSession.sessionId,
         });
       }
 
-      // Remove the canceled session from local state
+      // Remove canceled session from local state
       setSessions((prev) =>
         prev.filter(
           (s) =>
@@ -101,7 +98,7 @@ const UpcomingClasses = () => {
   };
 
   // -------------------------------------------
-  // CALENDLY NOTE MODAL & SAVE
+  // 3) Calendly Note
   // -------------------------------------------
   const openCalendlyNoteModal = (session) => {
     setSelectedSession(session);
@@ -119,17 +116,16 @@ const UpcomingClasses = () => {
     if (!selectedSession) return;
 
     try {
-      // POST /api/admin/add-note for Calendly
       const payload = {
         userId: selectedSession.userId,
         sessionId: selectedSession.sessionId,
         startTime: selectedSession.startTime,
         note: calendlyNoteText,
       };
-
       const response = await axios.post(`${API_BASE_URL}/api/admin/add-note`, payload);
+
       if (response.data.success) {
-        // Update local sessions array
+        // Update local sessions
         setSessions((prev) =>
           prev.map((s) =>
             s.sessionId === selectedSession.sessionId && s.startTime === selectedSession.startTime
@@ -150,49 +146,42 @@ const UpcomingClasses = () => {
   };
 
   // -------------------------------------------
-  // ZOOM NOTE MODAL & SAVE
+  // 4) Zoom Note
   // -------------------------------------------
   const openZoomNoteModal = (session) => {
-    setSelectedZoomSessionId(session.sessionId);
-    setSelectedZoomDate(session.startTime);
+    setSelectedSession(session);
     setZoomNoteText(session.note || '');
     setIsZoomNoteModalOpen(true);
   };
 
   const closeZoomNoteModal = () => {
-    setSelectedZoomSessionId('');
-    setSelectedZoomDate('');
+    setSelectedSession(null);
     setZoomNoteText('');
     setIsZoomNoteModalOpen(false);
   };
 
   const saveZoomNote = async () => {
-    if (!selectedZoomSessionId || !selectedZoomDate) {
-      toast.error('Missing session info!');
-      return;
-    }
+    if (!selectedSession) return;
+
     try {
-      // POST /api/admin/add-zoom-note for Zoom
       const payload = {
-        userId: selectedSession?.userId, // or store userId separately
-        sessionId: selectedZoomSessionId,
-        date: selectedZoomDate,
+        userId: selectedSession.userId,
+        sessionId: selectedSession.sessionId,
+        date: selectedSession.startTime,
         note: zoomNoteText,
       };
-
       const response = await axios.post(`${API_BASE_URL}/api/admin/add-zoom-note`, payload);
+
       if (!response.data.success) {
         toast.error('Failed to save note.');
         return;
       }
 
       toast.success('Note saved successfully!');
-
-      // Update local state so the new note shows instantly
+      // Update local sessions
       setSessions((prev) =>
         prev.map((s) =>
-          // Match by sessionId + startTime
-          s.sessionId === selectedZoomSessionId && s.startTime === selectedZoomDate
+          s.sessionId === selectedSession.sessionId && s.startTime === selectedSession.startTime
             ? { ...s, note: zoomNoteText }
             : s
         )
@@ -200,13 +189,13 @@ const UpcomingClasses = () => {
 
       closeZoomNoteModal();
     } catch (error) {
-      console.error('❌ Error saving zoom note:', error);
+      console.error('Error saving zoom note:', error);
       toast.error('Failed to save note.');
     }
   };
 
   // -------------------------------------------
-  // RENDER
+  // 5) Render
   // -------------------------------------------
   return (
     <div className="container mx-auto p-6">
@@ -231,7 +220,7 @@ const UpcomingClasses = () => {
             <tbody>
               {sessions.map((session) => (
                 <tr
-                  key={`${session.sessionId}-${session.startTime}`} // Unique key for multi-date Zoom
+                  key={`${session.sessionId}-${session.startTime}`}
                   className="border-b hover:bg-gray-100"
                 >
                   <td className="px-4 py-3">{session.eventName}</td>
@@ -261,7 +250,8 @@ const UpcomingClasses = () => {
                           session.note ? 'bg-blue-500 hover:bg-blue-600' : 'bg-green-500 hover:bg-green-600'
                         } text-white`}
                       >
-                        <FaStickyNote /> {session.note ? 'Edit Note' : 'Add Note'}
+                        <FaStickyNote />
+                        {session.note ? 'Edit Note' : 'Add Note'}
                       </button>
                     ) : (
                       <button
@@ -270,7 +260,8 @@ const UpcomingClasses = () => {
                           session.note ? 'bg-blue-500 hover:bg-blue-600' : 'bg-green-500 hover:bg-green-600'
                         } text-white`}
                       >
-                        <FaStickyNote /> {session.note ? 'Edit Note' : 'Add Note'}
+                        <FaStickyNote />
+                        {session.note ? 'Edit Note' : 'Add Note'}
                       </button>
                     )}
                   </td>
@@ -283,10 +274,8 @@ const UpcomingClasses = () => {
         <p className="text-center text-gray-500 text-lg">No upcoming sessions available.</p>
       )}
 
-      {/* ---------------------------------------------------------------- */}
-      {/* CANCEL SESSION MODAL */}
-      {/* ---------------------------------------------------------------- */}
-      {isCancelModalOpen && (
+      {/* Cancel Session Modal */}
+      {isCancelModalOpen && selectedSession && (
         <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center">
           <div className="bg-white p-6 rounded-md shadow-md w-96">
             <h3 className="text-lg font-semibold mb-4">Confirm Cancel</h3>
@@ -309,9 +298,7 @@ const UpcomingClasses = () => {
         </div>
       )}
 
-      {/* ---------------------------------------------------------------- */}
-      {/* CALENDLY NOTE MODAL */}
-      {/* ---------------------------------------------------------------- */}
+      {/* Calendly Note Modal */}
       {isCalendlyNoteModalOpen && selectedSession && (
         <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center">
           <div className="bg-white p-6 rounded-md shadow-md w-96">
@@ -324,7 +311,7 @@ const UpcomingClasses = () => {
             />
             <div className="mt-4 flex justify-end gap-3">
               <button
-                onClick={closeCalendlyNoteModal}
+                onClick={() => setIsCalendlyNoteModalOpen(false)}
                 className="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded-md"
               >
                 Close
@@ -340,10 +327,8 @@ const UpcomingClasses = () => {
         </div>
       )}
 
-      {/* ---------------------------------------------------------------- */}
-      {/* ZOOM NOTE MODAL */}
-      {/* ---------------------------------------------------------------- */}
-      {isZoomNoteModalOpen && (
+      {/* Zoom Note Modal */}
+      {isZoomNoteModalOpen && selectedSession && (
         <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center">
           <div className="bg-white p-6 rounded-md shadow-md w-96">
             <h3 className="text-lg font-semibold mb-4">Add/Edit Note (Zoom)</h3>
@@ -355,7 +340,7 @@ const UpcomingClasses = () => {
             />
             <div className="mt-4 flex justify-end gap-3">
               <button
-                onClick={closeZoomNoteModal}
+                onClick={() => setIsZoomNoteModalOpen(false)}
                 className="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded-md"
               >
                 Close
