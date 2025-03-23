@@ -444,51 +444,51 @@ exports.cancelZoomSession = async (req, res) => {
 
 exports.addOrUpdateZoomNote = async (req, res) => {
   try {
-    const { userId, sessionId, date, note } = req.body;
+    const { userId, sessionId, date, note } = req.body
 
+    // Validate required fields
     if (!userId || !sessionId || !date) {
-      return res.status(400).json({ error: "Missing required fields (userId, sessionId, date, note)" });
+      return res.status(400).json({ error: "Missing required fields (userId, sessionId, date, note)" })
     }
 
-    // 1. Find User
-    const user = await Register.findById(userId);
+    // Find the user
+    const user = await Register.findById(userId)
     if (!user) {
-      return res.status(404).json({ error: "User not found" });
+      return res.status(404).json({ error: "User not found" })
     }
 
-    // 2. Find Zoom Booking by _id
+    // Find the Zoom booking by its _id
     const zoomBooking = user.zoomBookings.find(
       (booking) => booking._id.toString() === sessionId
-    );
+    )
     if (!zoomBooking) {
-      return res.status(404).json({ error: "Zoom booking not found" });
+      return res.status(404).json({ error: "Zoom booking not found" })
     }
 
-    // 3. Find the exact date object inside sessionDates
-    //    Compare ISO strings to ensure an exact match
+    // Find the specific date sub-document by comparing ISO strings
     const dateObj = zoomBooking.sessionDates.find(
-      (d) => d.date.toISOString() === new Date(date).toISOString()
-    );
+      (d) => new Date(d.date).toISOString() === new Date(date).toISOString()
+    )
     if (!dateObj) {
-      return res.status(404).json({ error: "Date not found in sessionDates" });
+      return res.status(404).json({ error: "Date not found in sessionDates" })
     }
 
-    // 4. Update the note
-    dateObj.note = note;
+    // Update the note field for the specific date
+    dateObj.note = note
 
-    // 5. Save user
-    await user.save({ validateBeforeSave: false });
+    // Save the user document (with modified zoomBookings)
+    await user.save({ validateBeforeSave: false })
 
-    return res.json({
+    res.json({
       success: true,
       message: "Note updated successfully!",
       updatedSessionDate: dateObj
-    });
+    })
   } catch (error) {
-    console.error("❌ Error updating Zoom session note:", error);
-    res.status(500).json({ error: "Internal server error" });
+    console.error("Error updating Zoom session note:", error)
+    res.status(500).json({ error: "Internal Server Error" })
   }
-};
+}
 
 
 
