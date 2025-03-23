@@ -336,44 +336,43 @@ exports.resetAdminPassword = async (req, res) => {
 
 exports.getAllBookedSessions = async (req, res) => {
   try {
-    // Include any fields you need (like billingEmail) in the projection
+    // Fetch only the required fields from each user
     const users = await Register.find({}, "bookedSessions zoomBookings username billingEmail");
 
     let allSessions = [];
 
     users.forEach((user) => {
-      // 1) Calendly Sessions
+      // Process Calendly sessions
       user.bookedSessions.forEach((session) => {
         allSessions.push({
-          type: "calendly",
+          type: "calendly", // Identify as Calendly session
           userId: user._id,
           userEmail: user.billingEmail,
           userName: user.username,
-          sessionId: session._id,          // Calendly booking _id
+          sessionId: session._id, // Calendly session's _id
           eventName: session.eventName,
           startTime: session.startTime,
           endTime: session.endTime,
           status: session.status,
-          note: session.note || "",
+          note: session.note || ""
         });
       });
 
-      // 2) Zoom Sessions
+      // Process Zoom sessions (each date as a separate entry)
       user.zoomBookings.forEach((zoomBooking) => {
-        // For each date sub-document, push a separate session
         zoomBooking.sessionDates.forEach((dateObj) => {
           allSessions.push({
-            type: "zoom",
+            type: "zoom", // Identify as Zoom session
             userId: user._id,
             userEmail: user.billingEmail,
             userName: user.username,
-            sessionId: zoomBooking._id,           // The parent booking _id
+            sessionId: zoomBooking._id, // Parent booking _id
             eventName: zoomBooking.eventName,
-            startTime: dateObj.date,              // Each date in sessionDates
-            endTime: dateObj.date,                // Or store a separate end time if needed
-            status: dateObj.status || "Booked",   // e.g. "Booked", "Cancelled"
-            note: dateObj.note || "",             // Note stored per-date
-            zoomMeetingLink: zoomBooking.zoomMeetingLink || "",
+            startTime: dateObj.date, // Date from the sub-document
+            endTime: dateObj.date,   // Use the same date as endTime (or adjust if needed)
+            status: dateObj.status || "Booked", // Status per date
+            note: dateObj.note || "",           // Note stored per date
+            zoomMeetingLink: zoomBooking.zoomMeetingLink || ""
           });
         });
       });
@@ -385,6 +384,7 @@ exports.getAllBookedSessions = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch booked sessions" });
   }
 };
+
 
 exports.cancelZoomSession = async (req, res) => {
   try {

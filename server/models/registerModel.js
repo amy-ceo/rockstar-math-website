@@ -36,17 +36,15 @@ const bookedSessionSchema = new mongoose.Schema({
   updatedAt: { type: Date, required: false }, // ✅ When Last Updated
 })
 
-// Zoom Booking Sub-Schema
 const sessionDateSchema = new mongoose.Schema({
   date: { type: Date, required: true },
   note: { type: String, default: "" },
   status: {
     type: String,
     enum: ["Booked", "Completed", "Cancelled"],
-    default: "Booked",
+    default: "Booked"
   },
 });
-
 
 const zoomBookingSchema = new mongoose.Schema({
   eventName: { type: String, required: true },
@@ -54,10 +52,11 @@ const zoomBookingSchema = new mongoose.Schema({
   lastName: { type: String, required: true },
   zoomMeetingId: { type: String, required: true, unique: true, sparse: true },
   zoomMeetingLink: { type: String, required: true },
-  sessionDates: [sessionDateSchema],
+  sessionDates: [sessionDateSchema], // Updated to store sub-documents
   timezone: { type: String, default: 'UTC' },
   createdAt: { type: Date, default: Date.now },
-})
+});
+
 
 // ✅ Coupon Schema Inside Register Model
 const couponSchema = new mongoose.Schema({
