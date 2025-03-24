@@ -366,7 +366,7 @@ const Dashboard = () => {
         sessionDate: selectedZoomDate,
       })
 
-      await fetch('https://backend.com/api/zoom/cancel-session', {
+      await fetch('https://backend-production-cbe2.up.railway.app/api/zoom/cancel-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
