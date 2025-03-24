@@ -366,47 +366,54 @@ const Dashboard = () => {
         sessionDate: selectedZoomDate,
       })
 
-      await fetch('https://backend-production-cbe2.up.railway.app/api/zoom/cancel-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: users._id,
-          sessionId: selectedZoomSession, // The _id of the Zoom booking
-          sessionDate: selectedZoomDate, // The exact date we want to remove
-        }),
-      })
+      // 1) Make the fetch call and store in "response"
+      const response = await fetch(
+        'https://backend-production-cbe2.up.railway.app/api/zoom/cancel-session',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: users._id,
+            sessionId: selectedZoomSession,
+            sessionDate: selectedZoomDate,
+          }),
+        },
+      )
 
+      // 2) Parse JSON
       const data = await response.json()
       console.log('📥 API Response:', data)
 
+      // 3) Check response.ok
       if (response.ok) {
         toast.success('✅ Zoom Session Canceled!')
 
-        const formattedSessionDate = new Date(sessionDate).toISOString()
-        session.sessionDates = session.sessionDates.filter((dateObj) => {
-          return new Date(dateObj.date).toISOString() !== formattedSessionDate
-        })
-        // ✅ Remove the canceled session from the UI
-        setZoomBookings(
-          (prev) =>
-            prev
-              .map((session) => {
-                if (session._id === selectedZoomSession) {
-                  return {
-                    ...session,
-                    sessionDates: session.sessionDates.filter((date) => date !== selectedZoomDate),
-                  }
+        // 4) Remove the canceled date from local "zoomBookings" state
+        const formattedSessionDate = new Date(selectedZoomDate).toISOString()
+        setZoomBookings((prev) =>
+          prev
+            .map((booking) => {
+              if (booking._id === selectedZoomSession) {
+                return {
+                  ...booking,
+                  sessionDates: booking.sessionDates.filter(
+                    (dateObj) => new Date(dateObj.date).toISOString() !== formattedSessionDate,
+                  ),
                 }
-                return session
-              })
-              .filter((session) => session.sessionDates.length > 0), // Remove empty sessions
+              }
+              return booking
+            })
+            // If a booking has no more dates, remove it entirely
+            .filter((booking) => booking.sessionDates.length > 0),
         )
 
-        // ✅ Update Archived Classes
+        // 5) Update archived classes from the API response
         setArchivedClasses(data.archivedClasses)
 
+        // 6) Close the popup
         setShowZoomCancelPopup(false)
       } else {
+        // If server responded with an error
         toast.error('❌ Error canceling session.')
       }
     } catch (error) {
