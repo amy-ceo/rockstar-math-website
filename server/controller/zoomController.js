@@ -267,7 +267,7 @@ exports.cancelZoomSession = async (req, res) => {
         archivedAt: new Date(),
         sessionDate: formattedSessionDate,
         zoomMeetingLink: session.zoomMeetingLink || null,
-        source: "zoom",
+        source: "zoom", // ✅ source is set to "zoom"
       };
 
       if (!user.archivedClasses) {

@@ -4,65 +4,54 @@ const jwt = require('jsonwebtoken')
 const crypto = require('crypto')
 const cron = require('node-cron')
 const sendEmail = require('../utils/emailSender')
-const stripe = require('stripe')(
-  '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',
-) // 🛑 Replace with your actual Stripe Secret Key
 
-// ✅ Coupans
-// async function getActiveCoupons() {
-//   try {
-//     const coupons = await stripe.coupons.list({ limit: 100 }) // Fetch latest coupons
 
-//     let activeCoupons = coupons.data
-//       .filter((coupon) => coupon.percent_off) // Ensure it has a discount
-//       .map((coupon) => ({
-//         id: coupon.id,
-//         code: coupon.id, // Use ID as the coupon code
-//         percent_off: coupon.percent_off,
-//         expires: coupon.redeem_by ? new Date(coupon.redeem_by * 1000) : 'Forever',
-//       }))
+const archiveExpiredCalendlySessions = async () => {
+  try {
+    console.log("🔄 Running Calendly auto-archiving process...");
+    const users = await Register.find();
+    const currentDate = new Date();
 
-//     console.log('✅ Active Coupons:', activeCoupons)
-//     return activeCoupons
-//   } catch (error) {
-//     console.error('❌ Error Fetching Coupons:', error.message)
-//     return []
-//   }
-// }
-// ✅ Define Zoom Course Names
+    for (const user of users) {
+      let archivedSessions = [];
+      let activeSessions = [];
 
-// ✅ Define Service Packages and Their Booking Limits
+      // Loop through user.bookedSessions
+      for (const session of user.bookedSessions) {
+        // If session is in the past
+        if (session.startTime && session.startTime < currentDate) {
+          archivedSessions.push({
+            name: session.eventName,
+            description: "Calendly session date has passed",
+            archivedAt: new Date(),
+            sessionDate: session.startTime,
+            calendlyBookingLink: session.calendlyEventUri,
+            source: "calendly", // VERY IMPORTANT
+          });
+        } else {
+          activeSessions.push(session);
+        }
+      }
 
-// ✅ Map Each Zoom Link to a Custom Course Name
-// const zoomCourseMapping = [
-//   {
-//     name: '📘 Algebra 1 Tutoring',
-//     link: 'https://us06web.zoom.us/meeting/register/mZHoQiy9SqqHx69f4dejgg#/registration',
-//   },
-//   {
-//     name: '📗 Algebra 2 Tutoring',
-//     link: 'https://us06web.zoom.us/meeting/register/z2W2vvBHRQK_yEWMTteOrg#/registration',
-//   },
-//   {
-//     name: '📕 Calculus 1 Tutoring',
-//     link: 'https://us06web.zoom.us/meeting/register/kejTnKqpTpteWaMN13BAb0#/registration',
-//   },
-//   {
-//     name: '📙 Pre-Calculus & Trigonometry Tutoring ',
-//     link: 'https://us06web.zoom.us/meeting/register/jH2N2rFMSXyqX1UDEZAarQ#/registration',
-//   },
-//   {
-//     name: '📒 Geometry Tutoring',
-//     link: 'https://us06web.zoom.us/meeting/register/Lsd_MFiwQpKRKhMZhPIVPw#/registration',
-//   },
-// ]
+      // Save the updated arrays
+      user.bookedSessions = activeSessions;
+      user.archivedClasses.push(...archivedSessions);
 
-// ✅ Specific Zoom Link for Common Core
-// const COMMONCORE_ZOOM_LINK = {
-//   name: '📚  Common Core for Parents',
-//   link: 'https://us06web.zoom.us/meeting/register/XsYhADVmQcK8BIIT3Sfbpyg#/registration',
-// }
+      if (archivedSessions.length > 0) {
+        user.markModified("bookedSessions");
+        user.markModified("archivedClasses");
+        await user.save();
+      }
+    }
 
+    console.log("✅ Auto-archiving of expired Calendly sessions completed!");
+  } catch (error) {
+    console.error("❌ Error auto-archiving Calendly sessions:", error);
+  }
+};
+
+// Run every day at midnight
+cron.schedule("0 0 * * *", archiveExpiredCalendlySessions);
 // ✅ Define Calendly Booking Links
 const sessionMapping = {
   '3 x 30': 3,
@@ -102,39 +91,6 @@ const calendlyMapping = {
 //     return null
 //   }
 // }
-
-// ✅ Function to Automatically Archive Expired Classes
-const archiveExpiredCalendlySessions = async () => {
-  try {
-    console.log('🔄 Running Calendly auto-archiving process...')
-
-    const users = await Register.find()
-    const currentDate = new Date()
-
-    users.forEach(async (user) => {
-      const expiredSessions = user.purchasedClasses.filter(
-        (cls) => cls.bookingLink && new Date(cls.purchaseDate) < currentDate,
-      )
-
-      if (expiredSessions.length > 0) {
-        console.log(
-          `📂 Archiving ${expiredSessions.length} expired Calendly sessions for ${user.username}`,
-        )
-
-        user.archivedClasses.push(...expiredSessions)
-        user.purchasedClasses = user.purchasedClasses.filter(
-          (cls) => !(cls.bookingLink && new Date(cls.purchaseDate) < currentDate),
-        )
-
-        await user.save()
-      }
-    })
-
-    console.log('✅ Auto-archiving of expired Calendly sessions completed!')
-  } catch (error) {
-    console.error('❌ Error auto-archiving Calendly sessions:', error)
-  }
-}
 
 // ✅ Schedule the function to run daily at midnight
 cron.schedule('0 0 * * *', archiveExpiredCalendlySessions)
@@ -530,63 +486,49 @@ exports.cancelSession = async (req, res) => {
   try {
     const { userId, calendlyEventUri } = req.body;
 
-    if (!calendlyEventUri) {
-      return res.status(400).json({ message: 'Calendly event URI is required to cancel the session.' });
-    }
-
-    console.log(`🔍 Searching for session with calendlyEventUri: ${calendlyEventUri}`);
-
-    // ✅ Find user
+    // 1) Find user
     const user = await Register.findById(userId);
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
 
-    // ✅ Find the session in bookedSessions using calendlyEventUri
+    // 2) Find the Calendly session in user.bookedSessions
     const sessionIndex = user.bookedSessions.findIndex(
-      (session) => session.calendlyEventUri.trim().toLowerCase() === calendlyEventUri.trim().toLowerCase()
+      (s) => s.calendlyEventUri === calendlyEventUri
     );
-
     if (sessionIndex === -1) {
-      return res.status(404).json({ message: 'Session not found with the provided URI' });
+      return res.status(404).json({ message: "Session not found" });
     }
 
-    const canceledSession = user.bookedSessions[sessionIndex];
-
-    console.log(`✅ Found session: ${canceledSession.eventName} at ${canceledSession.startTime}`);
-
-    // ✅ Find any active purchased plan (remove name comparison)
-    let purchasedPlan = user.purchasedClasses.find((item) => item.remainingSessions > 0);
-
-    if (!purchasedPlan) {
-      console.warn(`⚠️ No active purchased plan found, but proceeding with cancellation.`);
-    } else {
-      // ✅ Restore Session Count
-      purchasedPlan.remainingSessions += 1;
-    }
-
-    // ✅ Move Session to Archived Classes
-    user.archivedClasses.push({
-      name: canceledSession.eventName,
-      description: 'Session was canceled by the user',
+    // 3) Prepare archived object with source = "calendly"
+    const session = user.bookedSessions[sessionIndex];
+    const archivedSession = {
+      name: session.eventName,
+      description: "Calendly session was canceled by user",
       archivedAt: new Date(),
-      sessionCount: purchasedPlan ? purchasedPlan.sessionCount : 1,
-      remainingSessions: purchasedPlan ? purchasedPlan.remainingSessions : 1,
-    });
+      sessionDate: session.startTime,              // or endTime if you prefer
+      calendlyBookingLink: session.calendlyEventUri,
+      source: "calendly",                          // IMPORTANT!
+    };
 
-    // ✅ Remove session from bookedSessions
+    // 4) Push archivedSession to archivedClasses
+    user.archivedClasses.push(archivedSession);
+
+    // 5) Remove the original session from bookedSessions
     user.bookedSessions.splice(sessionIndex, 1);
+
+    // 6) Mark arrays as modified & save
+    user.markModified("bookedSessions");
+    user.markModified("archivedClasses");
     await user.save();
 
-    console.log(`✅ Session canceled and archived successfully!`);
-
-    res.status(200).json({
-      message: 'Session canceled and archived successfully',
+    return res.status(200).json({
+      message: "Calendly session canceled and archived successfully",
       archivedClasses: user.archivedClasses,
     });
   } catch (error) {
-    console.error('❌ Error canceling session:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error("Error canceling Calendly session:", error);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
@@ -686,3 +628,5 @@ exports.proxyCalendly = async (req, res) => {
     res.status(500).send('Internal Server Error.')
   }
 }
+
+module.exports = { archiveExpiredCalendlySessions };
