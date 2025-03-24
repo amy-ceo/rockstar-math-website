@@ -355,65 +355,65 @@ const Dashboard = () => {
 
   const cancelZoomSession = async () => {
     if (!selectedZoomSession || !selectedZoomDate) {
-      toast.error("Invalid Zoom session details!");
-      return;
+      toast.error('Invalid Zoom session details!')
+      return
     }
-  
+
     try {
-      console.log("📡 Sending cancel request to API...", {
+      console.log('📡 Sending cancel request to API...', {
         userId: users._id,
         sessionId: selectedZoomSession,
         sessionDate: selectedZoomDate,
-      });
-  
-      const response = await fetch(
-        `https://backend-production-cbe2.up.railway.app/api/zoom/cancel-session`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userId: users._id,
-            sessionId: selectedZoomSession,
-            sessionDate: selectedZoomDate,
-          }),
-        }
-      );
-  
-      const data = await response.json();
-      console.log("📥 API Response:", data);
-  
+      })
+
+      await fetch('https://backend.com/api/zoom/cancel-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: users._id,
+          sessionId: selectedZoomSession, // The _id of the Zoom booking
+          sessionDate: selectedZoomDate, // The exact date we want to remove
+        }),
+      })
+
+      const data = await response.json()
+      console.log('📥 API Response:', data)
+
       if (response.ok) {
-        toast.success("✅ Zoom Session Canceled!");
-  
+        toast.success('✅ Zoom Session Canceled!')
+
+        const formattedSessionDate = new Date(sessionDate).toISOString()
+        session.sessionDates = session.sessionDates.filter((dateObj) => {
+          return new Date(dateObj.date).toISOString() !== formattedSessionDate
+        })
         // ✅ Remove the canceled session from the UI
-        setZoomBookings((prev) =>
-          prev
-            .map((session) => {
-              if (session._id === selectedZoomSession) {
-                return {
-                  ...session,
-                  sessionDates: session.sessionDates.filter(
-                    (date) => date !== selectedZoomDate
-                  ),
-                };
-              }
-              return session;
-            })
-            .filter((session) => session.sessionDates.length > 0) // Remove empty sessions
-        );
-  
+        setZoomBookings(
+          (prev) =>
+            prev
+              .map((session) => {
+                if (session._id === selectedZoomSession) {
+                  return {
+                    ...session,
+                    sessionDates: session.sessionDates.filter((date) => date !== selectedZoomDate),
+                  }
+                }
+                return session
+              })
+              .filter((session) => session.sessionDates.length > 0), // Remove empty sessions
+        )
+
         // ✅ Update Archived Classes
-        setArchivedClasses(data.archivedClasses);
-  
-        setShowZoomCancelPopup(false);
+        setArchivedClasses(data.archivedClasses)
+
+        setShowZoomCancelPopup(false)
       } else {
-        toast.error("❌ Error canceling session.");
+        toast.error('❌ Error canceling session.')
       }
     } catch (error) {
-      console.error("❌ Error canceling Zoom session:", error.message);
+      console.error('❌ Error canceling Zoom session:', error.message)
     }
-  };
-  
+  }
+
   const renderBookNowButton = (session) => {
     console.log('Session Data:', session) // Check the session data
 
@@ -606,72 +606,72 @@ const Dashboard = () => {
               </div>
             </section>
           )}
-       {zoomBookings.length > 0 && (
-  <section className="mt-6 p-6 bg-white shadow-lg rounded-lg">
-    <h3 className="text-2xl font-bold mb-4 text-gray-800">
-      🎥 Your Registered Zoom Sessions
-    </h3>
+          {zoomBookings.length > 0 && (
+            <section className="mt-6 p-6 bg-white shadow-lg rounded-lg">
+              <h3 className="text-2xl font-bold mb-4 text-gray-800">
+                🎥 Your Registered Zoom Sessions
+              </h3>
 
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-      {zoomBookings.map((session, index) =>
-        session.sessionDates && session.sessionDates.length > 0 ? (
-          // Rename 'date' to 'dateObj'
-          session.sessionDates.map((dateObj, i) => (
-            <div
-              key={`${session._id}-${i}`}
-              className="p-5 bg-white rounded-xl shadow-lg border border-gray-200 transition transform hover:scale-105"
-            >
-              {/* Session Title */}
-              <h4 className="text-xl font-semibold text-blue-700 mb-2">
-                {session.eventName || "Unnamed Session"}
-              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                {zoomBookings.map((session, index) =>
+                  session.sessionDates && session.sessionDates.length > 0 ? (
+                    // Rename 'date' to 'dateObj'
+                    session.sessionDates.map((dateObj, i) => (
+                      <div
+                        key={`${session._id}-${i}`}
+                        className="p-5 bg-white rounded-xl shadow-lg border border-gray-200 transition transform hover:scale-105"
+                      >
+                        {/* Session Title */}
+                        <h4 className="text-xl font-semibold text-blue-700 mb-2">
+                          {session.eventName || 'Unnamed Session'}
+                        </h4>
 
-              {/* Session Date */}
-              <p className="font-semibold text-gray-700">📅 Date:</p>
-              <p className="text-gray-600">
-                🕒 {formatDateTime(dateObj.date, session.timezone)}
-              </p>
+                        {/* Session Date */}
+                        <p className="font-semibold text-gray-700">📅 Date:</p>
+                        <p className="text-gray-600">
+                          🕒 {formatDateTime(dateObj.date, session.timezone)}
+                        </p>
 
-              {/* Zoom Meeting Link */}
-              {session.zoomMeetingLink && (
-                <div className="mt-3">
-                  <a
-                    href={session.zoomMeetingLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 font-medium hover:underline"
-                  >
-                    🔗 Join Zoom Session
-                  </a>
-                </div>
-              )}
+                        {/* Zoom Meeting Link */}
+                        {session.zoomMeetingLink && (
+                          <div className="mt-3">
+                            <a
+                              href={session.zoomMeetingLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 font-medium hover:underline"
+                            >
+                              🔗 Join Zoom Session
+                            </a>
+                          </div>
+                        )}
 
-              {/* Admin Note (Per-Date) */}
-              {dateObj.note && (
-                <div className="mt-3 p-3 border border-gray-300 rounded bg-gray-100">
-                  <h5 className="text-gray-800 font-bold">📌 Admin Note:</h5>
-                  <p className="text-gray-700">{dateObj.note}</p>
-                </div>
-              )}
+                        {/* Admin Note (Per-Date) */}
+                        {dateObj.note && (
+                          <div className="mt-3 p-3 border border-gray-300 rounded bg-gray-100">
+                            <h5 className="text-gray-800 font-bold">📌 Admin Note:</h5>
+                            <p className="text-gray-700">{dateObj.note}</p>
+                          </div>
+                        )}
 
-            
-
-              {/* Cancel Button */}
-              <button
-                className="mt-3 bg-red-500 text-white font-medium px-4 py-2 rounded-lg transition hover:bg-red-600 w-full"
-                onClick={() => confirmZoomCancel(session._id, dateObj.date)}
-              >
-                ❌ Cancel Session
-              </button>
-            </div>
-          ))
-        ) : (
-          <p className="text-red-500">⚠️ No scheduled dates found</p>
-        )
-      )}
-    </div>
-  </section>
-)}
+                        {/* Cancel Button */}
+                        <button
+                          className="mt-3 bg-red-500 text-white font-medium px-4 py-2 rounded-lg transition hover:bg-red-600 w-full"
+                          onClick={() =>
+                            confirmZoomCancel(session._id, new Date(dateObj.date).toISOString())
+                          }
+                        >
+                          ❌ Cancel Session
+                        </button>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-red-500">⚠️ No scheduled dates found</p>
+                  ),
+                )}
+              </div>
+            </section>
+          )}
 
           {/* ✅ Show Remaining Sessions - Hide "Learn", but display other sessions */}
           {remainingSessions.length > 0 && (
@@ -770,7 +770,10 @@ const Dashboard = () => {
             <div className="mt-4 flex justify-center space-x-4">
               <button
                 className="bg-red-500 text-white px-4 py-2 rounded"
-                onClick={() => cancelBooking(selectedEventUri)} // ✅ Use selectedEventUri here
+                onClick={async () => {
+                  await cancelBooking(selectedEventUri)
+                  setShowCancelPopup(false)
+                }}
               >
                 Yes, Cancel
               </button>
