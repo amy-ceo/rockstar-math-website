@@ -104,15 +104,15 @@ const Archive = () => {
               {/* ✅ Show if it was a Zoom Session */}
               {classItem.source === 'zoom' && (
                 <p className="text-sm text-gray-600 mt-2 flex items-center gap-2">
-                  🎥 <span className="text-blue-600">Zoom Session</span>
+                  🎥 <span className="text-blue-600">Expired Zoom Session</span>
                 </p>
               )}
 
-              {/* {classItem.source !== 'zoom' && (
+              {classItem.source !== 'zoom' && (
                 <p className="text-sm text-blue-600 mt-2 flex items-center gap-2">
                   <FaClock className="text-gray-500" /> Expired Calendly Session
                 </p>
-              )} */}
+              )}
             </div>
           ))}
         </div>
