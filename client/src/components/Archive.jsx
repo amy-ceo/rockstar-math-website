@@ -108,12 +108,11 @@ const Archive = () => {
                 </p>
               )}
 
-              {/* ✅ Show if it was a Calendly Session */}
-              {classItem.source !== 'zoom' && (
+              {/* {classItem.source !== 'zoom' && (
                 <p className="text-sm text-blue-600 mt-2 flex items-center gap-2">
                   <FaClock className="text-gray-500" /> Expired Calendly Session
                 </p>
-              )}
+              )} */}
             </div>
           ))}
         </div>

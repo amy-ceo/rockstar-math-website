@@ -1,18 +1,15 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useStripe, useElements, CardElement } from '@stripe/react-stripe-js'
 import toast, { Toaster } from 'react-hot-toast'
 import { FaCreditCard } from 'react-icons/fa'
 
-// ✅ Pass `createPaymentIntent` as a prop
-const PaymentForm = ({ totalAmount, createPaymentIntent }) => {
+const PaymentForm = ({ totalAmount, createPaymentIntent, onSuccess }) => {
   const stripe = useStripe()
   const elements = useElements()
   const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (event) => {
     event.preventDefault()
-    console.log('🚀 handleSubmit triggered!')
-
     if (!stripe || !elements) {
       toast.error('Stripe is not loaded yet!')
       return
@@ -21,14 +18,6 @@ const PaymentForm = ({ totalAmount, createPaymentIntent }) => {
     setLoading(true)
 
     try {
-      // ✅ Ensure `createPaymentIntent` exists before calling it
-      if (!createPaymentIntent) {
-        console.error('❌ createPaymentIntent function is not provided.')
-        toast.error('Payment initialization failed!')
-        setLoading(false)
-        return
-      }
-
       const clientSecret = await createPaymentIntent()
       if (!clientSecret) {
         toast.error('❌ Payment initialization failed!')
@@ -36,9 +25,6 @@ const PaymentForm = ({ totalAmount, createPaymentIntent }) => {
         return
       }
 
-      console.log('🔹 Using clientSecret:', clientSecret)
-
-      // ✅ Get CardElement properly
       const cardElement = elements.getElement(CardElement)
       if (!cardElement) {
         toast.error('❌ Unable to retrieve card details.')
@@ -57,7 +43,12 @@ const PaymentForm = ({ totalAmount, createPaymentIntent }) => {
         toast.error(`Payment Failed: ${error.message}`)
       } else if (paymentIntent?.status === 'succeeded') {
         toast.success('✅ Payment Successful! Redirecting...')
-        setTimeout(() => (window.location.href = '/dashboard'), 2000)
+        // Call the onSuccess callback instead of redirecting directly
+        if (onSuccess) {
+          onSuccess()
+        } else {
+          setTimeout(() => (window.location.href = '/dashboard'), 2000)
+        }
       }
     } catch (error) {
       console.error('❌ Error in Payment Processing:', error)
