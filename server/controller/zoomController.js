@@ -2,6 +2,9 @@ const crypto = require('crypto')
 const Register = require('../models/registerModel')
 const cron = require('node-cron')
 
+/**
+ * 1) Auto-archive any Zoom dates that are in the past
+ */
 const archiveExpiredZoomSessions = async () => {
   try {
     console.log('🔄 Running Zoom auto-archiving process...')
@@ -9,48 +12,50 @@ const archiveExpiredZoomSessions = async () => {
     const users = await Register.find()
     const currentDate = new Date()
 
-    users.forEach(async (user) => {
+    for (const user of users) {
       let updatedZoomBookings = []
       let archivedSessions = []
 
-      user.zoomBookings.forEach((session) => {
-        // Filter based on the sub-document's date field
-        let futureSessions = session.sessionDates.filter(
+      // Go through each Zoom booking
+      for (const session of user.zoomBookings) {
+        // futureSessions => dates that haven't passed yet
+        const futureSessions = session.sessionDates.filter(
           (dateObj) => new Date(dateObj.date) >= currentDate,
         )
-        let expiredSessions = session.sessionDates.filter(
+        // expiredSessions => any date that is in the past
+        const expiredSessions = session.sessionDates.filter(
           (dateObj) => new Date(dateObj.date) < currentDate,
         )
 
-        if (expiredSessions.length > 0) {
-          expiredSessions.forEach((dateObj) => {
-            archivedSessions.push({
-              name: session.eventName,
-              description: 'Session date has passed',
-              archivedAt: new Date(),
-              sessionDate: new Date(dateObj.date).toISOString(), // use the sub-document date
-              zoomMeetingLink: session.zoomMeetingLink,
-              source: 'zoom', // Identify as Zoom session
-            })
+        // Archive each expired date
+        for (const dateObj of expiredSessions) {
+          archivedSessions.push({
+            name: session.eventName,
+            description: 'Session date has passed',
+            archivedAt: new Date(),
+            sessionDate: new Date(dateObj.date).toISOString(),
+            zoomMeetingLink: session.zoomMeetingLink,
+            source: 'zoom',
           })
         }
 
+        // Keep only future dates in the session
         if (futureSessions.length > 0) {
-          // Replace sessionDates with the filtered array of objects
           session.sessionDates = futureSessions
           updatedZoomBookings.push(session)
         }
-      })
+      }
 
+      // Overwrite user’s zoomBookings with the future ones
       user.zoomBookings = updatedZoomBookings
+
+      // Append archived items
       user.archivedClasses.push(...archivedSessions)
 
-      // Mark fields as modified
       user.markModified('archivedClasses')
       user.markModified('zoomBookings')
-
       await user.save()
-    })
+    }
 
     console.log('✅ Auto-archiving of expired Zoom sessions completed!')
   } catch (error) {
@@ -61,15 +66,17 @@ const archiveExpiredZoomSessions = async () => {
 // Run daily at midnight
 cron.schedule('0 0 * * *', archiveExpiredZoomSessions)
 
-// ✅ Run the function daily at midnight
-cron.schedule('0 0 * * *', archiveExpiredZoomSessions)
+/**
+ * 2) Zoom Webhook Endpoint
+ *    - For new Zoom registrations, etc.
+ */
 exports.zoomWebhook = async (req, res) => {
   try {
     console.log('📢 Headers:', req.headers)
     console.log('📢 Request IP:', req.headers['x-forwarded-for'] || req.connection.remoteAddress)
     console.log('📢 Full Payload:', JSON.stringify(req.body, null, 2))
 
-    // Convert Buffer Body to JSON if necessary
+    // Convert Buffer Body to JSON if needed
     if (Buffer.isBuffer(req.body)) {
       req.body = JSON.parse(req.body.toString('utf8'))
     }
@@ -120,7 +127,7 @@ exports.zoomWebhook = async (req, res) => {
       return res.status(404).json({ error: 'User not found' })
     }
 
-    // Generate Weekly Session Dates (every 7 days)
+    // Generate Weekly Session Dates (every 7 days backward from startTime)
     const sessionDates = []
     let dateIterator = new Date(startTime)
     const today = new Date()
@@ -129,7 +136,7 @@ exports.zoomWebhook = async (req, res) => {
       sessionDates.push(dateIterator.toISOString())
       dateIterator.setDate(dateIterator.getDate() - 7)
     }
-    sessionDates.reverse() // Chronological order
+    sessionDates.reverse()
     console.log('✅ Generated Session Dates:', sessionDates)
 
     // Check if the Zoom event already exists
@@ -140,7 +147,7 @@ exports.zoomWebhook = async (req, res) => {
         existingMeeting.sessionDates = []
       }
 
-      // Add new session dates if not already present (as objects)
+      // Add new session dates if not already present
       sessionDates.forEach((dateStr) => {
         if (
           !existingMeeting.sessionDates.some(
@@ -160,7 +167,7 @@ exports.zoomWebhook = async (req, res) => {
       await user.save()
       console.log('✅ Updated existing Zoom booking with new session dates.')
     } else {
-      // Create a new Zoom booking; store each session date as an object
+      // Create a new Zoom booking
       const newZoomBooking = {
         eventName: meetingTopic,
         firstName: registrant.first_name || 'N/A',
@@ -187,22 +194,24 @@ exports.zoomWebhook = async (req, res) => {
     return res.status(500).json({ error: 'Internal Server Error' })
   }
 }
+
+/**
+ * 3) Fetch a user's Zoom bookings
+ */
 exports.getUserZoomBookings = async (req, res) => {
   try {
-    const { userId } = req.params // Get userId from request parameters
+    const { userId } = req.params
 
     if (!userId) {
       return res.status(400).json({ error: 'User ID is required' })
     }
 
-    // Find user by ID and fetch their zoomBookings only
     const user = await Register.findById(userId).select('zoomBookings').exec()
-
     if (!user) {
       return res.status(404).json({ error: 'User not found' })
     }
 
-    // Ensure sessionDates is an array of objects
+    // Ensure sessionDates is always an array
     const zoomBookings = user.zoomBookings.map((booking) => ({
       ...booking.toObject(),
       sessionDates: Array.isArray(booking.sessionDates) ? booking.sessionDates : [],
@@ -218,6 +227,10 @@ exports.getUserZoomBookings = async (req, res) => {
   }
 }
 
+/**
+ * 4) Cancel a single Zoom date and archive it
+ *    (If no dates remain, the entire session is removed from zoomBookings.)
+ */
 exports.cancelZoomSession = async (req, res) => {
   try {
     const { userId, sessionId, sessionDate } = req.body
@@ -227,8 +240,6 @@ exports.cancelZoomSession = async (req, res) => {
     }
 
     console.log(`🔍 Searching for user ${userId}...`)
-
-    // Find User
     const user = await Register.findById(userId)
     if (!user) {
       console.error('❌ User not found!')
@@ -236,56 +247,62 @@ exports.cancelZoomSession = async (req, res) => {
     }
 
     console.log(`🔍 Searching for Zoom Session with ID: ${sessionId}`)
-
-    // Find Zoom Session by its _id
     const sessionIndex = user.zoomBookings.findIndex(
       (session) => session._id.toString() === sessionId,
     )
-
     if (sessionIndex === -1) {
       console.error('❌ Session not found!')
       return res.status(404).json({ message: 'Session not found' })
     }
 
     let session = user.zoomBookings[sessionIndex]
-
     console.log(`✅ Found session: ${session.eventName}`)
 
-    // Format the provided sessionDate to ISO string (for comparison)
+    // Format the provided sessionDate
     const formattedSessionDate = new Date(sessionDate).toISOString()
 
-    // Remove only the matching date object from sessionDates
-    session.sessionDates = session.sessionDates.filter((dateObj) => {
-      return new Date(dateObj.date).toISOString() !== formattedSessionDate
-    })
-
+    // 1) Remove the single canceled date from sessionDates
+    session.sessionDates = session.sessionDates.filter(
+      (dateObj) => new Date(dateObj.date).toISOString() !== formattedSessionDate,
+    )
     console.log(`🔹 Remaining session dates after removal:`, session.sessionDates)
 
-    console.log(
-      '🔍 Before Saving - archivedClasses:',
-      JSON.stringify(user.archivedClasses, null, 2),
-    )
+    // 2) Archive THIS single canceled date right away
+    const archivedDate = {
+      name: session.eventName,
+      description: 'Zoom session date was canceled by user',
+      archivedAt: new Date(),
+      sessionDate: formattedSessionDate,
+      zoomMeetingLink: session.zoomMeetingLink || null,
+      source: 'zoom',
+    }
+    user.archivedClasses.push(archivedDate)
 
+    // 3) If no dates remain, remove the entire session
+    if (session.sessionDates.length === 0) {
+      console.log('✅ No more session dates left, removing the entire session from zoomBookings...')
+      user.zoomBookings.splice(sessionIndex, 1)
+    } else {
+      // Otherwise, keep the updated session
+      user.zoomBookings[sessionIndex] = session
+    }
+
+    user.markModified('archivedClasses')
+    user.markModified('zoomBookings')
     await user.save()
 
-    // Re-fetch archivedClasses for validation
+    // Re-fetch archivedClasses for the response
     const updatedUser = await Register.findById(userId).select('archivedClasses')
     console.log(
       '✅ Final Archived Classes in DB:',
       JSON.stringify(updatedUser.archivedClasses, null, 2),
     )
 
-    if (session.sessionDates.length === 0) {
-      return res.status(200).json({
-        message: 'Zoom session canceled and archived successfully',
-        archivedClasses: updatedUser.archivedClasses,
-      })
-    } else {
-      return res.status(200).json({
-        message: 'Zoom date canceled, but session remains active',
-        archivedClasses: updatedUser.archivedClasses,
-      })
-    }
+    // 4) Respond with success
+    return res.status(200).json({
+      message: 'Zoom date canceled and archived successfully',
+      archivedClasses: updatedUser.archivedClasses,
+    })
   } catch (error) {
     console.error('❌ Error canceling Zoom session:', error)
     res.status(500).json({ message: 'Internal Server Error' })

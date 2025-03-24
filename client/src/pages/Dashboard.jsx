@@ -346,27 +346,20 @@ const Dashboard = () => {
     }
   }
 
-  // ✅ Confirm Cancel Zoom Session
+  // Confirm cancellation for a specific Zoom date
   const confirmZoomCancel = (sessionId, date) => {
     setSelectedZoomSession(sessionId)
     setSelectedZoomDate(date)
     setShowZoomCancelPopup(true)
   }
 
+  // Updated cancelZoomSession: archives the canceled date immediately
   const cancelZoomSession = async () => {
     if (!selectedZoomSession || !selectedZoomDate) {
       toast.error('Invalid Zoom session details!')
       return
     }
-
     try {
-      console.log('📡 Sending cancel request to API...', {
-        userId: users._id,
-        sessionId: selectedZoomSession,
-        sessionDate: selectedZoomDate,
-      })
-
-      // 1) Make the fetch call and store in "response"
       const response = await fetch(
         'https://backend-production-cbe2.up.railway.app/api/zoom/cancel-session',
         {
@@ -379,16 +372,10 @@ const Dashboard = () => {
           }),
         },
       )
-
-      // 2) Parse JSON
       const data = await response.json()
-      console.log('📥 API Response:', data)
-
-      // 3) Check response.ok
       if (response.ok) {
-        toast.success('✅ Zoom Session Canceled!')
-
-        // 4) Remove the canceled date from local "zoomBookings" state
+        toast.success('✅ Zoom date canceled & archived!')
+        // Remove the canceled date from local state
         const formattedSessionDate = new Date(selectedZoomDate).toISOString()
         setZoomBookings((prev) =>
           prev
@@ -403,24 +390,17 @@ const Dashboard = () => {
               }
               return booking
             })
-            // If a booking has no more dates, remove it entirely
             .filter((booking) => booking.sessionDates.length > 0),
         )
-
-        // 5) Update archived classes from the API response
-        setArchivedClasses(data.archivedClasses)
-
-        // 6) Close the popup
+        setArchivedClasses(data.archivedClasses || [])
         setShowZoomCancelPopup(false)
       } else {
-        // If server responded with an error
-        toast.error('❌ Error canceling session.')
+        toast.error('❌ Error canceling Zoom date.')
       }
     } catch (error) {
-      console.error('❌ Error canceling Zoom session:', error.message)
+      console.error('Error canceling Zoom session:', error.message)
     }
   }
-
   const renderBookNowButton = (session) => {
     console.log('Session Data:', session) // Check the session data
 
@@ -744,7 +724,7 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* ✅ Zoom Session Cancel Confirmation Popup */}
+      {/* Zoom Cancel Confirmation Popup */}
       {showZoomCancelPopup && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white p-6 rounded shadow-lg text-center">
