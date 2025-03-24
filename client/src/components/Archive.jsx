@@ -114,18 +114,6 @@ const Archive = () => {
                   <FaClock className="text-gray-500" /> Expired Calendly Session
                 </p>
               )}
-
-              {/* ✅ Show Meeting Link if available */}
-              {classItem.zoomMeetingLink && (
-                <a
-                  href={classItem.zoomMeetingLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 underline mt-2 block"
-                >
-                  🔗 View Session Details
-                </a>
-              )}
             </div>
           ))}
         </div>
