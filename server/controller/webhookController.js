@@ -65,48 +65,50 @@ exports.calendlyWebhook = async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields' })
     }
 
-    // ✅ Check if Event Already Exists in User's bookedSessions (Avoid Duplicates)
-    const eventAlreadyExists = user.bookedSessions.some(
+    // ✅ Find user with email matching
+    const user = await Register.findOne({
+      $or: [
+        { billingEmail: inviteeEmail },
+        { schedulingEmails: inviteeEmail },
+        { schedulingEmails: { $elemMatch: { $eq: inviteeEmail } } }, // If array
+      ],
+    })
+
+    if (!user) {
+      console.error('❌ No user found with email:', inviteeEmail)
+      console.log(
+        'Available emails in system:',
+        await Register.find({}, 'billingEmail schedulingEmails'),
+      )
+      return res.status(404).json({ error: 'User not found' })
+    }
+
+    console.log('👤 Found User:', user._id)
+
+    // Check for duplicate event
+    const existingBooking = user.bookedSessions.find(
       (session) => normalizeUrl(session.calendlyEventUri) === normalizedEventUri,
     )
 
-    if (eventAlreadyExists) {
-      console.log(`⚠️ Duplicate Event Detected: ${eventName}. Skipping Booking.`)
-      return res.status(200).json({ message: 'Event already stored, skipping' })
+    if (existingBooking) {
+      console.log("⚠️ Duplicate event - already exists in user's bookings")
+      return res.status(200).json({ message: 'Event already exists' })
     }
 
-    // ✅ Find Matching Purchased Class
+    // Find matching purchased class
     let purchasedClass = user.purchasedClasses.find(
-      (cls) => cls.status === 'Active' && normalizeUrl(cls.bookingLink) === normalizedEventUri,
+      (cls) =>
+        cls.status === 'Active' &&
+        (normalizeUrl(cls.bookingLink) === normalizedEventUri ||
+          normalizeUrl(cls.proxyBookingLink)?.includes(encodeURIComponent(eventName))),
     )
 
-    // ✅ If no valid purchased class, assign first available class
     if (!purchasedClass && user.purchasedClasses.length > 0) {
-      purchasedClass =
-        user.purchasedClasses.find((cls) => cls.status === 'Active') || user.purchasedClasses[0]
-
-      // ✅ Update booking link in database
-      purchasedClass.bookingLink = normalizedEventUri
-      purchasedClass.description = purchasedClass.description || 'Calendly Booking'
-      user.markModified('purchasedClasses')
-      await user.save()
-
-      console.log(`🔄 Updated booking link to: ${normalizedEventUri}`)
+      console.log('🔍 No exact class match, using first active class')
+      purchasedClass = user.purchasedClasses.find((cls) => cls.status === 'Active')
     }
 
-    // ✅ Remove Session Deduction: Allow Booking Even if Sessions Are 0
-    if (purchasedClass) {
-      purchasedClass.remainingSessions = Math.max(purchasedClass.remainingSessions - 1, 0) // Prevent negative sessions
-      user.markModified('purchasedClasses')
-
-      if (purchasedClass.remainingSessions === 0) {
-        purchasedClass.status = 'Expired'
-      }
-    } else {
-      console.warn(`⚠️ No purchased class found. Booking will still proceed.`)
-    }
-
-    // ✅ Create New Booking Object
+    // Create new booking
     const newBooking = {
       eventName,
       calendlyEventUri: eventUri,
@@ -117,19 +119,26 @@ exports.calendlyWebhook = async (req, res) => {
       createdAt: new Date(),
     }
 
-    console.log('Storing New Booking:', JSON.stringify(newBooking, null, 2))
+    // Update user
+    if (purchasedClass) {
+      purchasedClass.remainingSessions = Math.max(purchasedClass.remainingSessions - 1, 0)
+      if (purchasedClass.remainingSessions <= 0) {
+        purchasedClass.status = 'Expired'
+      }
+      user.markModified('purchasedClasses')
+    }
 
-    // ✅ Update User's bookedSessions
     user.bookedSessions.push(newBooking)
-
-    // ✅ Save User with the updated session and class data
     await user.save()
 
-    console.log(`✅ Successfully Stored Calendly Booking for ${inviteeEmail}`)
+    console.log('✅ Successfully stored booking:', newBooking)
+    console.log('🔄 Updated user:', {
+      bookedSessions: user.bookedSessions.length,
+      purchasedClasses: user.purchasedClasses,
+    })
 
-    // ✅ **Send Confirmation Email to Billing & Scheduling Emails**
+    // Send confirmation email
     let recipients = [user.billingEmail]
-
     if (user.schedulingEmails) {
       if (Array.isArray(user.schedulingEmails)) {
         recipients = recipients.concat(user.schedulingEmails)
@@ -137,36 +146,46 @@ exports.calendlyWebhook = async (req, res) => {
         recipients.push(user.schedulingEmails)
       }
     }
+    recipients = recipients.filter((email) => email)
 
-    recipients = recipients.filter((email) => email) // Remove null/undefined values
-
-    res.status(200).json({ message: 'Booking stored successfully', updatedUser: user })
+    res.status(200).json({
+      message: 'Booking stored successfully',
+      booking: newBooking,
+    })
   } catch (error) {
-    console.error('❌ Error handling Calendly webhook:', error)
-    res.status(500).json({ error: 'Internal Server Error' })
+    console.error('❌ Webhook Error:', error)
+    res.status(500).json({
+      error: 'Internal Server Error',
+      details: error.message,
+    })
   }
 }
 
 exports.getCalendlyBookings = async (req, res) => {
   try {
     const { userId } = req.params
+    console.log('🔍 Checking UserId:', userId)
 
-    console.log('🔍 Checking UserId:', userId) // Debugging log
-
-    // Find user in MongoDB
     const user = await Register.findById(userId)
-
-    console.log('✅ Retrieved user data:', JSON.stringify(user, null, 2)) // Debugging log
-
     if (!user) {
       console.error('❌ User not found with ID:', userId)
       return res.status(404).json({ message: 'User not found' })
     }
 
-    // ✅ Return bookedSessions from the user
-    res.status(200).json({ bookings: user.bookedSessions || [] })
+    console.log('✅ Retrieved user data:', {
+      id: user._id,
+      bookedSessionsCount: user.bookedSessions.length,
+    })
+
+    res.status(200).json({
+      bookings: user.bookedSessions || [],
+      purchasedClasses: user.purchasedClasses,
+    })
   } catch (error) {
     console.error('❌ Error fetching bookings:', error)
-    res.status(500).json({ message: 'Server error' })
+    res.status(500).json({
+      message: 'Server error',
+      error: error.message,
+    })
   }
 }
