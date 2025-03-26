@@ -1,27 +1,27 @@
 // src/components/UpcomingClasses.jsx
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import { FaTrash, FaStickyNote } from 'react-icons/fa';
-import toast, { Toaster } from 'react-hot-toast';
-import 'react-toastify/dist/ReactToastify.css';
+import React, { useEffect, useState } from 'react'
+import axios from 'axios'
+import { FaTrash, FaStickyNote } from 'react-icons/fa'
+import toast, { Toaster } from 'react-hot-toast'
+import 'react-toastify/dist/ReactToastify.css'
 
-const API_BASE_URL = 'https://backend-production-cbe2.up.railway.app';
+const API_BASE_URL = 'https://backend-production-cbe2.up.railway.app'
 
 const UpcomingClasses = () => {
-  const [sessions, setSessions] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [sessions, setSessions] = useState([])
+  const [loading, setLoading] = useState(true)
 
   // Cancel Modal
-  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
-  const [selectedSession, setSelectedSession] = useState(null);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false)
+  const [selectedSession, setSelectedSession] = useState(null)
 
   // Calendly Note Modal
-  const [isCalendlyNoteModalOpen, setIsCalendlyNoteModalOpen] = useState(false);
-  const [calendlyNoteText, setCalendlyNoteText] = useState('');
+  const [isCalendlyNoteModalOpen, setIsCalendlyNoteModalOpen] = useState(false)
+  const [calendlyNoteText, setCalendlyNoteText] = useState('')
 
   // Zoom Note Modal
-  const [isZoomNoteModalOpen, setIsZoomNoteModalOpen] = useState(false);
-  const [zoomNoteText, setZoomNoteText] = useState('');
+  const [isZoomNoteModalOpen, setIsZoomNoteModalOpen] = useState(false)
+  const [zoomNoteText, setZoomNoteText] = useState('')
 
   // -------------------------------------------
   // 1) Fetch All Sessions on Mount
@@ -29,38 +29,38 @@ const UpcomingClasses = () => {
   useEffect(() => {
     const fetchSessions = async () => {
       try {
-        const response = await axios.get(`${API_BASE_URL}/api/admin/booked-sessions`);
+        const response = await axios.get(`${API_BASE_URL}/api/admin/booked-sessions`)
         if (response.data && response.data.success && Array.isArray(response.data.sessions)) {
-          setSessions(response.data.sessions);
+          setSessions(response.data.sessions)
         } else {
-          console.error('Invalid sessions response:', response.data);
-          setSessions([]);
+          console.error('Invalid sessions response:', response.data)
+          setSessions([])
         }
       } catch (error) {
-        console.error('Error fetching sessions:', error);
-        setSessions([]);
+        console.error('Error fetching sessions:', error)
+        setSessions([])
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
-    fetchSessions();
-  }, []);
+    }
+    fetchSessions()
+  }, [])
 
   // -------------------------------------------
   // 2) Cancel Session
   // -------------------------------------------
   const openCancelModal = (session) => {
-    setSelectedSession(session);
-    setIsCancelModalOpen(true);
-  };
+    setSelectedSession(session)
+    setIsCancelModalOpen(true)
+  }
 
   const closeCancelModal = () => {
-    setSelectedSession(null);
-    setIsCancelModalOpen(false);
-  };
+    setSelectedSession(null)
+    setIsCancelModalOpen(false)
+  }
 
   const cancelSession = async () => {
-    if (!selectedSession) return;
+    if (!selectedSession) return
 
     try {
       if (selectedSession.type === 'zoom') {
@@ -69,13 +69,13 @@ const UpcomingClasses = () => {
           userId: selectedSession.userId,
           sessionId: selectedSession.sessionId,
           sessionDate: selectedSession.startTime,
-        });
+        })
       } else {
         // Calendly
         await axios.post(`${API_BASE_URL}/api/admin/cancel-session`, {
           userId: selectedSession.userId,
           sessionId: selectedSession.sessionId,
-        });
+        })
       }
 
       // Remove canceled session from local state
@@ -83,37 +83,36 @@ const UpcomingClasses = () => {
         prev.filter(
           (s) =>
             !(
-              s.sessionId === selectedSession.sessionId &&
-              s.startTime === selectedSession.startTime
-            )
-        )
-      );
+              s.sessionId === selectedSession.sessionId && s.startTime === selectedSession.startTime
+            ),
+        ),
+      )
 
-      toast.success('Session cancelled successfully!');
-      closeCancelModal();
+      toast.success('Session cancelled successfully!')
+      closeCancelModal()
     } catch (error) {
-      console.error('Error cancelling session:', error);
-      toast.error('Failed to cancel session.');
+      console.error('Error cancelling session:', error)
+      toast.error('Failed to cancel session.')
     }
-  };
+  }
 
   // -------------------------------------------
   // 3) Calendly Note
   // -------------------------------------------
   const openCalendlyNoteModal = (session) => {
-    setSelectedSession(session);
-    setCalendlyNoteText(session.note || '');
-    setIsCalendlyNoteModalOpen(true);
-  };
+    setSelectedSession(session)
+    setCalendlyNoteText(session.note || '')
+    setIsCalendlyNoteModalOpen(true)
+  }
 
   const closeCalendlyNoteModal = () => {
-    setSelectedSession(null);
-    setCalendlyNoteText('');
-    setIsCalendlyNoteModalOpen(false);
-  };
+    setSelectedSession(null)
+    setCalendlyNoteText('')
+    setIsCalendlyNoteModalOpen(false)
+  }
 
   const saveCalendlyNote = async () => {
-    if (!selectedSession) return;
+    if (!selectedSession) return
 
     try {
       const payload = {
@@ -121,8 +120,8 @@ const UpcomingClasses = () => {
         sessionId: selectedSession.sessionId,
         startTime: selectedSession.startTime,
         note: calendlyNoteText,
-      };
-      const response = await axios.post(`${API_BASE_URL}/api/admin/add-note`, payload);
+      }
+      const response = await axios.post(`${API_BASE_URL}/api/admin/add-note`, payload)
 
       if (response.data.success) {
         // Update local sessions
@@ -130,38 +129,40 @@ const UpcomingClasses = () => {
           prev.map((s) =>
             s.sessionId === selectedSession.sessionId && s.startTime === selectedSession.startTime
               ? { ...s, note: calendlyNoteText }
-              : s
-          )
-        );
-        toast.success(selectedSession.note ? 'Note updated successfully!' : 'Note added successfully!');
+              : s,
+          ),
+        )
+        toast.success(
+          selectedSession.note ? 'Note updated successfully!' : 'Note added successfully!',
+        )
       } else {
-        toast.error('Failed to save note.');
+        toast.error('Failed to save note.')
       }
     } catch (error) {
-      console.error('Error saving Calendly note:', error);
-      toast.error('Failed to save note.');
+      console.error('Error saving Calendly note:', error)
+      toast.error('Failed to save note.')
     }
 
-    closeCalendlyNoteModal();
-  };
+    closeCalendlyNoteModal()
+  }
 
   // -------------------------------------------
   // 4) Zoom Note
   // -------------------------------------------
   const openZoomNoteModal = (session) => {
-    setSelectedSession(session);
-    setZoomNoteText(session.note || '');
-    setIsZoomNoteModalOpen(true);
-  };
+    setSelectedSession(session)
+    setZoomNoteText(session.note || '')
+    setIsZoomNoteModalOpen(true)
+  }
 
   const closeZoomNoteModal = () => {
-    setSelectedSession(null);
-    setZoomNoteText('');
-    setIsZoomNoteModalOpen(false);
-  };
+    setSelectedSession(null)
+    setZoomNoteText('')
+    setIsZoomNoteModalOpen(false)
+  }
 
   const saveZoomNote = async () => {
-    if (!selectedSession) return;
+    if (!selectedSession) return
 
     try {
       const payload = {
@@ -169,30 +170,30 @@ const UpcomingClasses = () => {
         sessionId: selectedSession.sessionId,
         date: selectedSession.startTime,
         note: zoomNoteText,
-      };
-      const response = await axios.post(`${API_BASE_URL}/api/admin/add-zoom-note`, payload);
+      }
+      const response = await axios.post(`${API_BASE_URL}/api/admin/add-zoom-note`, payload)
 
       if (!response.data.success) {
-        toast.error('Failed to save note.');
-        return;
+        toast.error('Failed to save note.')
+        return
       }
 
-      toast.success('Note saved successfully!');
+      toast.success('Note saved successfully!')
       // Update local sessions
       setSessions((prev) =>
         prev.map((s) =>
           s.sessionId === selectedSession.sessionId && s.startTime === selectedSession.startTime
             ? { ...s, note: zoomNoteText }
-            : s
-        )
-      );
+            : s,
+        ),
+      )
 
-      closeZoomNoteModal();
+      closeZoomNoteModal()
     } catch (error) {
-      console.error('Error saving zoom note:', error);
-      toast.error('Failed to save note.');
+      console.error('Error saving zoom note:', error)
+      toast.error('Failed to save note.')
     }
-  };
+  }
 
   // -------------------------------------------
   // 5) Render
@@ -247,7 +248,9 @@ const UpcomingClasses = () => {
                       <button
                         onClick={() => openZoomNoteModal(session)}
                         className={`px-4 py-2 rounded-md flex items-center gap-2 ${
-                          session.note ? 'bg-blue-500 hover:bg-blue-600' : 'bg-green-500 hover:bg-green-600'
+                          session.note
+                            ? 'bg-blue-500 hover:bg-blue-600'
+                            : 'bg-green-500 hover:bg-green-600'
                         } text-white`}
                       >
                         <FaStickyNote />
@@ -257,7 +260,9 @@ const UpcomingClasses = () => {
                       <button
                         onClick={() => openCalendlyNoteModal(session)}
                         className={`px-4 py-2 rounded-md flex items-center gap-2 ${
-                          session.note ? 'bg-blue-500 hover:bg-blue-600' : 'bg-green-500 hover:bg-green-600'
+                          session.note
+                            ? 'bg-blue-500 hover:bg-blue-600'
+                            : 'bg-green-500 hover:bg-green-600'
                         } text-white`}
                       >
                         <FaStickyNote />
@@ -356,7 +361,7 @@ const UpcomingClasses = () => {
         </div>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default UpcomingClasses;
+export default UpcomingClasses

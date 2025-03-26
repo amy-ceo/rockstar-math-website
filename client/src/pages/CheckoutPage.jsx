@@ -12,7 +12,7 @@ const PaymentForm = lazy(() => import('../components/PaymentForm'))
 
 // ✅ Load Stripe Public Key
 const stripePromise = loadStripe(
-  'pk_live_51QKwhUE4sPC5ms3x7cYIFoYqx3lULz1hFA9EoRobabZVPwdDm8KbDNlHOZMizb2YftdwRSyxRfyi93ovv5Rev7i300CpaQEtU2',
+  ' pk_test_51QKwhUE4sPC5ms3xgJZhmKyxW9B8Jg9NQHlCoxMzIjWqyIvRNmW8o3tNS4Hrg3guNIEe4hrn5i9dKpvZmXpeVkyp000FmIT2yn',
 )
 
 const CheckoutPage = () => {
@@ -482,26 +482,28 @@ const CheckoutPage = () => {
   //   }
   // };
 
-  // Function to clear cart from localStorage and state
-  const clearCarts = () => {
-    console.log('🛒 Clearing Cart from LocalStorage and State...')
-    localStorage.removeItem('cartItems') // ✅ Ensure cart is cleared
-    setCartItems([]) // ✅ Reset state
-    window.dispatchEvent(new Event('storage')) // ✅ Sync across tabs
-  }
-
   const handlePaymentSuccess = async () => {
     console.log('🚀 handlePaymentSuccess function called!')
 
     try {
       const user = JSON.parse(localStorage.getItem('user'))
-      if (!user || !user._id) {
-        toast.error('User authentication required!')
-        return
+      if (!user?._id) {
+        throw new Error('User authentication required!')
+      }
+
+      console.log('📡 Verifying payment intent status...')
+      // First verify the payment intent status
+      const response = await fetch(
+        `https://backend-production-cbe2.up.railway.app/api/stripe/payment-details/${paymentIntentId}`,
+      )
+      const paymentDetails = await response.json()
+
+      if (!response.ok || paymentDetails.status !== 'succeeded') {
+        throw new Error(`Payment not completed. Current status: ${paymentDetails.status}`)
       }
 
       console.log('📡 Capturing Stripe Payment...')
-      const response = await fetch(
+      const captureResponse = await fetch(
         'https://backend-production-cbe2.up.railway.app/api/stripe/capture-stripe-payment',
         {
           method: 'POST',
@@ -524,34 +526,44 @@ const CheckoutPage = () => {
         },
       )
 
-      const result = await response.json()
+      if (!captureResponse.ok) {
+        const errorData = await captureResponse.json()
+        throw new Error(errorData.error || 'Failed to capture payment')
+      }
+
+      const result = await captureResponse.json()
       console.log('Backend Response:', result)
 
-      if (result.clearCart) {
-        console.log('🛒 Clearing Cart from LocalStorage and State...')
+      // Clear cart only after successful backend confirmation
+      console.log('🛒 Clearing cart after successful payment')
+      setCartItems([])
+      localStorage.removeItem('cartItems')
+      window.dispatchEvent(new Event('cartUpdated'))
 
-        // ✅ Clear LocalStorage
-        localStorage.removeItem('cartItems')
-
-        // ✅ Update React State
-        setCartItems([])
-
-        // ✅ Dispatch Event to Sync Across Tabs
-        window.dispatchEvent(new Event('storage'))
-
-        toast.success('🎉 Payment Successful! Cart cleared.')
-
-        // ✅ Redirect to Dashboard after a short delay
-        setTimeout(() => navigate('/dashboard'), 1000)
-      } else {
-        toast.error('❌ Failed to clear cart after payment!')
-        console.warn('⚠️ Backend did not send clearCart = true. Cart may not be cleared.')
-      }
+      toast.success('🎉 Payment Successful! Redirecting...')
+      setTimeout(() => navigate('/dashboard'), 1000)
     } catch (error) {
       console.error('❌ Error in Payment Process:', error)
       toast.error(error.message || 'Payment processing error.')
+      // Don't clear cart if payment failed
     }
   }
+
+  // Add this useEffect hook to your CheckoutPage component
+  useEffect(() => {
+    const handleCartUpdate = () => {
+      const storedCart = JSON.parse(localStorage.getItem('cartItems')) || []
+      setCartItems(storedCart)
+    }
+
+    // Listen for cart updates from other tabs
+    window.addEventListener('cartUpdated', handleCartUpdate)
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('cartUpdated', handleCartUpdate)
+    }
+  }, [])
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-32">
@@ -672,17 +684,11 @@ const CheckoutPage = () => {
                 <Elements stripe={stripePromise} options={{ clientSecret }}>
                   <PaymentForm
                     totalAmount={total}
-                    paymentIntentId={paymentIntentId}
                     createPaymentIntent={createPaymentIntent}
-                    onSuccess={handlePaymentSuccess} // Ensure onSuccess prop is passed
+                    onPaymentSuccess={handlePaymentSuccess}
                   />
                 </Elements>
-                <button
-                  onClick={() => setShowPaymentForm(false)}
-                  className="w-full flex justify-center underline mt-5"
-                >
-                  Go Back
-                </button>
+                {/* ... rest of your code ... */}
               </div>
             </Suspense>
           )}

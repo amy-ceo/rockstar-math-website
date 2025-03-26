@@ -1,64 +1,71 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import { FaEdit, FaTrash } from 'react-icons/fa';
-import toast, { Toaster } from 'react-hot-toast';
+import React, { useEffect, useState } from 'react'
+import axios from 'axios'
+import { FaEdit, FaTrash } from 'react-icons/fa'
+import toast, { Toaster } from 'react-hot-toast'
 
 const AdminUsers = () => {
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [editData, setEditData] = useState({ username: '', email: '', phone: '' });
+  const [users, setUsers] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [selectedUser, setSelectedUser] = useState(null)
+  const [editData, setEditData] = useState({ username: '', email: '', phone: '' })
 
   // ✅ Fetch all users from backend
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    fetchUsers()
+  }, [])
 
   const fetchUsers = async () => {
     try {
-      const response = await axios.get('https://backend-production-cbe2.up.railway.app/api/admin/users');
-      setUsers(response.data);
+      const response = await axios.get(
+        'https://backend-production-cbe2.up.railway.app/api/admin/users',
+      )
+      setUsers(response.data)
     } catch (error) {
-      console.error('Error fetching users:', error);
-      toast.error('Failed to load users.');
+      console.error('Error fetching users:', error)
+      toast.error('Failed to load users.')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   // ✅ Delete user
   const handleDeleteUser = async (userId) => {
-    if (!window.confirm('Are you sure you want to delete this user?')) return;
+    if (!window.confirm('Are you sure you want to delete this user?')) return
 
     try {
-      await axios.delete(`https://backend-production-cbe2.up.railway.app/api/admin/users/${userId}`);
-      toast.success('User deleted successfully.');
-      setUsers(users.filter((user) => user._id !== userId)); // Remove from UI instantly
+      await axios.delete(`https://backend-production-cbe2.up.railway.app/api/admin/users/${userId}`)
+      toast.success('User deleted successfully.')
+      setUsers(users.filter((user) => user._id !== userId)) // Remove from UI instantly
     } catch (error) {
-      console.error('Error deleting user:', error);
-      toast.error('Failed to delete user.');
+      console.error('Error deleting user:', error)
+      toast.error('Failed to delete user.')
     }
-  };
+  }
 
   // ✅ Open edit modal
   const openEditModal = (user) => {
-    setSelectedUser(user);
-    setEditData({ username: user.username, email: user.billingEmail, phone: user.phone });
-  };
+    setSelectedUser(user)
+    setEditData({ username: user.username, email: user.billingEmail, phone: user.phone })
+  }
 
   // ✅ Handle update user
   const handleUpdateUser = async (e) => {
-    e.preventDefault();
+    e.preventDefault()
     try {
-      await axios.put(`https://backend-production-cbe2.up.railway.app/api/admin/users/${selectedUser._id}`, editData);
-      toast.success('User updated successfully.');
-      setUsers(users.map((user) => (user._id === selectedUser._id ? { ...user, ...editData } : user))); // Update UI instantly
-      setSelectedUser(null);
+      await axios.put(
+        `https://backend-production-cbe2.up.railway.app/api/admin/users/${selectedUser._id}`,
+        editData,
+      )
+      toast.success('User updated successfully.')
+      setUsers(
+        users.map((user) => (user._id === selectedUser._id ? { ...user, ...editData } : user)),
+      ) // Update UI instantly
+      setSelectedUser(null)
     } catch (error) {
-      console.error('Error updating user:', error);
-      toast.error('Failed to update user.');
+      console.error('Error updating user:', error)
+      toast.error('Failed to update user.')
     }
-  };
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
@@ -161,7 +168,7 @@ const AdminUsers = () => {
         </div>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default AdminUsers;
+export default AdminUsers

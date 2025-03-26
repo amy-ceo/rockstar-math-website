@@ -1,121 +1,124 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import toast, { Toaster } from "react-hot-toast"; 
+import React, { useState, useEffect } from 'react'
+import axios from 'axios'
+import toast, { Toaster } from 'react-hot-toast'
 
 const Profile = () => {
   const [userData, setUserData] = useState({
-    username: "",
-    billingEmail: "",
-    schedulingEmails: "", // ✅ Fixed
-    phone: "",
-    goals: "",
-  });
+    username: '',
+    billingEmail: '',
+    schedulingEmails: '', // ✅ Fixed
+    phone: '',
+    goals: '',
+  })
 
   const [passwords, setPasswords] = useState({
-    oldPassword: "",
-    newPassword: "",
-  });
+    oldPassword: '',
+    newPassword: '',
+  })
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false)
 
   // ✅ Correctly fetch `userId` from `localStorage`
-  const storedUser = JSON.parse(localStorage.getItem("user"));
-  const userId = storedUser?._id || "";
+  const storedUser = JSON.parse(localStorage.getItem('user'))
+  const userId = storedUser?._id || ''
 
-  console.log("📌 Stored User in Local Storage:", storedUser);
-  console.log("🔹 Extracted userId:", userId);
+  console.log('📌 Stored User in Local Storage:', storedUser)
+  console.log('🔹 Extracted userId:', userId)
 
   // ✅ Fetch user details
   useEffect(() => {
     if (storedUser && storedUser.schedulingEmails && storedUser.goals) {
-      console.log("📌 Loaded User from Local Storage:", storedUser);
-      setUserData(storedUser);
+      console.log('📌 Loaded User from Local Storage:', storedUser)
+      setUserData(storedUser)
     } else {
-      fetchUserDetails();
+      fetchUserDetails()
     }
-  }, []);
+  }, [])
 
   const fetchUserDetails = async () => {
     try {
-      console.log("📡 Fetching user details for userId:", userId);
+      console.log('📡 Fetching user details for userId:', userId)
 
       // Ensure `userId` is valid before making the request
       if (!userId) {
-        console.error("❌ No valid userId found! Cannot fetch user details.");
-        return;
+        console.error('❌ No valid userId found! Cannot fetch user details.')
+        return
       }
 
-      const res = await axios.get(`https://backend-production-cbe2.up.railway.app/api/user/${userId}`);
+      const res = await axios.get(
+        `https://backend-production-cbe2.up.railway.app/api/user/${userId}`,
+      )
 
-      console.log("✅ API Response:", res.data);
+      console.log('✅ API Response:', res.data)
 
       if (res.data.success && res.data.user) {
-        setUserData(res.data.user);
-        localStorage.setItem("user", JSON.stringify(res.data.user)); // ✅ Ensure local storage is updated
+        setUserData(res.data.user)
+        localStorage.setItem('user', JSON.stringify(res.data.user)) // ✅ Ensure local storage is updated
       } else {
-        console.error("❌ User data missing from API response!");
+        console.error('❌ User data missing from API response!')
       }
     } catch (error) {
-      console.error("❌ Error fetching user details:", error.response || error);
+      console.error('❌ Error fetching user details:', error.response || error)
     }
-  };
+  }
 
   // ✅ Handle Input Changes
   const handleChange = (e) => {
-    setUserData({ ...userData, [e.target.name]: e.target.value });
-  };
+    setUserData({ ...userData, [e.target.name]: e.target.value })
+  }
 
   const handlePasswordChange = (e) => {
-    setPasswords({ ...passwords, [e.target.name]: e.target.value });
-  };
+    setPasswords({ ...passwords, [e.target.name]: e.target.value })
+  }
 
   // ✅ Handle Profile Update Submission
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+    e.preventDefault()
+    setLoading(true)
 
     try {
-      console.log("📡 Sending Profile Update Request with Data:", userData);
+      console.log('📡 Sending Profile Update Request with Data:', userData)
 
-      const res = await axios.put(`https://backend-production-cbe2.up.railway.app/api/user/update/${userId}`, userData);
+      const res = await axios.put(
+        `https://backend-production-cbe2.up.railway.app/api/user/update/${userId}`,
+        userData,
+      )
 
-      console.log("✅ Update Response:", res.data);
+      console.log('✅ Update Response:', res.data)
 
-      localStorage.setItem("user", JSON.stringify(res.data.user));
-      toast.success("Profile updated successfully!");
-
+      localStorage.setItem('user', JSON.stringify(res.data.user))
+      toast.success('Profile updated successfully!')
     } catch (error) {
-      console.error("❌ Error updating profile:", error);
-      toast.error(error.response?.data?.message || "Failed to update.");
+      console.error('❌ Error updating profile:', error)
+      toast.error(error.response?.data?.message || 'Failed to update.')
     }
 
-    setLoading(false);
-  };
+    setLoading(false)
+  }
 
   // ✅ Handle Password Update
   const handlePasswordUpdate = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+    e.preventDefault()
+    setLoading(true)
 
     try {
-      console.log("📡 Sending Password Update Request with Data:", passwords);
+      console.log('📡 Sending Password Update Request with Data:', passwords)
 
       const res = await axios.put(
         `https://backend-production-cbe2.up.railway.app/api/user/update-password/${userId}`,
-        passwords
-      );
+        passwords,
+      )
 
-      console.log("✅ Password Update Response:", res.data);
-      toast.success("Password updated successfully!");
-      setPasswords({ oldPassword: "", newPassword: "" });
-
+      console.log('✅ Password Update Response:', res.data)
+      toast.success('Password updated successfully!')
+      setPasswords({ oldPassword: '', newPassword: '' })
     } catch (error) {
-      console.error("❌ Error updating password:", error);
-      toast.error(error.response?.data?.message || "Failed to update password.");
+      console.error('❌ Error updating password:', error)
+      toast.error(error.response?.data?.message || 'Failed to update password.')
     }
 
-    setLoading(false);
-  };
+    setLoading(false)
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 p-6">
@@ -134,7 +137,7 @@ const Profile = () => {
                 <input
                   type="text"
                   name="username"
-                  value={userData.username || ""}
+                  value={userData.username || ''}
                   onChange={handleChange}
                   className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
                 />
@@ -145,7 +148,7 @@ const Profile = () => {
                 <input
                   type="email"
                   name="billingEmail"
-                  value={userData.billingEmail || ""}
+                  value={userData.billingEmail || ''}
                   onChange={handleChange}
                   className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
                 />
@@ -156,7 +159,7 @@ const Profile = () => {
                 <input
                   type="email"
                   name="schedulingEmails"
-                  value={userData.schedulingEmails || ""}
+                  value={userData.schedulingEmails || ''}
                   onChange={handleChange}
                   className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
                 />
@@ -167,7 +170,7 @@ const Profile = () => {
                 <input
                   type="text"
                   name="phone"
-                  value={userData.phone || ""}
+                  value={userData.phone || ''}
                   onChange={handleChange}
                   className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
                 />
@@ -178,7 +181,7 @@ const Profile = () => {
                 <input
                   type="text"
                   name="goals"
-                  value={userData.goals || ""}
+                  value={userData.goals || ''}
                   onChange={handleChange}
                   className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
                 />
@@ -217,13 +220,17 @@ const Profile = () => {
             </div>
           </div>
 
-          <button type="submit" disabled={loading} className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition duration-300">
-            {loading ? "Updating..." : "Save Changes"}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition duration-300"
+          >
+            {loading ? 'Updating...' : 'Save Changes'}
           </button>
         </form>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default Profile;
+export default Profile

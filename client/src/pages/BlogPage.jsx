@@ -16,15 +16,14 @@ function BlogPage() {
     const fetchBlogs = async () => {
       try {
         const response = await axios.get('https://backend-production-cbe2.up.railway.app/api/blogs')
-        console.log("DEBUG: Fetched Blogs Data:", response.data); // ✅ Debugging line
-        setBlogs(response.data);
+        console.log('DEBUG: Fetched Blogs Data:', response.data) // ✅ Debugging line
+        setBlogs(response.data)
       } catch (error) {
-        console.error('Error fetching blogs:', error);
+        console.error('Error fetching blogs:', error)
       }
     }
     fetchBlogs()
   }, [])
-  
 
   // ✅ Open & Close Modal
   const handleOpenModal = (blog) => {
@@ -107,7 +106,7 @@ function BlogPage() {
 
       {/* ✅ Dynamic Blog Section */}
       <Suspense fallback={<div className="text-center py-10 text-gray-500">Loading...</div>}>
-      <AnimatedSection direction="top">
+        <AnimatedSection direction="top">
           <div className="py-10 bg-gray-50">
             <h2 className="text-gray-800 text-3xl font-bold text-center mb-10">
               <span className="border-b-4 border-deepBlue pb-1">Our Blogs</span>

@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react'
 import { useCart } from '../context/CartContext' // ✅ Import Cart Context
 import { toast, Toaster } from 'react-hot-toast' // ✅ Toast Notifications
 import './ribbon.css' // ✅ Import Ribbon CSS
-import Image from "../assets/subcriptionpageimage.png"
+import Image from '../assets/subcriptionpageimage.png'
 const SubscriptionPage = () => {
   const [plans, setPlans] = useState([])
   const [loading, setLoading] = useState(true)
@@ -81,10 +81,8 @@ const SubscriptionPage = () => {
           </p>
         </div>
         <Toaster position="top-right" /> {/* ✅ Toast Notifications */}
-
         {/* ✅ Container for Subscription Plans & Image */}
         <div className="flex flex-col md:flex-row items-center justify-center mt-10 max-w-6xl mx-auto px-4 md:px-0 gap-10">
-          
           {/* ✅ Subscription Plans */}
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-6 w-full">
             {loading ? (

@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { Line, Pie, Bar } from "react-chartjs-2";
+import React, { useEffect, useState } from 'react'
+import { Line, Pie, Bar } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -11,7 +11,7 @@ import {
   Legend,
   ArcElement,
   BarElement,
-} from "chart.js";
+} from 'chart.js'
 
 // ✅ Register ChartJS components
 ChartJS.register(
@@ -23,32 +23,34 @@ ChartJS.register(
   Tooltip,
   Legend,
   ArcElement,
-  BarElement
-);
+  BarElement,
+)
 
 const AdminAnalytics = () => {
-  const [revenueTrends, setRevenueTrends] = useState([]);
-  const [courseSales, setCourseSales] = useState([]);
-  const [paymentMethods, setPaymentMethods] = useState([]);
-  const [userSignups, setUserSignups] = useState([]);
+  const [revenueTrends, setRevenueTrends] = useState([])
+  const [courseSales, setCourseSales] = useState([])
+  const [paymentMethods, setPaymentMethods] = useState([])
+  const [userSignups, setUserSignups] = useState([])
 
   useEffect(() => {
-    fetchAnalyticsData();
-  }, []);
+    fetchAnalyticsData()
+  }, [])
 
   const fetchAnalyticsData = async () => {
     try {
-      const response = await fetch("https://backend-production-cbe2.up.railway.app/api/admin/analytics");
-      const data = await response.json();
+      const response = await fetch(
+        'https://backend-production-cbe2.up.railway.app/api/admin/analytics',
+      )
+      const data = await response.json()
 
-      setRevenueTrends(data.revenueTrends || []);
-      setCourseSales(data.courseSales || []);
-      setPaymentMethods(data.paymentMethods || []);
-      setUserSignups(data.userSignups || []);
+      setRevenueTrends(data.revenueTrends || [])
+      setCourseSales(data.courseSales || [])
+      setPaymentMethods(data.paymentMethods || [])
+      setUserSignups(data.userSignups || [])
     } catch (error) {
-      console.error("Error fetching analytics data:", error);
+      console.error('Error fetching analytics data:', error)
     }
-  };
+  }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
@@ -61,10 +63,10 @@ const AdminAnalytics = () => {
               labels: revenueTrends.map((item) => item.date),
               datasets: [
                 {
-                  label: "Revenue ($)",
+                  label: 'Revenue ($)',
                   data: revenueTrends.map((item) => item.amount),
-                  borderColor: "rgba(75,192,192,1)",
-                  backgroundColor: "rgba(75,192,192,0.2)",
+                  borderColor: 'rgba(75,192,192,1)',
+                  backgroundColor: 'rgba(75,192,192,0.2)',
                 },
               ],
             }}
@@ -75,7 +77,6 @@ const AdminAnalytics = () => {
       </div>
 
       {/* ✅ Course Sales Pie Chart */}
-      
 
       {/* ✅ Payment Methods Bar Chart */}
       <div className="bg-white shadow-lg p-6 rounded-lg">
@@ -86,9 +87,9 @@ const AdminAnalytics = () => {
               labels: paymentMethods.map((item) => item.method),
               datasets: [
                 {
-                  label: "Payments",
+                  label: 'Payments',
                   data: paymentMethods.map((item) => item.count),
-                  backgroundColor: ["#FF6384", "#36A2EB", "#FFCE56"],
+                  backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56'],
                 },
               ],
             }}
@@ -107,9 +108,9 @@ const AdminAnalytics = () => {
               labels: userSignups.map((item) => item.date),
               datasets: [
                 {
-                  label: "Users",
+                  label: 'Users',
                   data: userSignups.map((item) => item.count),
-                  backgroundColor: "rgba(54, 162, 235, 0.6)",
+                  backgroundColor: 'rgba(54, 162, 235, 0.6)',
                 },
               ],
             }}
@@ -119,7 +120,7 @@ const AdminAnalytics = () => {
         )}
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default AdminAnalytics;
+export default AdminAnalytics

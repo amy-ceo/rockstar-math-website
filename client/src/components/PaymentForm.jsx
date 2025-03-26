@@ -1,12 +1,25 @@
 import React, { useState } from 'react'
 import { useStripe, useElements, CardElement } from '@stripe/react-stripe-js'
+import { useNavigate } from 'react-router-dom'
 import toast, { Toaster } from 'react-hot-toast'
 import { FaCreditCard } from 'react-icons/fa'
 
-const PaymentForm = ({ totalAmount, createPaymentIntent, onSuccess }) => {
+const PaymentForm = ({ totalAmount, createPaymentIntent, onPaymentSuccess }) => {
   const stripe = useStripe()
   const elements = useElements()
+  const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
+
+  const clearCart = () => {
+    // Clear from localStorage
+    localStorage.removeItem('cartItems')
+    // Dispatch event to sync across tabs
+    window.dispatchEvent(new Event('cartUpdated'))
+    // Callback to parent component if provided
+    if (onPaymentSuccess) {
+      onPaymentSuccess()
+    }
+  }
 
   const handleSubmit = async (event) => {
     event.preventDefault()
@@ -36,19 +49,24 @@ const PaymentForm = ({ totalAmount, createPaymentIntent, onSuccess }) => {
         payment_method: { card: cardElement },
       })
 
-      setLoading(false)
-
       if (error) {
         console.error('Payment Error:', error)
         toast.error(`Payment Failed: ${error.message}`)
-      } else if (paymentIntent?.status === 'succeeded') {
+        setLoading(false)
+        return
+      }
+
+      if (paymentIntent?.status === 'succeeded') {
+        // Clear cart immediately
+        clearCart()
+
+        // Show success message
         toast.success('✅ Payment Successful! Redirecting...')
-        // Call the onSuccess callback instead of redirecting directly
-        if (onSuccess) {
-          onSuccess()
-        } else {
-          setTimeout(() => (window.location.href = '/dashboard'), 2000)
-        }
+
+        // Wait for cart clearing to complete before redirecting
+        setTimeout(() => {
+          navigate('/dashboard')
+        }, 2000)
       }
     } catch (error) {
       console.error('❌ Error in Payment Processing:', error)

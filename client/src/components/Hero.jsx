@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import axios from 'axios'
 import toast, { Toaster } from 'react-hot-toast'
-import 'animate.css';
+import 'animate.css'
 
 function Hero() {
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -17,13 +17,16 @@ function Hero() {
     e.preventDefault()
 
     try {
-      const response = await axios.post('https://backend-production-cbe2.up.railway.app/api/consultation/request', {
-        email,
-        firstname,
-        lastname,
-        phonenumber,
-        currentgrade,
-      })
+      const response = await axios.post(
+        'https://backend-production-cbe2.up.railway.app/api/consultation/request',
+        {
+          email,
+          firstname,
+          lastname,
+          phonenumber,
+          currentgrade,
+        },
+      )
 
       if (response.data.success) {
         toast.success('Your request has been sent! Admin will contact you soon.')
@@ -67,7 +70,7 @@ function Hero() {
           {/* Buttons */}
           <div className="flex items-center md:items-baseline gap-4 justify-center lg:justify-start">
             <Link
-             to='https://calendly.com/rockstarmathtutoring/15min'
+              to="https://calendly.com/rockstarmathtutoring/15min"
               className="px-8 py-3 border border-yellow-300 text-yellow-300 font-semibold rounded-full transition duration-300 ease-in-out hover:bg-yellow-300 hover:text-indigo-600"
             >
               Free Consultation
@@ -84,7 +87,11 @@ function Hero() {
         {/* Image Section */}
         <div className="flex justify-center lg:justify-end mt-10 lg:mt-0 lg:w-1/2 relative">
           <div className="relative w-[300px] md:w-[400px] xl:w-[500px]">
-            <img src="/images/hero.png" alt="girl with book" className="w-full z-10 animate__bounceIn" />
+            <img
+              src="/images/hero.png"
+              alt="girl with book"
+              className="w-full z-10 animate__bounceIn"
+            />
           </div>
         </div>
       </div>
@@ -138,7 +145,7 @@ function Hero() {
                 onChange={(e) => setCurrentgrade(e.target.value)}
                 className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-deepBlue"
               />
-            
+
               <button
                 type="submit"
                 className="w-full bg-deepBlue text-white py-2 mt-4 rounded-lg hover:bg-sky-600"

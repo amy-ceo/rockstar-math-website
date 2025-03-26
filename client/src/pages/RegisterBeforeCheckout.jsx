@@ -3,10 +3,9 @@ import { Link, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import toast, { Toaster } from 'react-hot-toast'
 import { AiFillEye, AiFillEyeInvisible } from 'react-icons/ai'
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from '../context/AuthContext'
 
 const RegisterBeforeCheckout = () => {
-  
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmation, setShowConfirmation] = useState(false)
   const [formData, setFormData] = useState({
@@ -28,18 +27,18 @@ const RegisterBeforeCheckout = () => {
   const [isOtpPopupOpen, setIsOtpPopupOpen] = useState(false) // OTP popup state
   const [isOtpVerified, setIsOtpVerified] = useState(false) // OTP verification state
   const [generatedOtp, setGeneratedOtp] = useState('') // Store received OTP for comparison
-  const [isWebcamPopupOpen, setIsWebcamPopupOpen] = useState(false);
-  const [isWebcamAgreed, setIsWebcamAgreed] = useState(false);
+  const [isWebcamPopupOpen, setIsWebcamPopupOpen] = useState(false)
+  const [isWebcamAgreed, setIsWebcamAgreed] = useState(false)
   const [isSmsPopupOpen, setIsSmsPopupOpen] = useState(false)
-  const { users } = useAuth();
+  const { users } = useAuth()
   const navigate = useNavigate()
 
   useEffect(() => {
     // ✅ If user is logged in, redirect to checkout
     if (users) {
-      navigate("/checkout");
+      navigate('/checkout')
     }
-  }, [users, navigate]);
+  }, [users, navigate])
 
   // ✅ Handle Input Change
   const handleChange = (e) => {
@@ -102,9 +101,12 @@ const RegisterBeforeCheckout = () => {
     setIsOtpPopupOpen(true)
 
     try {
-      const response = await axios.post('https://backend-production-cbe2.up.railway.app/api/send-otp', {
-        phone: formData.phone,
-      })
+      const response = await axios.post(
+        'https://backend-production-cbe2.up.railway.app/api/send-otp',
+        {
+          phone: formData.phone,
+        },
+      )
 
       if (response.data.success) {
         toast.success('OTP sent successfully!')
@@ -124,19 +126,21 @@ const RegisterBeforeCheckout = () => {
   }
 
   const handleAgreeWebcam = () => {
-    setIsWebcamAgreed(true); // ✅ Enable checkbox
-    setFormData((prev) => ({ ...prev, didUserApproveWebcam: true }));
-    setIsWebcamPopupOpen(false);
-  };
-  
+    setIsWebcamAgreed(true) // ✅ Enable checkbox
+    setFormData((prev) => ({ ...prev, didUserApproveWebcam: true }))
+    setIsWebcamPopupOpen(false)
+  }
 
   // ✅ Verify OTP Dynamically
   const verifyOtp = async () => {
     try {
-      const response = await axios.post('https://backend-production-cbe2.up.railway.app/api/verify-otp', {
-        phone: formData.phone,
-        otp,
-      })
+      const response = await axios.post(
+        'https://backend-production-cbe2.up.railway.app/api/verify-otp',
+        {
+          phone: formData.phone,
+          otp,
+        },
+      )
 
       if (response.data.success) {
         toast.success('OTP Verified Successfully!')
@@ -151,7 +155,6 @@ const RegisterBeforeCheckout = () => {
   }
   // ✅ Handle SMS Checkbox & Open OTP Popup
   const handleSmsCheckboxChange = async (e) => {
-
     if (!formData.phone || formData.phone.length < 10) {
       toast.error('Please enter a valid phone number first!')
       return
@@ -164,9 +167,12 @@ const RegisterBeforeCheckout = () => {
     if (isChecked) {
       setIsOtpPopupOpen(true)
       try {
-        const response = await axios.post('https://backend-production-cbe2.up.railway.app/api/send-otp', {
-          phone: formData.phone,
-        })
+        const response = await axios.post(
+          'https://backend-production-cbe2.up.railway.app/api/send-otp',
+          {
+            phone: formData.phone,
+          },
+        )
 
         if (response.data.success) {
           toast.success('OTP sent successfully!')
@@ -188,10 +194,13 @@ const RegisterBeforeCheckout = () => {
 
         if (!email || !phone) return // User ka data nahi hai, allow registration
 
-        const response = await axios.post('https://backend-production-cbe2.up.railway.app/api/check-registration', {
-          email,
-          phone,
-        })
+        const response = await axios.post(
+          'https://backend-production-cbe2.up.railway.app/api/check-registration',
+          {
+            email,
+            phone,
+          },
+        )
 
         if (response.data.success) {
           toast.success('You are already registered! Redirecting to checkout...')
@@ -217,99 +226,101 @@ const RegisterBeforeCheckout = () => {
   }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-  
-    console.log("📝 Form Data Before Submission:", formData);
-  
+    e.preventDefault()
+
+    console.log('📝 Form Data Before Submission:', formData)
+
     const requiredFields = [
-      "username",
-      "password",
-      "userType",
-      "adultName",
-      "numStudents",
-      "billingEmail",
-      "schedulingEmails",
-      "phone",
-      "goals",
-    ];
-  
-    if (formData.userType === "Student") {
-      requiredFields.push("studentAge");
+      'username',
+      'password',
+      'userType',
+      'adultName',
+      'numStudents',
+      'billingEmail',
+      'schedulingEmails',
+      'phone',
+      'goals',
+    ]
+
+    if (formData.userType === 'Student') {
+      requiredFields.push('studentAge')
     }
-  
+
     // ✅ If only 1 student, validate these fields
     if (formData.numStudents === 1) {
-      requiredFields.push("studentNames", "studentGrades", "studentMathLevels");
+      requiredFields.push('studentNames', 'studentGrades', 'studentMathLevels')
     } else {
       // ✅ If numStudents > 1, remove these fields before sending to backend
-      delete formData.studentNames;
-      delete formData.studentGrades;
-      delete formData.studentMathLevels;
+      delete formData.studentNames
+      delete formData.studentGrades
+      delete formData.studentMathLevels
     }
-  
+
     // 🔹 Validate Required Fields
     for (const field of requiredFields) {
-      if (typeof formData[field] === "string" && !formData[field].trim()) {
-        toast.error(`${field.replace(/([A-Z])/g, " $1")} is required!`);
-        return;
+      if (typeof formData[field] === 'string' && !formData[field].trim()) {
+        toast.error(`${field.replace(/([A-Z])/g, ' $1')} is required!`)
+        return
       }
-      if (formData[field] === undefined || formData[field] === "") {
-        toast.error(`${field.replace(/([A-Z])/g, " $1")} is required!`);
-        return;
+      if (formData[field] === undefined || formData[field] === '') {
+        toast.error(`${field.replace(/([A-Z])/g, ' $1')} is required!`)
+        return
       }
     }
-  
+
     // ✅ Validate Students Array When `numStudents > 1`
     if (formData.numStudents > 1) {
       if (!Array.isArray(formData.students) || formData.students.length !== formData.numStudents) {
-        toast.error("Number of students does not match the student details provided!");
-        return;
+        toast.error('Number of students does not match the student details provided!')
+        return
       }
-  
+
       for (let i = 0; i < formData.students.length; i++) {
-        let student = formData.students[i];
-  
-        if (!student.name || !student.grade || !student.mathLevel || student.age === "") {
-          toast.error(`Student ${i + 1} details are incomplete!`);
-          return;
+        let student = formData.students[i]
+
+        if (!student.name || !student.grade || !student.mathLevel || student.age === '') {
+          toast.error(`Student ${i + 1} details are incomplete!`)
+          return
         }
-  
-        student.name = student.name.trim();
-        student.grade = student.grade.trim();
-        student.mathLevel = student.mathLevel.trim();
+
+        student.name = student.name.trim()
+        student.grade = student.grade.trim()
+        student.mathLevel = student.mathLevel.trim()
       }
     }
-  
+
     try {
-      const response = await axios.post("https://backend-production-cbe2.up.railway.app/api/register", formData);
-  
+      const response = await axios.post(
+        'https://backend-production-cbe2.up.railway.app/api/register',
+        formData,
+      )
+
       if (response.data.success) {
-        toast.success("Registration successful! Redirecting to checkout...");
-  
-        localStorage.setItem("user", JSON.stringify(response.data.user));
-        localStorage.setItem("token", response.data.token);
-        localStorage.setItem("savedUsername", formData.username);
-        localStorage.setItem("savedPassword", formData.password);
-        localStorage.setItem("billingEmail", formData.billingEmail);  // ✅ Store billing email
-        localStorage.setItem("schedulingEmails", formData.schedulingEmails);  // ✅ Store scheduling email
-        
-        setShowConfirmation(true);
-  
+        toast.success('Registration successful! Redirecting to checkout...')
+
+        localStorage.setItem('user', JSON.stringify(response.data.user))
+        localStorage.setItem('token', response.data.token)
+        localStorage.setItem('savedUsername', formData.username)
+        localStorage.setItem('savedPassword', formData.password)
+        localStorage.setItem('billingEmail', formData.billingEmail) // ✅ Store billing email
+        localStorage.setItem('schedulingEmails', formData.schedulingEmails) // ✅ Store scheduling email
+
+        setShowConfirmation(true)
+
         setTimeout(() => {
-          window.location.href = "/checkout";
-        }, 3000);
+          window.location.href = '/checkout'
+        }, 3000)
       }
     } catch (error) {
-      console.error("❌ Backend Error Response:", error.response?.data);
-  
-      if (error.response?.data?.error === "Username already taken!") {
-        toast.error("This username is already taken! Please choose another.");
+      console.error('❌ Backend Error Response:', error.response?.data)
+
+      if (error.response?.data?.error === 'Username already taken!') {
+        toast.error('This username is already taken! Please choose another.')
       } else {
-        toast.error(error.response?.data?.error || "Registration failed.");
+        toast.error(error.response?.data?.error || 'Registration failed.')
       }
     }
-  };
-  
+  }
 
   if (showConfirmation) {
     return (
@@ -614,7 +625,9 @@ const RegisterBeforeCheckout = () => {
               <br />
               ● Students must have their webcam turned on during all live sessions.
               <br />
-              ● If there’s ever a situation where your student feels uncomfortable, or may be camera shy please don’t hesitate to reach out—we’re here to help and accommodate whenever possible.
+              ● If there’s ever a situation where your student feels uncomfortable, or may be camera
+              shy please don’t hesitate to reach out—we’re here to help and accommodate whenever
+              possible.
               <br />● Exceptions may be granted for documented technical difficulties or special
               accommodations.
             </p>
@@ -683,11 +696,11 @@ const RegisterBeforeCheckout = () => {
             </button>
 
             <button
-                onClick={() => setIsOtpPopupOpen(false)}
-                className="w-full mt-2 text-gray-600 underline text-sm"
-              >
-                Cancel
-              </button>
+              onClick={() => setIsOtpPopupOpen(false)}
+              className="w-full mt-2 text-gray-600 underline text-sm"
+            >
+              Cancel
+            </button>
           </div>
         </div>
       )}

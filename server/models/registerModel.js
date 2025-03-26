@@ -36,17 +36,16 @@ const bookedSessionSchema = new mongoose.Schema({
   updatedAt: { type: Date, required: false }, // ✅ When Last Updated
 })
 
-
 // 1) Sub-Schema for each Zoom date
 const sessionDateSchema = new mongoose.Schema({
   date: { type: Date, required: true },
   note: { type: String, default: '' },
-  status: { 
-    type: String, 
-    enum: ['Booked', 'Completed', 'Cancelled'], 
-    default: 'Booked' 
+  status: {
+    type: String,
+    enum: ['Booked', 'Completed', 'Cancelled'],
+    default: 'Booked',
   },
-});
+})
 
 // 2) Zoom Booking Schema
 const zoomBookingSchema = new mongoose.Schema({
@@ -58,8 +57,7 @@ const zoomBookingSchema = new mongoose.Schema({
   sessionDates: [sessionDateSchema], // each date is a sub-document
   timezone: { type: String, default: 'UTC' },
   createdAt: { type: Date, default: Date.now },
-});
-
+})
 
 // ✅ Coupon Schema Inside Register Model
 const couponSchema = new mongoose.Schema({
@@ -91,9 +89,8 @@ const archivedClassSchema = new mongoose.Schema({
   sessionDate: { type: Date }, // ✅ Store the exact session date
   zoomMeetingLink: { type: String, default: null }, // ✅ Store Zoom link if it's a Zoom session
   calendlyBookingLink: { type: String, default: null }, // ✅ Store Calendly link if it's a Calendly session
-  source: { type: String, enum: ["zoom", "calendly"], required: true }, // ✅ Identify session type
-});
-
+  source: { type: String, enum: ['zoom', 'calendly'], required: true }, // ✅ Identify session type
+})
 
 // ✅ Define Schema
 const RegisterSchema = new mongoose.Schema(
@@ -103,6 +100,15 @@ const RegisterSchema = new mongoose.Schema(
     userType: { type: String, required: true },
     adultName: { type: String, required: true },
     numStudents: { type: Number, required: true },
+    cartItems: [
+      {
+        id: String,
+        name: String,
+        price: Number,
+        currency: String,
+        quantity: Number,
+      },
+    ],
     students: {
       type: [
         {
@@ -129,8 +135,8 @@ const RegisterSchema = new mongoose.Schema(
     // ✅ Password Reset Fields
     resetPasswordToken: { type: String },
     resetPasswordExpires: { type: Date },
-   // ✅ New Field: Track Zoom Access
-   zoomAccess: { type: [String], default: [] }, // ✅ Stores accessed Zoom sessions
+    // ✅ New Field: Track Zoom Access
+    zoomAccess: { type: [String], default: [] }, // ✅ Stores accessed Zoom sessions
     // ✅ Archived Classes (Now Supports Zoom & Calendly)
     // ✅ Store User Coupons
     coupons: [couponSchema],

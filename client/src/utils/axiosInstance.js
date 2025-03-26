@@ -1,18 +1,18 @@
-import axios from "axios";
+import axios from 'axios'
 
 const axiosInstance = axios.create({
-  baseURL: "https://backend-production-cbe2.up.railway.app/api",
-});
+  baseURL: 'https://backend-production-cbe2.up.railway.app/api',
+})
 
 axiosInstance.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem('token')
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      config.headers.Authorization = `Bearer ${token}`
     }
-    return config;
+    return config
   },
-  (error) => Promise.reject(error)
-);
+  (error) => Promise.reject(error),
+)
 
-export default axiosInstance;
+export default axiosInstance

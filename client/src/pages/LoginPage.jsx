@@ -1,86 +1,89 @@
-import React, { useState, Suspense, lazy } from "react";
-import { AiFillEye, AiFillEyeInvisible } from "react-icons/ai";
-import { Link, NavLink, useNavigate } from "react-router-dom";
-import { toast, Toaster } from "react-hot-toast"; // ✅ FIXED IMPORT
+import React, { useState, Suspense, lazy } from 'react'
+import { AiFillEye, AiFillEyeInvisible } from 'react-icons/ai'
+import { Link, NavLink, useNavigate } from 'react-router-dom'
+import { toast, Toaster } from 'react-hot-toast' // ✅ FIXED IMPORT
 
-import { useAuth } from "../context/AuthContext";
-import axios from "axios";
+import { useAuth } from '../context/AuthContext'
+import axios from 'axios'
 
 // ✅ Configure Toast globally
 
 // Lazy Load Forgot Password Component
-const ForgotPassword = lazy(() => import("../components/ForgotPassword.jsx"));
+const ForgotPassword = lazy(() => import('../components/ForgotPassword.jsx'))
 
 function LoginPage() {
-  const [showPassword, setShowPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false)
   const [formData, setFormData] = useState({
-    username: "",
-    password: "",
+    username: '',
+    password: '',
     rememberMe: false,
-  });
+  })
 
-  const navigate = useNavigate();
-  const { login } = useAuth();
+  const navigate = useNavigate()
+  const { login } = useAuth()
 
   // ✅ Handle Input Changes
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value, type, checked } = e.target
     setFormData({
       ...formData,
-      [name]: type === "checkbox" ? checked : value,
-    });
-  };
+      [name]: type === 'checkbox' ? checked : value,
+    })
+  }
 
   // ✅ Handle Login Submission
   const handleSubmit = async (e) => {
-    e.preventDefault();
-  
+    e.preventDefault()
+
     try {
-      const response = await axios.post("https://backend-production-cbe2.up.railway.app/api/auth/login", {
-        username: formData.username,
-        password: formData.password,
-      });
-  
-      console.log("✅ Server Response:", response.data);
-  
+      const response = await axios.post(
+        'https://backend-production-cbe2.up.railway.app/api/auth/login',
+        {
+          username: formData.username,
+          password: formData.password,
+        },
+      )
+
+      console.log('✅ Server Response:', response.data)
+
       if (!response.data || !response.data.token || !response.data.user) {
-        toast.error("❌ Invalid server response!", { position: "top-center" });
-        return;
+        toast.error('❌ Invalid server response!', { position: 'top-center' })
+        return
       }
-  
-      const { token, user } = response.data;
-  
+
+      const { token, user } = response.data
+
       // ✅ Store token & user
       if (formData.rememberMe) {
-        localStorage.setItem("token", token);
-        localStorage.setItem("user", JSON.stringify(user));
+        localStorage.setItem('token', token)
+        localStorage.setItem('user', JSON.stringify(user))
       } else {
-        sessionStorage.setItem("token", token);
-        sessionStorage.setItem("user", JSON.stringify(user));
+        sessionStorage.setItem('token', token)
+        sessionStorage.setItem('user', JSON.stringify(user))
       }
-  
+
       // ✅ Update Auth Context
-      login(user);
-      toast.success("🎉 Login successful! Redirecting...", { position: "top-center" });
-  
+      login(user)
+      toast.success('🎉 Login successful! Redirecting...', { position: 'top-center' })
+
       // ✅ Redirect to dashboard after 1 second
       setTimeout(() => {
-        navigate("/dashboard");
-      }, 1000);
+        navigate('/dashboard')
+      }, 1000)
     } catch (error) {
-      toast.error(error.response?.data?.message || "❌ Invalid credentials!", { position: "top-center" });
+      toast.error(error.response?.data?.message || '❌ Invalid credentials!', {
+        position: 'top-center',
+      })
     }
-  };
+  }
 
   return (
     <div className="flex">
       {/* Left Side (Image Section) */}
-              <Toaster position="right" /> {/* ✅ Toast Notifications */}
-      
+      <Toaster position="right" /> {/* ✅ Toast Notifications */}
       <div className="hidden w-1/2 bg-white xl:flex">
         <img src="/images/login.jpg" loading="lazy" alt="Login Image" className="w-full" />
       </div>
-
       {/* Right Side (Form Section) */}
       <div className="w-full lg:w-1/2 bg-white flex flex-col items-center mt-36 mb-36 px-10 md:px-20 lg:px-48">
         <img src="/images/logo.png" alt="Logo" className="w-[280px] h-auto" />
@@ -110,7 +113,7 @@ function LoginPage() {
               Password
             </label>
             <input
-              type={showPassword ? "text" : "password"}
+              type={showPassword ? 'text' : 'password'}
               name="password"
               placeholder="Your password"
               value={formData.password}
@@ -158,14 +161,14 @@ function LoginPage() {
 
         {/* Sign Up Link */}
         <p className="mt-4 text-sm text-gray-600">
-          Don't have an account?{" "}
+          Don't have an account?{' '}
           <NavLink to="/signup" className="text-blue-500">
             Sign up now
           </NavLink>
         </p>
       </div>
     </div>
-  );
+  )
 }
 
-export default LoginPage;
+export default LoginPage

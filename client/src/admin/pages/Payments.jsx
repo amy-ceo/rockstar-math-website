@@ -1,49 +1,53 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import { FaSync, FaSearch, FaMoneyBillWave } from 'react-icons/fa';
-import toast, { Toaster } from 'react-hot-toast';
+import React, { useEffect, useState } from 'react'
+import axios from 'axios'
+import { FaSync, FaSearch, FaMoneyBillWave } from 'react-icons/fa'
+import toast, { Toaster } from 'react-hot-toast'
 
 const Payments = () => {
-  const [payments, setPayments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterStatus, setFilterStatus] = useState('');
+  const [payments, setPayments] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [filterStatus, setFilterStatus] = useState('')
 
   useEffect(() => {
-    fetchPayments();
-  }, []);
+    fetchPayments()
+  }, [])
 
   const fetchPayments = async () => {
     try {
-      const response = await axios.get('https://backend-production-cbe2.up.railway.app/api/admin/stripe-payments');
-      setPayments(response.data);
-      setLoading(false);
+      const response = await axios.get(
+        'https://backend-production-cbe2.up.railway.app/api/admin/stripe-payments',
+      )
+      setPayments(response.data)
+      setLoading(false)
     } catch (error) {
-      console.error('Error fetching payments:', error);
-      toast.error('Failed to load payments.');
-      setLoading(false);
+      console.error('Error fetching payments:', error)
+      toast.error('Failed to load payments.')
+      setLoading(false)
     }
-  };
+  }
 
   const handleRefund = async (paymentId) => {
-    if (!window.confirm('Are you sure you want to refund this payment?')) return;
+    if (!window.confirm('Are you sure you want to refund this payment?')) return
     try {
-      await axios.post(`https://backend-production-cbe2.up.railway.app/api/admin/refund-payment`, { paymentId });
-      toast.success('Payment refunded successfully.');
-      fetchPayments(); // Refresh payment list
+      await axios.post(`https://backend-production-cbe2.up.railway.app/api/admin/refund-payment`, {
+        paymentId,
+      })
+      toast.success('Payment refunded successfully.')
+      fetchPayments() // Refresh payment list
     } catch (error) {
-      console.error('Error processing refund:', error);
-      toast.error('Failed to process refund.');
+      console.error('Error processing refund:', error)
+      toast.error('Failed to process refund.')
     }
-  };
+  }
 
   const filteredPayments = payments.filter((payment) => {
     return (
       (payment.id.includes(searchQuery) ||
         payment.metadata?.customer_name?.toLowerCase().includes(searchQuery.toLowerCase())) &&
       (filterStatus ? payment.status === filterStatus : true)
-    );
-  });
+    )
+  })
 
   return (
     <div className="container mx-auto p-6">
@@ -118,7 +122,11 @@ const Payments = () => {
                   <td className="py-3 px-4 border">{payment.id}</td>
                   <td className="py-3 px-4 border">{payment.metadata?.customer_name || 'N/A'}</td>
                   <td className="py-3 px-4 border">${payment.amount_received / 100}</td>
-                  <td className={`py-3 px-4 border ${payment.status === 'succeeded' ? 'text-green-500' : 'text-red-500'}`}>
+                  <td
+                    className={`py-3 px-4 border ${
+                      payment.status === 'succeeded' ? 'text-green-500' : 'text-red-500'
+                    }`}
+                  >
                     {payment.status}
                   </td>
                   <td className="py-3 px-4 border">{payment.payment_method_types[0]}</td>
@@ -142,7 +150,7 @@ const Payments = () => {
         </div>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default Payments;
+export default Payments
