@@ -1,42 +1,58 @@
 const axios = require('axios')
 require('dotenv').config()
 
-const registerCalendlyWebhook = async () => {
+const deleteAndRecreateWebhook = async () => {
   try {
-    const calendlyApiKey = process.env.CALENDLY_API_KEY // Make sure you're loading it from .env
-    const webhookUrl = 'https://backend-production-cbe2.up.railway.app/api/webhook/calendly' // Your Webhook URL
+    const calendlyApiKey = process.env.CALENDLY_API_KEY
+    const webhookUrl = 'https://backend-production-cbe2.up.railway.app/api/webhook/calendly'
+    const organizationId = 'AADABSJONSZO3TK2'
 
-    if (!calendlyApiKey) {
-      throw new Error('⚠️ Missing Calendly API Key. Set it in .env!')
+    if (!calendlyApiKey) throw new Error('Missing Calendly API Key in .env!')
+
+    // 1. List and delete existing webhooks
+    const existingWebhooks = await axios.get('https://api.calendly.com/webhook_subscriptions', {
+      params: {
+        organization: `https://api.calendly.com/organizations/${organizationId}`,
+        scope: 'organization',
+      },
+      headers: {
+        Authorization: `Bearer ${calendlyApiKey}`,
+        'Content-Type': 'application/json',
+      },
+    })
+
+    for (const webhook of existingWebhooks.data.collection) {
+      await axios.delete(webhook.uri, {
+        headers: { Authorization: `Bearer ${calendlyApiKey}` },
+      })
+      console.log(`🗑️ Deleted: ${webhook.uri}`)
     }
 
-    const organizationId = 'AADABSJONSZO3TK2' // Use only the Org ID part, not the full URL
-
-    // Register the Webhook with Correct Events
-    const response = await axios.post(
+    // 2. Create new webhook
+    const newWebhook = await axios.post(
       'https://api.calendly.com/webhook_subscriptions',
       {
-        url: webhookUrl, // Webhook URL to receive event data
-        events: ['invitee.created', 'invitee.canceled'], // Event types to listen to
-        organization: `https://api.calendly.com/organizations/${organizationId}`, // Correct organization URL format
-        scope: 'organization', // Scope must be "organization"
+        url: webhookUrl,
+        events: ['invitee.created', 'invitee.canceled'],
+        organization: `https://api.calendly.com/organizations/${organizationId}`,
+        scope: 'organization',
       },
       {
         headers: {
-          Authorization: `Bearer ${calendlyApiKey}`, // Bearer token for authentication
+          Authorization: `Bearer ${calendlyApiKey}`,
           'Content-Type': 'application/json',
         },
       },
     )
 
-    console.log('✅ Calendly Webhook Registered Successfully:', response.data)
+    console.log('✅ New Webhook:', {
+      uri: newWebhook.data.uri,
+      state: newWebhook.data.state,
+      url: newWebhook.data.callback_url,
+    })
   } catch (error) {
-    console.error(
-      '❌ Error Registering Calendly Webhook:',
-      error.response ? error.response.data : error.message,
-    )
+    console.error('❌ Error:', error.response?.data || error.message)
   }
 }
 
-// Run the function to register the webhook
-registerCalendlyWebhook()
+deleteAndRecreateWebhook()

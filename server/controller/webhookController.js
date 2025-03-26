@@ -153,37 +153,35 @@ exports.calendlyWebhook = async (req, res) => {
     recipients = recipients.filter((email) => email) // Remove null/undefined values
     const recipientEmails = recipients.join(',')
 
-    // ✅ Email Content
-    const emailSubject = `📅 Your RockstarMath Booking Confirmation`
-    const formatDateForEmail = (date, timezone) => {
-      return new Intl.DateTimeFormat('en-US', {
-        timeZone: timezone,
-        year: 'numeric',
-        month: 'long',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true,
-      }).format(new Date(date))
-    }
+    // const formatDateForEmail = (date, timezone) => {
+    //   return new Intl.DateTimeFormat('en-US', {
+    //     timeZone: timezone,
+    //     year: 'numeric',
+    //     month: 'long',
+    //     day: '2-digit',
+    //     hour: '2-digit',
+    //     minute: '2-digit',
+    //     hour12: true
+    //   }).format(new Date(date));
+    // };
 
-    const formattedStartTime = formatDateForEmail(startTime, timezone)
-    const formattedEndTime = formatDateForEmail(endTime, timezone)
+    // const formattedStartTime = formatDateForEmail(startTime, timezone);
+    // const formattedEndTime = formatDateForEmail(endTime, timezone);
 
     // const emailHtml = `
     //   <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
-    //     <h2 style="color: #2C3E50;">📅 Your Session is Booked!</h2>
-    //     <p>Hi <b>${user.username}</b>,</p>
-    //     <p>Your session "<b>${eventName}</b>" has been successfully booked.</p>
-    //     <p><b>Start Time:</b> ${formattedStartTime}</p>
-    //     <p><b>End Time:</b> ${formattedEndTime}</p>
-    //     <p><b>Time Zone:</b> ${timezone}</p>
-    //     <p><b>Event Link:</b> <a href="${eventUri}" target="_blank">${eventUri}</a></p>
+    //       <h2 style="color: #2C3E50;">📅 Your Session is Booked!</h2>
+    //       <p>Hi <b>${user.username}</b>,</p>
+    //       <p>Your session "<b>${eventName}</b>" has been successfully booked.</p>
+    //       <p><b>Start Time:</b> ${formattedStartTime}</p>
+    //       <p><b>End Time:</b> ${formattedEndTime}</p>
+    //       <p><b>Time Zone:</b> ${timezone}</p>
+    //       <p><b>Event Link:</b> <a href="${eventUri}" target="_blank">${eventUri}</a></p>
     //   </div>
-    // `
+    // `;
 
-    // await sendEmail(recipientEmails, emailSubject, '', emailHtml)
-    // console.log(`✅ Booking confirmation email sent to ${recipientEmails}`)
+    // await sendEmail(recipientEmails, emailSubject, "", emailHtml);
+    // console.log(`✅ Booking confirmation email sent to ${recipientEmails}`);
 
     res.status(200).json({ message: 'Booking stored successfully', updatedUser: user })
   } catch (error) {
