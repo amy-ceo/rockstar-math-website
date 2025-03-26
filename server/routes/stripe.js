@@ -418,11 +418,7 @@ router.post('/capture-stripe-payment', async (req, res) => {
   try {
     const { paymentIntentId, user } = req.body
 
-    if (!paymentIntentId) {
-      return res.status(400).json({ error: 'Payment Intent ID is required' })
-    }
-
-    // Retrieve and validate payment intent
+    // Verify payment intent first
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId)
 
     if (paymentIntent.status !== 'succeeded') {
@@ -445,13 +441,6 @@ router.post('/capture-stripe-payment', async (req, res) => {
     })
 
     await newPayment.save()
-
-    // Clear user's cart in database
-    if (user?._id) {
-      await Register.findByIdAndUpdate(user._id, {
-        $set: { cartItems: [] },
-      })
-    }
 
     res.json({
       message: 'Payment captured successfully',

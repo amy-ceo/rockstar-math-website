@@ -12,7 +12,7 @@ const PaymentForm = lazy(() => import('../components/PaymentForm'))
 
 // ✅ Load Stripe Public Key
 const stripePromise = loadStripe(
-  ' pk_test_51QKwhUE4sPC5ms3xgJZhmKyxW9B8Jg9NQHlCoxMzIjWqyIvRNmW8o3tNS4Hrg3guNIEe4hrn5i9dKpvZmXpeVkyp000FmIT2yn',
+  'pk_live_51QKwhUE4sPC5ms3x7cYIFoYqx3lULz1hFA9EoRobabZVPwdDm8KbDNlHOZMizb2YftdwRSyxRfyi93ovv5Rev7i300CpaQEtU2',
 )
 
 const CheckoutPage = () => {
@@ -672,7 +672,6 @@ const CheckoutPage = () => {
               </div>
             </>
           )}
-
           {showPaymentForm && clientSecret && (
             <Suspense
               fallback={
@@ -681,14 +680,24 @@ const CheckoutPage = () => {
             >
               <div className="mt-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-3">Enter Card Details</h2>
-                <Elements stripe={stripePromise} options={{ clientSecret }}>
+                <Elements
+                  stripe={stripePromise}
+                  options={{
+                    clientSecret,
+                    appearance: {
+                      theme: 'stripe',
+                    },
+                  }}
+                >
                   <PaymentForm
                     totalAmount={total}
-                    createPaymentIntent={createPaymentIntent}
-                    onPaymentSuccess={handlePaymentSuccess}
+                    clientSecret={clientSecret}
+                    onPaymentSuccess={() => {
+                      setCartItems([])
+                      setShowPaymentForm(false)
+                    }}
                   />
                 </Elements>
-                {/* ... rest of your code ... */}
               </div>
             </Suspense>
           )}
