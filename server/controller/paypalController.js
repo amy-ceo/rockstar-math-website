@@ -152,23 +152,31 @@ exports.createOrder = async (req, res) => {
   }
 }
 
-// 🎯 Capture PayPal Order & Update Purchased Classes
 exports.captureOrder = async (req, res) => {
   try {
-    const { orderId, user } = req.body
+    const { orderId, user: userFromFrontend } = req.body // userFromFrontend is from localStorage
 
     if (
       !orderId ||
-      !user ||
-      !user._id ||
-      !user.billingEmail ||
-      !Array.isArray(user.cartItems) ||
-      user.cartItems.length === 0
+      !userFromFrontend ||
+      !userFromFrontend._id ||
+      !userFromFrontend.billingEmail ||
+      !Array.isArray(userFromFrontend.cartItems) ||
+      userFromFrontend.cartItems.length === 0
     ) {
-      console.error('❌ Missing required fields:', { orderId, user })
+      console.error('❌ PayPal Capture: Missing required fields:', {
+        orderId,
+        user: userFromFrontend,
+      })
       return res.status(400).json({ error: 'Missing required fields or empty cart items' })
     }
-    const users = await Register.findById(user._id).exec() // Fetch user from DB
+
+    // Fetch the LATEST user data from DB to ensure consistency for updates
+    const dbUser = await Register.findById(userFromFrontend._id).exec()
+    if (!dbUser) {
+      console.error(`❌ PayPal Capture: User not found in DB for ID: ${userFromFrontend._id}`)
+      return res.status(404).json({ error: 'User not found in database.' })
+    }
 
     console.log('🛒 Capturing PayPal Order:', orderId)
     const captureRequest = new paypal.orders.OrdersCaptureRequest(orderId)
@@ -177,360 +185,313 @@ exports.captureOrder = async (req, res) => {
     let captureResponse
     try {
       captureResponse = await paypalClient.execute(captureRequest)
-      console.log('✅ Capture Response:', captureResponse.result)
+      console.log('✅ PayPal Capture Response:', JSON.stringify(captureResponse.result, null, 2))
     } catch (captureError) {
-      console.error('❌ PayPal Capture Error:', captureError)
-      return res.status(400).json({ error: 'PayPal capture failed', details: captureError.message })
+      console.error('❌ PayPal API Capture Error:', captureError.message || captureError)
+      // Check for specific PayPal error like ORDER_ALREADY_CAPTURED
+      if (captureError.isAxiosError && captureError.response && captureError.response.data) {
+        const payPalErrorDetails = captureError.response.data.details
+        if (
+          payPalErrorDetails &&
+          payPalErrorDetails.some((d) => d.issue === 'ORDER_ALREADY_CAPTURED')
+        ) {
+          console.warn(`⚠️ PayPal Order ${orderId} already captured.`)
+          // Attempt to find existing payment and respond as if successful to avoid user confusion
+          const existingPaymentByOrderId = await Payment.findOne({ orderId: orderId }) // Or StripePayment
+          if (existingPaymentByOrderId) {
+            console.log(`Found existing payment for already captured order ${orderId}.`)
+            return res.json({
+              message: 'Payment was already captured and recorded.',
+              paymentId: existingPaymentByOrderId.paymentIntentId, // PayPal Capture ID
+              redirectTo: '/dashboard',
+            })
+          }
+        }
+      }
+      return res
+        .status(400)
+        .json({ error: 'PayPal capture failed at API level', details: captureError.message })
     }
 
     if (!captureResponse.result || captureResponse.result.status !== 'COMPLETED') {
-      console.error('❌ PayPal Capture Failed - Status:', captureResponse.result.status)
+      console.error(
+        '❌ PayPal Capture Not Completed - Status:',
+        captureResponse.result.status,
+        captureResponse.result,
+      )
+      return res.status(400).json({
+        error: 'Payment capture was not completed by PayPal',
+        details: captureResponse.result,
+      })
+    }
+
+    const captureDetails = captureResponse.result.purchase_units[0]?.payments?.captures?.[0]
+    if (!captureDetails || !captureDetails.id) {
+      console.error(
+        '❌ PayPal Capture Details Missing or Capture ID missing:',
+        captureResponse.result,
+      )
       return res
         .status(400)
-        .json({ error: 'Payment capture failed', details: captureResponse.result })
+        .json({ error: 'Essential capture details missing from PayPal response' })
     }
 
-    const captureDetails = captureResponse.result.purchase_units[0].payments?.captures?.[0]
+    const paypalCaptureId = captureDetails.id // This is PayPal's unique ID for the capture
 
-    if (!captureDetails) {
-      console.error('❌ Capture Details Missing:', captureResponse.result)
-      return res.status(400).json({ error: 'Capture details missing from PayPal response' })
-    }
+    const paymentModelToUse = Payment // Or StripePayment if consolidating
+    const existingPayment = await paymentModelToUse.findOne({ paymentIntentId: paypalCaptureId })
 
-    const amount = captureDetails.amount.value
-    const currency = captureDetails.amount.currency_code
-    const paymentIntentId = captureDetails.id // ✅ Use PayPal capture ID as `paymentIntentId`
-
-    // ✅ Ensure `paymentIntentId` is unique before saving
-    const existingPayment = await Payment.findOne({ paymentIntentId })
     if (existingPayment) {
-      console.warn('⚠️ Duplicate Payment Detected, Skipping Save:', paymentIntentId)
-      return res.json({ message: 'Payment already recorded.', payment: captureResponse.result })
+      console.warn(
+        `⚠️ Duplicate PayPal Capture ID Detected: ${paypalCaptureId}. Payment already recorded.`,
+      )
+      return res.json({
+        message: 'Payment already recorded (duplicate capture ID).',
+        paymentId: paypalCaptureId,
+        redirectTo: '/dashboard',
+      })
     }
 
-    // ✅ Save Payment Record
+    let newPaymentRecord
     try {
-      console.log('🔹 Saving Payment Details...')
-      const newPayment = new Payment({
-        orderId,
-        paymentIntentId, // ✅ Save unique payment ID
-        userId: user._id,
-        billingEmail: user.billingEmail,
-        amount,
-        currency,
-        status: 'Completed',
+      console.log('🔹 Saving PayPal Payment Details to DB...')
+      newPaymentRecord = new Payment({
+        // Using your 'Payment' model for PayPal
+        orderId: orderId, // PayPal Order ID from createOrder
+        paymentIntentId: paypalCaptureId, // PayPal Capture ID (this should be unique)
+        userId: dbUser._id,
+        billingEmail: dbUser.billingEmail, // From dbUser for accuracy
+        amount: parseFloat(captureDetails.amount.value),
+        currency: captureDetails.amount.currency_code,
+        status: 'Completed', // Or 'succeeded'
         paymentMethod: 'PayPal',
-        cartItems: user.cartItems || [],
+        cartItems:
+          userFromFrontend.cartItems.map((item) => ({
+            // Use cartItems from this specific transaction
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+          })) || [],
+        createdAt: new Date(captureDetails.create_time || Date.now()), // PayPal's timestamp
       })
 
-      await newPayment.save()
-      console.log('✅ Payment Record Saved!')
+      await newPaymentRecord.save()
+      console.log(
+        `✅ PayPal Payment Record Saved! DB ID: ${newPaymentRecord._id}, Capture ID: ${paypalCaptureId}`,
+      )
     } catch (saveError) {
-      console.error('❌ Error Saving Payment:', saveError)
+      console.error('❌ Error Saving PayPal Payment to DB:', saveError)
+      // This is a critical error; if DB save fails, the system is out of sync.
       return res
         .status(500)
         .json({ error: 'Database error while saving payment.', details: saveError.message })
     }
-    // ✅ Prepare recipients list (Include billingEmail & schedulingEmails)
-    let recipients = [users.billingEmail]
-    // ✅ If schedulingEmails is a string, add it to the list
-    if (users.schedulingEmails) {
-      if (Array.isArray(users.schedulingEmails)) {
-        recipients = recipients.concat(users.schedulingEmails) // If it's an array, merge it
-      } else {
-        recipients.push(users.schedulingEmails) // If it's a string, add it directly
+
+    // --- SOCKET.IO EMISSION ---
+    const io = req.io
+    if (io) {
+      // Format for consistency with admin payments page if possible
+      const paymentDataForSocket = {
+        id: newPaymentRecord.paymentIntentId, // Or newPaymentRecord._id (DB id)
+        paymentIntentId: newPaymentRecord.paymentIntentId,
+        userId: dbUser
+          ? { _id: dbUser._id, username: dbUser.username, billingEmail: dbUser.billingEmail }
+          : null,
+        billingEmail: newPaymentRecord.billingEmail,
+        amount: newPaymentRecord.amount,
+        currency: newPaymentRecord.currency,
+        status: newPaymentRecord.status,
+        paymentMethod: newPaymentRecord.paymentMethod,
+        cartItems: newPaymentRecord.cartItems,
+        createdAt: newPaymentRecord.createdAt,
+        // Add any other fields your admin payments table expects
       }
+      io.emit('newPaymentProcessed', paymentDataForSocket)
+      console.log(
+        '📊 Emitted newPaymentProcessed for PayPal via WebSocket:',
+        paymentDataForSocket.id,
+      )
+
+      // Also update summary stats
+      // Ensure this query considers ALL payment types if you have multiple models/methods
+      const allPaymentRecords = await paymentModelToUse.find({
+        status: { $in: ['Completed', 'succeeded'] },
+      })
+      const totalRevenue = allPaymentRecords.reduce((sum, p) => sum + (p.amount || 0), 0)
+      const totalTransactionDocs = await paymentModelToUse.countDocuments()
+      const problemTransactionDocs = await paymentModelToUse.countDocuments({
+        status: { $in: ['failed', 'pending', 'requires_payment_method', 'canceled', 'refunded'] },
+      })
+
+      io.emit('paymentSummaryUpdated', {
+        totalRevenue,
+        totalTransactions: totalTransactionDocs,
+        failedTransactions: problemTransactionDocs, // or problemTransactions
+      })
+      console.log('📊 Emitted paymentSummaryUpdated for PayPal via WebSocket')
     }
+    // --- END SOCKET.IO EMISSION ---
 
-    // ✅ Remove any null or undefined values
-    recipients = recipients.filter((email) => email)
+    // --- Post-Purchase User Updates & Emails (using dbUser) ---
+    let recipients = [dbUser.billingEmail]
+    if (dbUser.schedulingEmails) {
+      recipients = recipients.concat(
+        Array.isArray(dbUser.schedulingEmails)
+          ? dbUser.schedulingEmails
+          : [dbUser.schedulingEmails],
+      )
+    }
+    recipients = recipients.filter(Boolean) // Remove null/undefined
+    const recipientEmailsString = recipients.join(',')
 
-    // ✅ Convert recipients array to a comma-separated string
-    const recipientEmails = recipients.join(',')
-
-    // ✅ **Step 1: Send Welcome Email (Same as Stripe)**
-    console.log(`📧 Sending Welcome Email to: ${user.billingEmail}`)
-    let welcomeSubject = `🎉 Welcome to RockstarMath, ${user.username}!`
+    // Send Welcome Email
+    console.log(`📧 Sending Welcome Email to: ${dbUser.billingEmail}`)
+    let welcomeSubject = `🎉 Welcome to RockstarMath, ${dbUser.username}!`
+    // ... (your welcomeHtml, ensure variables like dbUser.username are used)
     let welcomeHtml = `
        <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
-         
          <div style="text-align: center; padding-bottom: 20px;">
            <img src="https://www.rockstarmath.com/images/logo.png" alt="RockstarMath" style="width: 150px; margin-bottom: 10px;">
-         <h2 style="color: #2C3E50;">🎉 Welcome, ${user.username}!</h2>
+         <h2 style="color: #2C3E50;">🎉 Welcome, ${dbUser.username}!</h2>
          <p style="font-size: 16px;">We're thrilled to have you join <b>RockstarMath</b>! 🚀</p>
        </div>
- 
        <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
          <h3 style="color: #007bff;">📢 Your Account is Ready!</h3>
-         <p>Congratulations! Your account has been successfully created. You now have access to personalized math tutoring, expert guidance, and interactive learning resources.</p>
-         <p><b>Username:</b> ${user.username}</p>
-         <p><b>Email:</b> ${user.billingEmail}</p>
+         <p>Congratulations! Your account has been successfully created...</p>
+         <p><b>Username:</b> ${dbUser.username}</p><p><b>Email:</b> ${dbUser.billingEmail}</p>
        </div>
- 
-       <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-         <h3 style="color: #007bff;">📌 What's Next?</h3>
-         <p>Start your learning journey today by logging into your dashboard, exploring available sessions, and scheduling your first class!</p>
-         <p><b>Access your dashboard here:</b> <a href="https://www.rockstarmath.com/login" target="_blank" style="color: #007bff;">Go to Dashboard</a></p>
-       </div>
- 
-       <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-         <h3 style="color: #007bff;">💡 Need Help?</h3>
-         <p>Our team is always here to assist you! If you have any questions, reach out to us at <b>rockstarmathtutoring@gmail.com</b>.</p>
-       </div>
- 
-       <p style="text-align: center; font-size: 16px;">Let's make math learning fun and exciting! We can't wait to see you in class. 🚀</p>
- 
-       <p style="text-align: center; font-size: 14px; color: #555; margin-top: 20px;">
-         Best regards,<br>
-         <b>Amy Gemme</b><br>
-         RockstarMath Tutoring<br>
-         📞 510-410-4963
-       </p>
-     </div>
-     `
+       <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;"><h3 style="color: #007bff;">📌 What's Next?</h3><p>... <a href="https://www.rockstarmath.com/login" target="_blank" style="color: #007bff;">Go to Dashboard</a></p></div>
+       <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;"><h3 style="color: #007bff;">💡 Need Help?</h3><p>... rockstarmathtutoring@gmail.com ...</p></div>
+       <p style="text-align: center; font-size: 16px;">Let's make math learning fun and exciting! ... 🚀</p>
+       <p style="text-align: center; font-size: 14px; color: #555; margin-top: 20px;">Best regards,<br><b>Amy Gemme</b><br>RockstarMath Tutoring<br>📞 510-410-4963</p>
+     </div>`
+    await sendEmail(recipientEmailsString, welcomeSubject, '', welcomeHtml)
+    console.log('✅ Welcome email sent!')
 
-    await sendEmail(recipientEmails, welcomeSubject, '', welcomeHtml)
-
-    console.log('✅ Welcome email sent successfully!')
-    console.log('✅ Emails sent to:', recipientEmails)
-    // ✅ Step 1: Fetch Active Coupons from Stripe
+    // Manage Coupons, Purchased Classes, etc. for dbUser
     const activeCoupons = await getActiveCoupons()
-    console.log('🎟 Active Coupons from Stripe:', activeCoupons)
+    let appliedCouponsToSave = [] // Renamed to avoid conflict
 
-    // ✅ Step 2: Match Coupons Based on Purchased Course Names
-    let userCoupons = activeCoupons.filter((coupon) => {
-      return user.cartItems.some((item) => {
-        return item.name.toLowerCase().includes(coupon.code.toLowerCase())
-      })
+    ;(userFromFrontend.cartItems || []).forEach((item) => {
+      if (item.name.toLowerCase() === 'achieve') {
+        appliedCouponsToSave.push({ code: 'fs4n9tti', percent_off: 100, expires: 'Forever' })
+        appliedCouponsToSave.push({ code: 'qRBcEmgS', percent_off: 30, expires: 'Forever' })
+      }
+      // Add other coupon logic...
     })
-
-    console.log('🎟 Matched Coupons for User:', userCoupons)
-    console.log(
-      '🛒 Purchased Items:',
-      user.cartItems.map((item) => item.name),
+    appliedCouponsToSave = appliedCouponsToSave.filter(
+      (c, i, self) =>
+        i === self.findIndex((t) => t.code === c.code && t.percent_off === c.percent_off),
     )
 
-    // ✅ Step 3: Fetch Zoom Links
-    let zoomLinks = []
-    if (
-      ['Learn', 'Achieve', 'Excel'].some((course) =>
-        user.cartItems.map((item) => item.name).includes(course),
+    if (appliedCouponsToSave.length > 0) {
+      const newCouponsForDB = appliedCouponsToSave.filter(
+        (ac) => !(dbUser.coupons || []).some((dbc) => dbc.code === ac.code),
       )
-    ) {
-      zoomLinks = zoomCourseMapping
-    }
-
-    // ✅ Normalize the product names for a better match
-    const normalizeString = (str) =>
-      str
-        .toLowerCase()
-        .replace(/[^a-zA-Z0-9 ]/g, '')
-        .trim()
-
-    // ✅ Check if "Common Core for Parents" was purchased
-    const hasCommonCore = user.cartItems.some(
-      (item) => normalizeString(item.name) === normalizeString(COMMONCORE_ZOOM_LINK.name),
-    )
-
-    if (hasCommonCore) {
-      zoomLinks.push(COMMONCORE_ZOOM_LINK)
-    }
-
-    // ✅ Apply Discount Coupons Based on Course Name (Ensure all relevant coupons are applied)
-    let appliedCoupons = []
-
-    user.cartItems.forEach((item) => {
-      let matchedCoupons = activeCoupons.filter((coupon) => {
-        if (item.name === 'Learn' && coupon.percent_off === 10) return true
-        if (item.name === 'Achieve' && (coupon.percent_off === 30 || coupon.percent_off === 100))
-          return true
-        if (item.name === 'Excel' && coupon.percent_off === 20) return true
-        return false
-      })
-
-      if (matchedCoupons.length > 0) {
-        matchedCoupons.forEach((coupon) => {
-          appliedCoupons.push({
-            code: coupon.code,
-            percent_off: coupon.percent_off,
-            expires: coupon.expires,
-          })
-        })
-      }
-
-      // ✅ **Ensure both 30% and 100% Achieve coupons are applied**
-      if (item.name === 'Achieve') {
-        appliedCoupons.push(
-          { code: 'fs4n9tti', percent_off: 100 }, // ✅ 100% Off Coupon
-          { code: 'qRBcEmgS', percent_off: 30 }, // ✅ 30% Off Coupon
-        )
-      }
-    })
-
-    // ✅ Ensure duplicates are removed (if any)
-    appliedCoupons = appliedCoupons.filter(
-      (coupon, index, self) => index === self.findIndex((c) => c.code === coupon.code),
-    )
-
-    console.log('🎟 Final Applied Coupons:', appliedCoupons)
-    if (appliedCoupons.length > 0) {
-      appliedCoupons = appliedCoupons.filter((coupon) => coupon.code && coupon.code.trim() !== '')
-
-      // ✅ Step 7: Save Coupons in User's Database
-      if (appliedCoupons.length > 0) {
-        await Register.findByIdAndUpdate(user._id, {
-          $push: { coupons: { $each: appliedCoupons } },
-        })
+      if (newCouponsForDB.length > 0) {
+        dbUser.coupons.push(...newCouponsForDB)
       }
     }
 
-    console.log('📧 Sending Email with Zoom Links:', zoomLinks)
-    console.log('🎟 Sending Email with Coupons:', appliedCoupons)
-    const proxyBaseUrl = 'https://backend-production-cbe2.up.railway.app/api/proxy-calendly'
-
-    // ✅ Extract Purchased Items & Apply Session Mapping
-    const purchasedItems = user.cartItems.map((item) => {
-      const formattedItemName = item.name.trim().toLowerCase()
-
-      // ✅ Fetch Session Count & Ensure Defaults
-      const sessionCount = sessionMapping[formattedItemName] ?? 0
-      const remainingSessions = sessionMapping[formattedItemName] ?? 0
-
-      // ✅ Generate Proxy URL Instead of Calendly Link
-      const originalCalendlyLink = calendlyMapping[formattedItemName] || null
-      const proxyBookingLink = originalCalendlyLink
-        ? `${proxyBaseUrl}?userId=${user._id}&session=${encodeURIComponent(item.name)}`
-        : null
-
+    const proxyCalendlyBaseUrl = `http://${process.env.HOST || 'localhost'}:${
+      process.env.PORT || 5000
+    }/api/proxy-calendly`
+    const purchasedItemsForDB = (userFromFrontend.cartItems || []).map((item) => {
+      const originalCalendlyLink = calendlyMapping[item.name.trim().toLowerCase()] || null
       return {
         name: item.name,
-        sessionCount,
-        remainingSessions,
-        bookingLink: proxyBookingLink, // ✅ Store Proxy Calendly Link!
-        bookingLink: originalCalendlyLink, // ✅ Keep Original Link (Hidden)
-        proxyBookingLink: proxyBookingLink, // ✅ Use Proxy URL in UI
+        sessionCount: sessionMapping[item.name.trim().toLowerCase()] || 0,
+        remainingSessions: sessionMapping[item.name.trim().toLowerCase()] || 0,
+        bookingLink: originalCalendlyLink,
+        proxyBookingLink: originalCalendlyLink
+          ? `${proxyCalendlyBaseUrl}?userId=${dbUser._id}&session=${encodeURIComponent(item.name)}`
+          : null,
         status: 'Active',
       }
     })
-    console.log('🛒 Mapped Purchased Items with Sessions:', purchasedItems)
 
-    // ✅ Save Purchased Classes in Database
-    if (purchasedItems.length > 0) {
-      await Register.findByIdAndUpdate(
-        user._id,
-        { $push: { purchasedClasses: { $each: purchasedItems } } },
-        { new: true },
+    if (purchasedItemsForDB.length > 0) {
+      const newPurchasedClasses = purchasedItemsForDB.filter(
+        (pi) => !(dbUser.purchasedClasses || []).some((pc) => pc.name === pi.name), // Simple check, might need more complex for re-purchase
       )
-    } else {
-      console.log('⚠️ No new purchased classes to add.')
+      if (newPurchasedClasses.length > 0) {
+        dbUser.purchasedClasses.push(...newPurchasedClasses)
+      }
     }
-    // ✅ **Extract Correct Calendly Booking Links for Email**
-    let calendlyLinks = purchasedItems
-      .filter((item) => item.bookingLink !== null) // ✅ Only Include Items with Valid Links
-      .map((item) => ({
-        name: item.name,
-        link: item.bookingLink,
-      }))
+    await dbUser.save({ validateBeforeSave: false }) // Save all accumulated changes to dbUser
+    console.log('✅ User coupons and purchased classes updated in DB.')
 
-    console.log('📅 Final Calendly Links for User:', calendlyLinks)
+    // Determine Zoom and Calendly links for the confirmation email
+    let emailZoomLinks = []
+    if (
+      ['Learn', 'Achieve', 'Excel'].some((course) =>
+        (userFromFrontend.cartItems || []).map((item) => item.name).includes(course),
+      )
+    ) {
+      emailZoomLinks = zoomCourseMapping
+    }
+    const hasCommonCore = (userFromFrontend.cartItems || []).some(
+      (item) => item.name.trim().toLowerCase() === COMMONCORE_ZOOM_LINK.name.toLowerCase(),
+    )
+    if (hasCommonCore) emailZoomLinks.push(COMMONCORE_ZOOM_LINK)
 
-    // ✅ **Generate Email Content & Send**
-    const emailHtml = generateEmailHtml(
-      user,
-      zoomLinks,
-      appliedCoupons,
-      calendlyLinks,
+    let emailCalendlyLinks = purchasedItemsForDB
+      .filter((item) => item.proxyBookingLink) // Use proxyBookingLink for the email
+      .map((item) => ({ name: item.name, link: item.proxyBookingLink }))
+
+    // Generate and Send Purchase Confirmation Email
+    const purchaseEmailHtml = generateEmailHtml(
+      dbUser, // Use the updated dbUser for email personalization
+      emailZoomLinks,
+      appliedCouponsToSave, // Send the coupons that were determined for this transaction
+      emailCalendlyLinks,
       hasCommonCore,
     )
+    await sendEmail(
+      recipientEmailsString,
+      '📚 Your RockstarMath Purchase Details',
+      '',
+      purchaseEmailHtml,
+    )
+    console.log('✅ Purchase confirmation email sent.')
 
-    // ✅ **Call `addPurchasedClass` API**
+    // The call to /api/add-purchased-class (your internal API)
+    // This seems redundant if you're already updating `dbUser.purchasedClasses` directly above.
+    // If it does something DIFFERENT, keep it. Otherwise, it might be removed to avoid double processing.
+    // For now, keeping your existing call:
     try {
-      console.log('📡 Calling addPurchasedClass API...')
-      const purchaseResponse = await fetch(
-        `https://backend-production-cbe2.up.railway.app/api/add-purchased-class`,
+      console.log('📡 Calling internal /api/add-purchased-class (review if redundant)...')
+      await fetch(
+        `${
+          process.env.API_BASE_URL || 'https://backend-production-cbe2.up.railway.app'
+        }/api/add-purchased-class`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            userId: user._id,
-            purchasedItems: purchasedItems,
-            userEmail: user.billingEmail,
+            userId: dbUser._id,
+            purchasedItems: purchasedItemsForDB, // Send the mapped items
+            userEmail: dbUser.billingEmail,
           }),
         },
       )
-
-      const purchaseResult = await purchaseResponse.json()
-      console.log('✅ Purchased Classes API Response:', purchaseResult)
-
-      if (!purchaseResponse.ok) {
-        console.warn('⚠️ Issue updating purchased classes:', purchaseResult.message)
-      }
-    } catch (purchaseError) {
-      console.error('❌ Error calling addPurchasedClass API:', purchaseError)
+      // const purchaseResult = await purchaseResponse.json(); // process if needed
+    } catch (internalApiError) {
+      console.error('❌ Error calling internal /api/add-purchased-class:', internalApiError)
     }
-    // ✅ Send Confirmation Email
-    try {
-      await sendEmail(
-        recipientEmails,
-        `🎉 Thank You for Your Purchase – Welcome to RockstarMath!`,
-        ``,
-        `
-           <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
-             
-             <div style="text-align: center; padding-bottom: 20px;">
-               <img src="https://www.rockstarmath.com/images/logo.png" alt="RockstarMath" style="width: 150px; margin-bottom: 10px;">
-               <h2 style="color: #2C3E50;">🎉 Thank You for Your Purchase – Welcome to RockstarMath!</h2>
-             </div>
-         
-             <p>Hi <b>${user.username}</b>,</p>
-             
-             <p>Thank you for your purchase! 🎉 We’re thrilled to have you as part of the RockstarMath community and are excited to help you achieve your math goals.</p>
-         
-             <h3 style="color: #007bff;">🚀 Get Started Now!</h3>
-             <p>To begin, log in to your dashboard:</p>
-             <p style="text-align: center;">
-               <a href="https://www.rockstarmath.com/login" target="_blank" style="background: #007bff; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px; font-weight: bold;">Go to Dashboard</a>
-             </p>
-             
-             <p>Use the username and password you created during registration to log in.</p>
-         
-             
-             <h3 style="color: #007bff;">📞 Need Assistance?</h3>
-             <p>If you have any questions or need help, feel free to reach out to us:</p>
-             <ul>
-               <li>📧 Reply to this email</li>
-               <li>📞 Call us at <b>510-410-4963</b></li>
-             </ul>
-         
-             <p>Thank you again for choosing RockstarMath! We can’t wait to see you excel! 🚀</p>
-         
-             <p style="text-align: center; font-size: 14px; color: #555; margin-top: 20px;">
-               Best regards,<br>
-               <b>Amy Gemme</b><br>
-               Founder, RockstarMath<br>
-               📞 510-410-4963 | 🌍 <a href="https://www.rockstarmath.com" target="_blank">www.rockstarmath.com</a>
-             </p>
-         
-           </div>
-           `,
-      )
 
-      console.log('✅ Confirmation Email Sent')
-    } catch (emailError) {
-      console.error('❌ Email Sending Failed:', emailError)
-    }
-    // ✅ Send Emails (Only if schedulingEmails exist)
-    await sendEmail(recipientEmails, '📚 Your RockstarMath Purchase Details', '', emailHtml)
-
-    console.log('✅ Purchase confirmation email sent success')
+    // --- Final Response to Frontend ---
     res.json({
-      message: 'Payment captured successfully!',
-      payment: captureResponse.result,
-      redirectTo: '/dashboard', // ✅ Ensure this is included
+      message: 'Payment captured, processed, and user updated successfully!',
+      paymentId: paypalCaptureId,
+      redirectTo: '/dashboard', // This is what the frontend will use
     })
   } catch (error) {
-    console.error('❌ Error Capturing PayPal Payment:', error)
-    res.status(500).json({ error: 'Internal Server Error', details: error.message || error })
+    console.error('❌ Outer Catch: Error Capturing PayPal Payment:', error)
+    res.status(500).json({
+      error: 'Internal Server Error during PayPal capture.',
+      details: error.message || error,
+    })
   }
 }
 

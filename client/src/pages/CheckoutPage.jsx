@@ -125,92 +125,114 @@ const CheckoutPage = () => {
     }
   }
 
-  const handlePayPalSuccess = async (data) => {
-    const user = JSON.parse(localStorage.getItem('user'))
-    if (!user || !user._id) {
-      toast.error('User authentication required!')
+  const handlePayPalSuccess = async (data, actions) => {
+    // `actions` might be provided by PayPalButtons if needed for capture
+    const userFromStorage = JSON.parse(localStorage.getItem('user')) // Get user from localStorage
+
+    // Validate user from localStorage
+    if (!userFromStorage || !userFromStorage._id) {
+      toast.error('User authentication required! Please log in again.')
+      navigate('/login') // Redirect to login if user data is missing
       return
     }
 
+    const toastId = toast.loading('Processing your PayPal payment...')
+
     try {
-      console.log('📡 Capturing PayPal Order...')
-      const response = await fetch(
-        'https://backend-production-cbe2.up.railway.app/api/paypal/capture-order',
+      // The `data.orderID` comes from PayPal's onApprove callback, it's the PayPal Order ID.
+      console.log('PayPal Order ID from onApprove:', data.orderID)
+      console.log('📡 Contacting backend to capture PayPal Order...')
+
+      const captureApiResponse = await fetch(
+        `${
+          process.env.REACT_APP_API_BASE_URL || 'https://backend-production-cbe2.up.railway.app'
+        }/api/paypal/capture-order`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            orderId: data.orderID,
+            orderId: data.orderID, // This is the PayPal Order ID
             user: {
-              _id: user._id,
-              username: user.username || 'Unknown User',
-              billingEmail: user.billingEmail || 'No email',
-              phone: user.phone || 'No phone',
+              // Send the user object as your backend expects
+              _id: userFromStorage._id,
+              username: userFromStorage.username || 'N/A',
+              billingEmail: userFromStorage.billingEmail || 'no-email@example.com',
+              phone: userFromStorage.phone || 'N/A',
+              // Send the cartItems that were part of *this* specific checkout/transaction
+              // cartItems state variable should hold the items at the point of checkout
               cartItems: cartItems.map((item) => ({
+                id: item.id || `paypal_item_${Math.random().toString(36).substring(7)}`, // Provide an ID if item.id is missing
                 name: item.name,
-                price: Number(item.price) || 0,
+                price: parseFloat(item.price || 0).toFixed(2), // Ensure price is a string number
                 quantity: item.quantity || 1,
+                description: item.description || 'N/A',
               })),
             },
           }),
         },
       )
 
-      const result = await response.json()
-      console.log('📡 PayPal Capture Response:', result)
+      const backendResult = await captureApiResponse.json()
+      console.log('📡 Backend Response from /api/paypal/capture-order:', backendResult)
 
-      if (!response.ok) {
-        throw new Error(result.error || 'PayPal capture failed.')
+      if (!captureApiResponse.ok) {
+        // Use error message from backend if available, otherwise a generic one
+        throw new Error(
+          backendResult.error ||
+            backendResult.message ||
+            'Failed to capture PayPal payment on the server.',
+        )
       }
 
-      console.log('📡 Calling addPurchasedClass API...')
-      const purchaseResponse = await fetch(
-        'https://backend-production-cbe2.up.railway.app/api/add-purchased-class',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId: user._id,
-            purchasedItems: cartItems.map((item) => ({
-              name: item.name,
-              description: item.description || 'No description available',
-            })),
-            userEmail: user.billingEmail || 'No email',
-          }),
-        },
-      )
+      toast.success(backendResult.message || '🎉 Payment Successful! Finalizing your order...', {
+        id: toastId,
+      })
 
-      const purchaseResult = await purchaseResponse.json()
-      console.log('✅ Purchased Classes API Response:', purchaseResult)
-
-      if (!purchaseResponse.ok) {
-        console.warn('⚠️ Issue updating purchased classes:', purchaseResult.message)
-      }
-
-      // ✅ Fetch updated user data and update localStorage
-      console.log('📡 Fetching updated user data...')
-      const userResponse = await fetch(
-        `https://backend-production-cbe2.up.railway.app/api/user/${users._id}`,
-      )
-
-      if (!userResponse.ok) {
-        console.warn('⚠️ Failed to fetch updated user data.')
-      } else {
-        const updatedUser = await userResponse.json()
-        localStorage.setItem('user', JSON.stringify(updatedUser))
-        // Redirect IMMEDIATELY after updating localStorage
-        navigate('/dashboard') // Redirect to dashboard
-      }
-
-      // Clear Cart after successful PayPal Payment
+      // Clear Cart from localStorage and state after successful backend processing
+      console.log('🛒 Clearing cart...')
       localStorage.removeItem('cartItems')
-      setCartItems([])
-      window.dispatchEvent(new Event('storage'))
+      setCartItems([]) // Update local React state
+      window.dispatchEvent(new Event('storage')) // Inform other tabs/windows about localStorage change
+      window.dispatchEvent(new Event('cartUpdated')) // Custom event if other components listen to this
 
-      toast.success('🎉 Payment Successful! Redirecting...')
+      console.log('📡 Fetching updated user data for localStorage...')
+      try {
+        const userProfileResponse = await fetch(
+          `${
+            process.env.REACT_APP_API_BASE_URL || 'https://backend-production-cbe2.up.railway.app'
+          }/api/user/${userFromStorage._id}`, // Use ID from localStorage for consistency
+        )
+        if (userProfileResponse.ok) {
+          const updatedUserData = await userProfileResponse.json()
+          localStorage.setItem('user', JSON.stringify(updatedUserData.user || updatedUserData)) // Assuming backend sends { user: ... } or just the user object
+          console.log('✅ User data in localStorage updated successfully.')
+        } else {
+          const errorData = await userProfileResponse.json()
+          console.warn(
+            '⚠️ Failed to fetch updated user data for localStorage.',
+            errorData.message || userProfileResponse.statusText,
+          )
+        }
+      } catch (fetchError) {
+        console.warn('⚠️ Error fetching updated user data for localStorage:', fetchError)
+      }
+
+      // Redirect based on backend response or fallback
+      if (backendResult.redirectTo) {
+        console.log(`Navigating to ${backendResult.redirectTo} as per backend response.`)
+        navigate(backendResult.redirectTo)
+      } else {
+        console.log('Backend did not provide redirectTo, navigating to /dashboard as fallback.')
+        navigate('/dashboard')
+      }
     } catch (error) {
-      console.error('❌ Error in Payment Process:', error)
-      toast.error(error.message || 'Payment processing error.')
+      console.error('❌ Error in PayPal Payment Success Handler:', error)
+      toast.error(
+        error.message || 'An error occurred during payment processing. Please try again.',
+        { id: toastId },
+      )
+      // Potentially, you might want to navigate to an error page or back to cart
+      // navigate('/cart');
     }
   }
 
