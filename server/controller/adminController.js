@@ -1,69 +1,42 @@
 const Admin = require('../models/Admin')
-const Register = require('../models/registerModel') // Correct Model for Users
+const Register = require('../models/registerModel') // User Model
+const StripePayment = require('../models/StripePayment') // Your Payment Model in DB
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY) // Stripe API
-const sendEmail = require('../utils/emailSender') // ✅ Use existing emailSender module
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY) // Stripe API for refunds
+const sendEmail = require('../utils/emailSender')
 const crypto = require('crypto')
 const mongoose = require('mongoose')
-// ✅ Function to Check if userId is a Valid ObjectId
+
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id)
-// ✅ Generate JWT Token
+
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' })
 }
 
-// ✅ Admin Login Function with Password Hash Check & Comparison
-
+// --- loginAdmin ---
 exports.loginAdmin = async (req, res) => {
   const { email, password } = req.body
-
   try {
-    // ✅ 1. Find Admin in Database
     const admin = await Admin.findOne({ email })
-
     if (!admin) {
-      console.log('❌ Admin not found for email:', email)
       return res.status(400).json({ message: 'Invalid email or password' })
     }
-
-    console.log('🔹 Found Admin:', admin.email)
-    console.log('🔹 Stored Hashed Password:', admin.password)
-    console.log('🔹 Entered Password:', password)
-
-    // ✅ 2. Ensure Password is Properly Hashed Before Comparing
     if (!admin.password.startsWith('$2b$')) {
-      console.log('⚠️ Password was NOT hashed before! Rehashing now...')
-
-      // ✅ Hash and Save Password if it’s not already hashed
+      // Or your bcrypt prefix
       const salt = await bcrypt.genSalt(10)
       admin.password = await bcrypt.hash(admin.password, salt)
       await admin.save()
-
-      console.log('✅ New Hashed Password Saved:', admin.password)
     }
-
-    // ✅ 3. Compare Entered Password with Hashed Password
     const isMatch = await bcrypt.compare(password, admin.password)
-    console.log('🔑 Password Match Result:', isMatch)
-
     if (!isMatch) {
-      console.log('❌ Password did not match')
       return res.status(400).json({ message: 'Invalid email or password' })
     }
-
-    // ✅ 4. Generate JWT Token
-    const token = jwt.sign({ id: admin._id }, process.env.JWT_SECRET, { expiresIn: '7d' })
-
-    console.log('✅ Admin Login Successful')
+    const token = generateToken(admin._id)
     res.status(200).json({
       message: 'Admin Login Successful',
       token,
-      admin: {
-        _id: admin._id,
-        name: admin.name,
-        email: admin.email,
-      },
+      admin: { _id: admin._id, name: admin.name, email: admin.email },
     })
   } catch (error) {
     console.error('Admin Login Error:', error)
@@ -71,48 +44,55 @@ exports.loginAdmin = async (req, res) => {
   }
 }
 
+// --- getAnalytics ---
+// This can still fetch from Stripe for broad analytics if desired,
+// or you can adapt it to use your StripePayment collection for more tailored analytics.
+// For consistency with payments page, using StripePayment might be better long-term.
+// The current implementation fetches live from Stripe.
 exports.getAnalytics = async (req, res) => {
   try {
-    // ✅ Fetch latest payments from Stripe
-    const payments = await stripe.paymentIntents.list({ limit: 100 })
+    const paymentIntentsFromStripe = await stripe.paymentIntents.list({
+      limit: 100,
+      expand: ['data.latest_charge'],
+    })
 
     let totalRevenue = 0
     let paymentMethods = {}
-    let revenueTrends = {} // ✅ Store revenue per day
-    let courseSales = {} // ✅ Store revenue per day
+    let revenueTrends = {}
+    let courseSales = {} // This relies on metadata.courseName which might not always be on PaymentIntent
 
-    payments.data.forEach((payment) => {
-      if (payment.status === 'succeeded') {
-        totalRevenue += payment.amount_received / 100 // Convert cents to dollars
+    paymentIntentsFromStripe.data.forEach((pi) => {
+      if (pi.status === 'succeeded') {
+        const amountForRevenue = pi.amount_received || pi.amount // amount_received if available, else amount
+        totalRevenue += amountForRevenue / 100
 
-        // ✅ Group revenue by date (Format: YYYY-MM-DD)
-        const date = new Date(payment.created * 1000).toISOString().split('T')[0]
-        revenueTrends[date] = (revenueTrends[date] || 0) + payment.amount_received / 100
+        const date = new Date(pi.created * 1000).toISOString().split('T')[0]
+        revenueTrends[date] = (revenueTrends[date] || 0) + amountForRevenue / 100
 
-        // ✅ Track Payment Methods
-        const method = payment.payment_method_types[0] || 'unknown'
+        const method = pi.payment_method_types[0] || 'unknown'
         paymentMethods[method] = (paymentMethods[method] || 0) + 1
 
-        // ✅ Track Course Sales - Check if metadata exists
-        if (payment.metadata && payment.metadata.courseName) {
-          courseSales[payment.metadata.courseName] =
-            (courseSales[payment.metadata.courseName] || 0) + 1
-        } else {
-          console.log(`⚠️ No courseName found in metadata for payment ID: ${payment.id}`)
+        // For courseSales, it's better if your StripePayment model stores this info consistently
+        if (pi.metadata && pi.metadata.cartSummary) {
+          // Using cartSummary as an example
+          const items = pi.metadata.cartSummary.split(', ')
+          items.forEach((item) => {
+            courseSales[item.trim()] = (courseSales[item.trim()] || 0) + 1
+          })
+        } else if (pi.latest_charge && pi.latest_charge.description) {
+          // Fallback to charge description if metadata is not there
+          courseSales[pi.latest_charge.description] =
+            (courseSales[pi.latest_charge.description] || 0) + 1
         }
       }
     })
 
-    // ✅ Format revenue trends for frontend
     const formattedRevenueTrends = Object.keys(revenueTrends).map((date) => ({
       date,
       amount: revenueTrends[date],
     }))
 
-    // ✅ Fetch total users count from database
     const totalUsers = await Register.countDocuments()
-
-    // ✅ Fetch users grouped by date for "New User Signups" chart
     const userSignupsData = await Register.aggregate([
       {
         $group: {
@@ -120,48 +100,47 @@ exports.getAnalytics = async (req, res) => {
           count: { $sum: 1 },
         },
       },
-      { $sort: { _id: 1 } }, // Sort by date (oldest to newest)
+      { $sort: { _id: 1 } },
     ])
-
-    // ✅ Format user signups for frontend
     const formattedUserSignups = userSignupsData.map((entry) => ({
       date: entry._id,
       count: entry.count,
     }))
 
-    // ✅ Send response to frontend
     res.json({
       totalRevenue,
       totalUsers,
-      courseSales: Object.keys(courseSales).map((course) => ({
-        course,
-        sales: courseSales[course],
-      })),
-      paymentMethods: Object.keys(paymentMethods).map((method) => ({
-        method,
-        count: paymentMethods[method],
-      })),
+      courseSales: Object.entries(courseSales).map(([course, sales]) => ({ course, sales })),
+      paymentMethods: Object.entries(paymentMethods).map(([method, count]) => ({ method, count })),
       revenueTrends: formattedRevenueTrends,
       userSignups: formattedUserSignups,
     })
   } catch (error) {
     console.error('❌ Error fetching analytics:', error)
-    res.status(500).json({ message: 'Error fetching analytics', error })
+    res.status(500).json({ message: 'Error fetching analytics', error: error.message })
   }
 }
 
+// --- getAdminStats ---
+// This is used for the main admin dashboard summary cards and is ALREADY using your DB.
 exports.getAdminStats = async (req, res) => {
   try {
     const totalUsers = await Register.countDocuments()
+    // Fetches from your StripePayment collection
+    const paymentsFromDB = await StripePayment.find({}) // Fetch all to correctly calculate based on status
 
-    const payments = await StripePayment.find({ status: 'Completed' })
-    const totalRevenue = payments.reduce((sum, payment) => sum + (payment.amount || 0), 0)
+    const totalRevenue = paymentsFromDB
+      .filter((p) => p.status === 'Completed' || p.status === 'succeeded') // Consider only succeeded for revenue
+      .reduce((sum, payment) => sum + (payment.amount || 0), 0)
 
-    const totalCoursesSold = payments.reduce((sum, payment) => {
-      return (
-        sum + (payment.cartItems && Array.isArray(payment.cartItems) ? payment.cartItems.length : 0)
-      )
-    }, 0)
+    const totalCoursesSold = paymentsFromDB
+      .filter((p) => p.status === 'Completed' || p.status === 'succeeded') // Count sales from succeeded payments
+      .reduce((sum, payment) => {
+        return (
+          sum +
+          (payment.cartItems && Array.isArray(payment.cartItems) ? payment.cartItems.length : 0)
+        )
+      }, 0)
 
     res.json({
       totalUsers,
@@ -170,13 +149,14 @@ exports.getAdminStats = async (req, res) => {
     })
   } catch (error) {
     console.error('Error fetching admin stats:', error)
-    res.status(500).json({ message: 'Error fetching stats' })
+    res.status(500).json({ message: 'Error fetching stats', error: error.message })
   }
 }
 
+// --- getAllUsers ---
 exports.getAllUsers = async (req, res) => {
   try {
-    const users = await Register.find()
+    const users = await Register.find({}).select('-password') // Exclude passwords
     res.json(users)
   } catch (error) {
     console.error('Error fetching users:', error)
@@ -184,39 +164,41 @@ exports.getAllUsers = async (req, res) => {
   }
 }
 
-// ✅ Update User
+// --- updateUser ---
 exports.updateUser = async (req, res) => {
   try {
     const { id } = req.params
-    const { username, email, phone } = req.body
-
+    const { username, email, phone } = req.body // Ensure 'email' from body is mapped to 'billingEmail'
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ error: 'Invalid user ID format.' })
+    }
     const updatedUser = await Register.findByIdAndUpdate(
       id,
-      { username, billingEmail: email, phone },
-      { new: true },
-    )
-
+      { username, billingEmail: email, phone }, // Map `email` to `billingEmail`
+      { new: true, runValidators: true },
+    ).select('-password')
     if (!updatedUser) {
       return res.status(404).json({ error: 'User not found.' })
     }
-
-    res.json({ success: true, message: 'User updated successfully.' })
+    res.json({ success: true, message: 'User updated successfully.', user: updatedUser })
   } catch (error) {
     console.error('Error updating user:', error)
     res.status(500).json({ error: 'Failed to update user.' })
   }
 }
 
-// ✅ Delete User
+// --- deleteUser ---
 exports.deleteUser = async (req, res) => {
   try {
     const { id } = req.params
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ error: 'Invalid user ID format.' })
+    }
     const deletedUser = await Register.findByIdAndDelete(id)
-
     if (!deletedUser) {
       return res.status(404).json({ error: 'User not found.' })
     }
-
+    // Optionally: Clean up related data, e.g., payments associated with this user if necessary (soft delete or anonymize)
     res.json({ success: true, message: 'User deleted successfully.' })
   } catch (error) {
     console.error('Error deleting user:', error)
@@ -224,106 +206,216 @@ exports.deleteUser = async (req, res) => {
   }
 }
 
+// --- getStripePayments (MODIFIED TO FETCH FROM YOUR DATABASE) ---
 exports.getStripePayments = async (req, res) => {
   try {
-    const payments = await stripe.paymentIntents.list({ limit: 100 })
-    res.json(payments.data)
+    // Fetch payments from your StripePayment collection in MongoDB
+    // Sort by creation date, newest first
+    // Populate userId to get user details like username or email if needed for display/search
+    const paymentsFromDB = await StripePayment.find({})
+      .sort({ createdAt: -1 }) // Sort by DB timestamp
+      .populate('userId', 'username billingEmail') // Populate user details
+
+    // The frontend expects data in a certain structure.
+    // Map your DB data to match what Stripe's API `paymentIntents.list` might return,
+    // OR adjust your frontend to match your DB structure.
+    // It's generally better to send what your DB stores.
+    // The frontend table uses: id, metadata.customer_name, amount_received/100, status, payment_method_types[0], created
+    // Your StripePayment model has: paymentIntentId, userId, billingEmail, amount, currency, status, paymentMethod, cartItems, createdAt
+
+    const formattedPayments = paymentsFromDB.map((p) => ({
+      id: p.paymentIntentId, // Use paymentIntentId as the primary ID
+      paymentIntentId: p.paymentIntentId, // Keep for clarity if needed
+      userId: p.userId
+        ? { _id: p.userId._id, username: p.userId.username, billingEmail: p.userId.billingEmail }
+        : null, // Populated user
+      billingEmail: p.billingEmail || (p.userId ? p.userId.billingEmail : null), // Email for display
+      amount: p.amount, // Amount is already in dollars (or your base currency unit) as saved
+      currency: p.currency,
+      status: p.status, // e.g., "Completed", "refunded"
+      paymentMethod: p.paymentMethod, // e.g., "Stripe", "card" (ensure consistency)
+      cartItems: p.cartItems,
+      createdAt: p.createdAt, // DB timestamp
+      refundId: p.refundId, // If you store refund ID
+      // Fields for compatibility with previous frontend structure (if strictly needed)
+      // amount_received: p.amount * 100, // If frontend expects cents for this field
+      // payment_method_types: [p.paymentMethod || 'card'], // If frontend expects an array
+      // created: Math.floor(new Date(p.createdAt).getTime() / 1000) // If frontend expects Unix timestamp
+    }))
+
+    res.json(formattedPayments)
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching payments', error })
+    console.error('Error fetching payments from DB:', error)
+    res.status(500).json({ message: 'Error fetching payments from database', error: error.message })
   }
 }
 
+// --- refundPayment (MODIFIED as per previous response for DB update and Socket emission) ---
 exports.refundPayment = async (req, res) => {
-  const { paymentId } = req.body
+  const { paymentId } = req.body // This is the Stripe Payment Intent ID (e.g., pi_xxxx)
+
+  if (!paymentId) {
+    return res.status(400).json({ message: 'Payment Intent ID is required.' })
+  }
+
   try {
-    await stripe.refunds.create({ payment_intent: paymentId })
-    res.json({ message: 'Refund successful' })
+    const paymentInDb = await StripePayment.findOne({ paymentIntentId: paymentId })
+    if (!paymentInDb) {
+      return res.status(404).json({ message: 'Payment not found in our records.' })
+    }
+    if (paymentInDb.status === 'refunded') {
+      return res.status(400).json({ message: 'This payment has already been refunded.' })
+    }
+    if (paymentInDb.status !== 'Completed' && paymentInDb.status !== 'succeeded') {
+      return res
+        .status(400)
+        .json({ message: `Payment status is ${paymentInDb.status}, cannot refund.` })
+    }
+
+    const refund = await stripe.refunds.create({
+      payment_intent: paymentId,
+    })
+
+    const updatedPayment = await StripePayment.findOneAndUpdate(
+      { paymentIntentId: paymentId },
+      { status: 'refunded', refundId: refund.id, lastModified: new Date() }, // Store Stripe refund ID
+      { new: true },
+    ).populate('userId', 'username billingEmail')
+
+    if (!updatedPayment) {
+      // This case means the DB update failed after Stripe refund succeeded. Critical to log.
+      console.error(
+        `CRITICAL: Stripe refund ${refund.id} for PI ${paymentId} succeeded, but DB update failed.`,
+      )
+      // Potentially try to update again or flag for manual intervention.
+      // For now, inform admin but acknowledge Stripe success.
+      return res
+        .status(500)
+        .json({ message: 'Stripe refund succeeded but DB update failed. Please check logs.' })
+    }
+
+    console.log(
+      `✅ Payment ${paymentId} refunded successfully. Stripe Refund ID: ${refund.id}. DB status updated.`,
+    )
+
+    const io = req.io
+    if (io) {
+      const formattedUpdatedPayment = {
+        // Format consistently with getStripePayments
+        id: updatedPayment.paymentIntentId,
+        paymentIntentId: updatedPayment.paymentIntentId,
+        userId: updatedPayment.userId
+          ? {
+              _id: updatedPayment.userId._id,
+              username: updatedPayment.userId.username,
+              billingEmail: updatedPayment.userId.billingEmail,
+            }
+          : null,
+        billingEmail:
+          updatedPayment.billingEmail ||
+          (updatedPayment.userId ? updatedPayment.userId.billingEmail : null),
+        amount: updatedPayment.amount,
+        currency: updatedPayment.currency,
+        status: updatedPayment.status,
+        paymentMethod: updatedPayment.paymentMethod,
+        cartItems: updatedPayment.cartItems,
+        createdAt: updatedPayment.createdAt,
+        refundId: updatedPayment.refundId,
+      }
+      io.emit('paymentUpdated', formattedUpdatedPayment)
+
+      // Recalculate and emit summary stats
+      const allPayments = await StripePayment.find({})
+      const totalRevenue = allPayments
+        .filter((p) => p.status === 'Completed' || p.status === 'succeeded') // Only 'succeeded' for revenue
+        .reduce((sum, p) => sum + (p.amount || 0), 0)
+      const totalTransactions = allPayments.length
+      const problemTransactions = allPayments.filter(
+        (p) => ['failed', 'requires_payment_method', 'canceled'].includes(p.status), // Consider what 'failed' means for you
+      ).length
+
+      io.emit('paymentSummaryUpdated', {
+        totalRevenue,
+        totalTransactions,
+        failedTransactions: problemTransactions, // Match frontend state name if different
+      })
+      console.log('📊 Emitted paymentUpdated and paymentSummaryUpdated event after refund.')
+    }
+
+    res.status(200).json({ message: 'Refund processed successfully.', data: updatedPayment })
   } catch (error) {
-    res.status(500).json({ message: 'Refund failed', error })
+    console.error('Error processing refund:', error)
+    let errorMessage = 'Failed to process refund.'
+    if (error.type === 'StripeInvalidRequestError' && error.code === 'charge_already_refunded') {
+      errorMessage = 'This payment has already been fully refunded by Stripe.'
+      // Ensure DB is also marked as refunded
+      await StripePayment.findOneAndUpdate(
+        { paymentIntentId: paymentId, status: { $ne: 'refunded' } },
+        { status: 'refunded', lastModified: new Date() }, // Add refundId if you can retrieve it
+        { new: true },
+      )
+      // Emit update if DB was changed
+      const io = req.io
+      if (io) io.emit('paymentUpdated', { paymentIntentId: paymentId, status: 'refunded' })
+    } else if (error.type) {
+      // Stripe specific error
+      errorMessage = error.message
+    }
+    res.status(500).json({ message: errorMessage, errorInfo: error.message })
   }
 }
 
-// ✅ 1️⃣ Request Password Reset (Admin)
+// --- requestAdminPasswordReset ---
 exports.requestAdminPasswordReset = async (req, res) => {
   try {
     const { email } = req.body
     const admin = await Admin.findOne({ email })
-
     if (!admin) {
       return res.status(400).json({ message: 'Admin with this email does not exist' })
     }
-
-    // ✅ Generate Secure Token
     const resetToken = crypto.randomBytes(32).toString('hex')
-
-    // ✅ Hash Token before saving
     const salt = await bcrypt.genSalt(10)
-    const hashedToken = await bcrypt.hash(resetToken, salt)
-
-    admin.resetPasswordToken = hashedToken
-    admin.resetPasswordExpires = Date.now() + 3600000 // Token expires in 1 hour
-
+    admin.resetPasswordToken = await bcrypt.hash(resetToken, salt)
+    admin.resetPasswordExpires = Date.now() + 3600000 // 1 hour
     await admin.save()
-
-    console.log('🔹 Reset Token (Plain):', resetToken)
-    console.log('🔹 Hashed Token Saved:', hashedToken)
-
-    // ✅ Send Email with Reset Link
-    const resetURL = `https://www.rockstarmath.com/admin/reset-password/${resetToken}`
-    sendEmail(
+    const resetURL = `https://www.rockstarmath.com/admin/reset-password/${resetToken}` // Frontend URL
+    await sendEmail(
       admin.email,
-      'Password Reset Request',
+      'RockstarMath Admin Password Reset',
       `Click here to reset your password: ${resetURL}`,
     )
-
     res.json({ message: 'Password reset link sent to email' })
   } catch (error) {
     console.error('Password Reset Request Error:', error)
     res.status(500).json({ message: 'Server error', error: error.message })
   }
 }
-// ✅ 2️⃣ Reset Password (Admin)
+
+// --- resetAdminPassword ---
 exports.resetAdminPassword = async (req, res) => {
   try {
     const { token } = req.params
     const { newPassword } = req.body
-
     if (!newPassword) {
       return res.status(400).json({ message: 'New password is required' })
     }
-
-    // ✅ Find Admin with Valid Token
-    const admin = await Admin.findOne({ resetPasswordExpires: { $gt: Date.now() } })
-
-    if (!admin) {
-      return res.status(400).json({ message: 'Invalid or expired token' })
+    const admin = await Admin.findOne({
+      resetPasswordExpires: { $gt: Date.now() },
+    })
+    if (!admin || !admin.resetPasswordToken) {
+      return res
+        .status(400)
+        .json({ message: 'Invalid or expired token (admin not found or token missing)' })
     }
-
-    // ✅ Verify Token with bcrypt.compare()
     const isTokenValid = await bcrypt.compare(token, admin.resetPasswordToken)
-
     if (!isTokenValid) {
-      return res.status(400).json({ message: 'Invalid or expired token' })
+      return res.status(400).json({ message: 'Invalid or expired token (token mismatch)' })
     }
-
-    // ✅ FIX: Ensure password is hashed only once
-    if (!admin.password.startsWith('$2b$')) {
-      console.log('✅ Hashing new password before saving...')
-      const salt = await bcrypt.genSalt(10)
-      admin.password = await bcrypt.hash(newPassword, salt)
-    } else {
-      console.log('⚠️ Password was already hashed! Not rehashing.')
-      admin.password = newPassword
-    }
-
-    console.log('🔹 Hashed Password Being Saved:', admin.password)
-
-    // ✅ Clear reset token fields
+    const salt = await bcrypt.genSalt(10)
+    admin.password = await bcrypt.hash(newPassword, salt)
     admin.resetPasswordToken = undefined
     admin.resetPasswordExpires = undefined
-
     await admin.save()
-
     res.status(200).json({ message: 'Password reset successful!' })
   } catch (error) {
     console.error('Password Reset Error:', error)
@@ -331,22 +423,21 @@ exports.resetAdminPassword = async (req, res) => {
   }
 }
 
+// --- getAllBookedSessions ---
 exports.getAllBookedSessions = async (req, res) => {
   try {
-    // Fetch only the required fields from each user
     const users = await Register.find({}, 'bookedSessions zoomBookings username billingEmail')
-
+      .populate('bookedSessions') // If bookedSessions are refs
+      .populate('zoomBookings') // If zoomBookings are refs
     let allSessions = []
-
     users.forEach((user) => {
-      // Process Calendly sessions
-      user.bookedSessions.forEach((session) => {
+      ;(user.bookedSessions || []).forEach((session) => {
         allSessions.push({
-          type: 'calendly', // Identify as Calendly session
+          type: 'calendly',
           userId: user._id,
           userEmail: user.billingEmail,
           userName: user.username,
-          sessionId: session._id, // Calendly session's _id
+          sessionId: session._id,
           eventName: session.eventName,
           startTime: session.startTime,
           endTime: session.endTime,
@@ -354,243 +445,164 @@ exports.getAllBookedSessions = async (req, res) => {
           note: session.note || '',
         })
       })
-
-      // Process Zoom sessions (each date as a separate entry)
-      user.zoomBookings.forEach((zoomBooking) => {
-        zoomBooking.sessionDates.forEach((dateObj) => {
+      ;(user.zoomBookings || []).forEach((zoomBooking) => {
+        ;(zoomBooking.sessionDates || []).forEach((dateObj) => {
           allSessions.push({
-            type: 'zoom', // Identify as Zoom session
+            type: 'zoom',
             userId: user._id,
             userEmail: user.billingEmail,
             userName: user.username,
             sessionId: zoomBooking._id, // Parent booking _id
+            sessionDateId: dateObj._id, // ID of the specific date entry
             eventName: zoomBooking.eventName,
-            startTime: dateObj.date, // Date from the sub-document
-            endTime: dateObj.date, // Use the same date as endTime (or adjust if needed)
-            status: dateObj.status || 'Booked', // Status per date
-            note: dateObj.note || '', // Note stored per date
+            startTime: dateObj.date,
+            endTime: dateObj.date, // Adjust if endTime is different
+            status: dateObj.status || 'Booked',
+            note: dateObj.note || '',
             zoomMeetingLink: zoomBooking.zoomMeetingLink || '',
           })
         })
       })
     })
-
+    allSessions.sort((a, b) => new Date(b.startTime) - new Date(a.startTime)) // Sort newest first
     res.json({ success: true, sessions: allSessions })
   } catch (error) {
     console.error('Error fetching booked sessions:', error)
-    res.status(500).json({ message: 'Failed to fetch booked sessions' })
+    res.status(500).json({ message: 'Failed to fetch booked sessions', error: error.message })
   }
 }
 
-// In adminController.js (or wherever you define cancelZoomSession)
+// --- cancelZoomSession ---
 exports.cancelZoomSession = async (req, res) => {
   try {
-    const { userId, sessionId, sessionDate } = req.body
-
-    // Validate input
-    if (!userId || !sessionId || !sessionDate) {
+    const { userId, sessionId, sessionDateId } = req.body // Use sessionDateId
+    if (!userId || !sessionId || !sessionDateId) {
       return res.status(400).json({ error: 'Missing required fields' })
     }
-
-    // Find the user
     const user = await Register.findById(userId)
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' })
-    }
+    if (!user) return res.status(404).json({ error: 'User not found' })
 
-    // Find the correct Zoom booking by _id
-    const zoomIndex = user.zoomBookings.findIndex((zb) => zb._id.toString() === sessionId)
-    if (zoomIndex === -1) {
-      return res.status(404).json({ error: 'Zoom session not found' })
-    }
+    const zoomBooking = user.zoomBookings.id(sessionId) // Find subdocument by ID
+    if (!zoomBooking) return res.status(404).json({ error: 'Zoom booking not found' })
 
-    // Grab the booking
-    const zoomBooking = user.zoomBookings[zoomIndex]
+    const dateIndex = zoomBooking.sessionDates.findIndex((d) => d._id.toString() === sessionDateId)
+    if (dateIndex === -1) return res.status(404).json({ error: 'Specific session date not found' })
 
-    // Find the sub-document date by matching the ISO string
-    const dateIndex = zoomBooking.sessionDates.findIndex(
-      (d) => new Date(d.date).toISOString() === new Date(sessionDate).toISOString(),
-    )
-    if (dateIndex === -1) {
-      return res.status(404).json({ error: 'Session date not found' })
-    }
-
-    // Remove that specific date from the sessionDates array
     zoomBooking.sessionDates.splice(dateIndex, 1)
-
-    // If no dates remain, remove the entire booking
     if (zoomBooking.sessionDates.length === 0) {
-      user.zoomBookings.splice(zoomIndex, 1)
+      zoomBooking.remove() // Mongoose subdocument remove
     }
-
-    // Save
     await user.save({ validateBeforeSave: false })
-
-    res.json({ success: true, message: 'Zoom session cancelled successfully!' })
+    res.json({ success: true, message: 'Zoom session date cancelled successfully!' })
   } catch (error) {
-    console.error('Error cancelling Zoom session:', error)
-    res.status(500).json({ error: 'Internal server error' })
+    console.error('Error cancelling Zoom session date:', error)
+    res.status(500).json({ error: 'Internal server error', details: error.message })
   }
 }
 
-// 2) ADD OR UPDATE ZOOM NOTE
+// --- addOrUpdateZoomNote ---
 exports.addOrUpdateZoomNote = async (req, res) => {
   try {
-    const { userId, sessionId, date, note } = req.body
-
-    if (!userId || !sessionId || !date) {
-      return res.status(400).json({
-        error: 'Missing required fields (userId, sessionId, date, note)',
-      })
+    const { userId, sessionId, sessionDateId, note } = req.body // Use sessionDateId
+    if (!userId || !sessionId || !sessionDateId || note === undefined) {
+      return res.status(400).json({ error: 'Missing required fields' })
     }
-
-    // Find user
     const user = await Register.findById(userId)
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' })
-    }
+    if (!user) return res.status(404).json({ error: 'User not found' })
 
-    // Find the Zoom booking by _id
-    const zoomBooking = user.zoomBookings.find((booking) => booking._id.toString() === sessionId)
-    if (!zoomBooking) {
-      return res.status(404).json({ error: 'Zoom booking not found' })
-    }
+    const zoomBooking = user.zoomBookings.id(sessionId)
+    if (!zoomBooking) return res.status(404).json({ error: 'Zoom booking not found' })
 
-    // Find the date sub-document
-    const dateObj = zoomBooking.sessionDates.find(
-      (d) => new Date(d.date).toISOString() === new Date(date).toISOString(),
-    )
-    if (!dateObj) {
-      return res.status(404).json({ error: 'Date not found in sessionDates' })
-    }
+    const dateObj = zoomBooking.sessionDates.id(sessionDateId) // Find specific date entry by its _id
+    if (!dateObj) return res.status(404).json({ error: 'Session date not found in this booking' })
 
-    // Update the note
     dateObj.note = note
-
-    // Save
     await user.save({ validateBeforeSave: false })
-
     res.json({
       success: true,
-      message: 'Note updated successfully!',
+      message: 'Zoom note updated successfully!',
       updatedSessionDate: dateObj,
     })
   } catch (error) {
     console.error('Error updating Zoom session note:', error)
-    res.status(500).json({ error: 'Internal Server Error' })
+    res.status(500).json({ error: 'Internal Server Error', details: error.message })
   }
 }
 
+// --- cancelSession (for Calendly/bookedSessions) ---
 exports.cancelSession = async (req, res) => {
   try {
-    const { userId, sessionId } = req.body
-
-    // ✅ Remove session from user's bookedSessions array
-    const updatedUser = await Register.findByIdAndUpdate(
-      userId,
-      { $pull: { bookedSessions: { _id: sessionId } } },
-      { new: true },
-    )
-
-    if (!updatedUser) {
-      return res.status(404).json({ message: 'User not found' })
+    const { userId, sessionId } = req.body // sessionId is the _id of the bookedSession
+    if (!userId || !sessionId) {
+      return res.status(400).json({ message: 'User ID and Session ID are required.' })
     }
+    const user = await Register.findById(userId)
+    if (!user) return res.status(404).json({ message: 'User not found' })
 
-    // ✅ Send email notification to the user
-    const emailSubject = 'Your Scheduled Session Has Been Cancelled'
-    const emailMessage = `Dear ${updatedUser.name},\n\nYour session has been cancelled by the admin. If you have any concerns, please contact support.\n\nBest regards,\nSupport Team`
+    const session = user.bookedSessions.id(sessionId) // Mongoose method to find subdocument by _id
+    if (!session) return res.status(404).json({ message: 'Session not found for this user.' })
 
-    await sendEmail(updatedUser.email, emailSubject, emailMessage)
+    session.remove() // Mongoose method to remove subdocument
+    await user.save({ validateBeforeSave: false })
 
-    res.json({ success: true, message: 'Session cancelled and email sent' })
+    // Optionally send email
+    // const emailSubject = 'Your Scheduled Session Has Been Cancelled';
+    // const emailMessage = `Dear ${user.username || 'User'},\n\nYour session scheduled for ${new Date(session.startTime).toLocaleString()} has been cancelled by the admin. If you have any concerns, please contact support.\n\nBest regards,\nRockstarMath Team`;
+    // await sendEmail(user.billingEmail, emailSubject, emailMessage);
+
+    res.json({ success: true, message: 'Calendly session cancelled successfully.' })
   } catch (error) {
-    console.error('Error cancelling session:', error)
-    res.status(500).json({ message: 'Failed to cancel session' })
+    console.error('Error cancelling Calendly session:', error)
+    res.status(500).json({ message: 'Failed to cancel session', error: error.message })
   }
 }
 
-// ✅ DELETE NOTE FROM A BOOKED SESSION
+// --- deleteNoteFromSession (for Calendly/bookedSessions) ---
 exports.deleteNoteFromSession = async (req, res) => {
   try {
-    const { userId, startTime } = req.body
-
-    // ✅ Validate Input Fields
-    if (!userId || !startTime) {
-      return res.status(400).json({ error: 'Missing required fields' })
+    const { userId, sessionId } = req.body // sessionId is the _id of the bookedSession
+    if (!userId || !sessionId) {
+      return res.status(400).json({ error: 'User ID and Session ID are required.' })
     }
-
-    // ✅ Validate userId format
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(400).json({ error: 'Invalid userId format' })
+    if (!isValidObjectId(userId) || !isValidObjectId(sessionId)) {
+      return res.status(400).json({ error: 'Invalid ID format.' })
     }
-
-    // ✅ Find User
     const user = await Register.findById(userId)
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' })
-    }
+    if (!user) return res.status(404).json({ error: 'User not found' })
 
-    // ✅ Find the specific session in `bookedSessions`
-    const session = user.bookedSessions.find(
-      (session) => session.startTime.toISOString() === new Date(startTime).toISOString(),
-    )
+    const session = user.bookedSessions.id(sessionId)
+    if (!session) return res.status(404).json({ error: 'Session not found' })
 
-    if (!session) {
-      return res.status(404).json({ error: 'Session not found' })
-    }
-
-    // ✅ Remove the note
     session.note = '' // Clear the note
-
-    // ✅ Save the updated user document without validating `purchasedClasses`
     await user.save({ validateBeforeSave: false })
-
     res.json({ success: true, message: 'Note deleted successfully!', updatedSession: session })
   } catch (error) {
-    console.error('Error deleting note:', error)
-    res.status(500).json({ error: 'Internal server error' })
+    console.error('Error deleting note from Calendly session:', error)
+    res.status(500).json({ error: 'Internal server error', details: error.message })
   }
 }
-// ✅ Add or Update Note to a Booked Session
+
+// --- addOrUpdateNoteToSession (for Calendly/bookedSessions) ---
 exports.addOrUpdateNoteToSession = async (req, res) => {
   try {
-    const { userId, startTime, note } = req.body
-
-    // ✅ Validate Input Fields
-    if (!userId || !startTime || note === undefined) {
-      return res.status(400).json({ error: 'Missing required fields' })
+    const { userId, sessionId, note } = req.body // sessionId is the _id of the bookedSession
+    if (!userId || !sessionId || note === undefined) {
+      return res.status(400).json({ error: 'User ID, Session ID and note are required.' })
     }
-
-    // ✅ Validate userId format
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(400).json({ error: 'Invalid userId format' })
+    if (!isValidObjectId(userId) || !isValidObjectId(sessionId)) {
+      return res.status(400).json({ error: 'Invalid ID format.' })
     }
-
-    // ✅ Find the user by ID
     const user = await Register.findById(userId)
+    if (!user) return res.status(404).json({ error: 'User not found' })
 
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' })
-    }
+    const session = user.bookedSessions.id(sessionId)
+    if (!session) return res.status(404).json({ error: 'Session not found' })
 
-    // ✅ Find the session inside bookedSessions using startTime
-    const session = user.bookedSessions.find(
-      (session) => session.startTime.toISOString() === new Date(startTime).toISOString(),
-    )
-
-    if (!session) {
-      return res.status(404).json({ error: 'Session not found' })
-    }
-
-    // ✅ Update the note field
     session.note = note
-
-    // ✅ Save the updated user document without validating purchasedClasses
     await user.save({ validateBeforeSave: false })
-
     res.json({ success: true, message: 'Note updated successfully!', updatedSession: session })
   } catch (error) {
-    console.error('Error adding/updating note:', error)
-    res.status(500).json({ error: 'Internal server error' })
+    console.error('Error adding/updating note to Calendly session:', error)
+    res.status(500).json({ error: 'Internal server error', details: error.message })
   }
 }
