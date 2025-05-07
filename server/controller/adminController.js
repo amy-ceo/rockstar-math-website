@@ -5,9 +5,9 @@ const bcrypt = require('bcryptjs')
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY) // Stripe API
 const sendEmail = require('../utils/emailSender') // ✅ Use existing emailSender module
 const crypto = require('crypto')
-const mongoose = require("mongoose");
+const mongoose = require('mongoose')
 // ✅ Function to Check if userId is a Valid ObjectId
-const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
+const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id)
 // ✅ Generate JWT Token
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' })
@@ -16,63 +16,60 @@ const generateToken = (id) => {
 // ✅ Admin Login Function with Password Hash Check & Comparison
 
 exports.loginAdmin = async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password } = req.body
 
   try {
     // ✅ 1. Find Admin in Database
-    const admin = await Admin.findOne({ email });
+    const admin = await Admin.findOne({ email })
 
     if (!admin) {
-      console.log("❌ Admin not found for email:", email);
-      return res.status(400).json({ message: "Invalid email or password" });
+      console.log('❌ Admin not found for email:', email)
+      return res.status(400).json({ message: 'Invalid email or password' })
     }
 
-    console.log("🔹 Found Admin:", admin.email);
-    console.log("🔹 Stored Hashed Password:", admin.password);
-    console.log("🔹 Entered Password:", password);
+    console.log('🔹 Found Admin:', admin.email)
+    console.log('🔹 Stored Hashed Password:', admin.password)
+    console.log('🔹 Entered Password:', password)
 
     // ✅ 2. Ensure Password is Properly Hashed Before Comparing
-    if (!admin.password.startsWith("$2b$")) {
-      console.log("⚠️ Password was NOT hashed before! Rehashing now...");
+    if (!admin.password.startsWith('$2b$')) {
+      console.log('⚠️ Password was NOT hashed before! Rehashing now...')
 
       // ✅ Hash and Save Password if it’s not already hashed
-      const salt = await bcrypt.genSalt(10);
-      admin.password = await bcrypt.hash(admin.password, salt);
-      await admin.save();
+      const salt = await bcrypt.genSalt(10)
+      admin.password = await bcrypt.hash(admin.password, salt)
+      await admin.save()
 
-      console.log("✅ New Hashed Password Saved:", admin.password);
+      console.log('✅ New Hashed Password Saved:', admin.password)
     }
 
     // ✅ 3. Compare Entered Password with Hashed Password
-    const isMatch = await bcrypt.compare(password, admin.password);
-    console.log("🔑 Password Match Result:", isMatch);
+    const isMatch = await bcrypt.compare(password, admin.password)
+    console.log('🔑 Password Match Result:', isMatch)
 
     if (!isMatch) {
-      console.log("❌ Password did not match");
-      return res.status(400).json({ message: "Invalid email or password" });
+      console.log('❌ Password did not match')
+      return res.status(400).json({ message: 'Invalid email or password' })
     }
 
     // ✅ 4. Generate JWT Token
-    const token = jwt.sign({ id: admin._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
+    const token = jwt.sign({ id: admin._id }, process.env.JWT_SECRET, { expiresIn: '7d' })
 
-    console.log("✅ Admin Login Successful");
+    console.log('✅ Admin Login Successful')
     res.status(200).json({
-      message: "Admin Login Successful",
+      message: 'Admin Login Successful',
       token,
       admin: {
         _id: admin._id,
         name: admin.name,
         email: admin.email,
       },
-    });
+    })
   } catch (error) {
-    console.error("Admin Login Error:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    console.error('Admin Login Error:', error)
+    res.status(500).json({ message: 'Server error', error: error.message })
   }
-};
-
-
-
+}
 
 exports.getAnalytics = async (req, res) => {
   try {
@@ -155,24 +152,25 @@ exports.getAnalytics = async (req, res) => {
 
 exports.getAdminStats = async (req, res) => {
   try {
-    const totalUsers = await Register.countDocuments() // ✅ Fetch total users
+    const totalUsers = await Register.countDocuments()
 
-    // ✅ Fetch Stripe Payments (All Successful)
-    const payments = await stripe.paymentIntents.list({ limit: 100 })
+    const payments = await StripePayment.find({ status: 'Completed' })
+    const totalRevenue = payments.reduce((sum, payment) => sum + (payment.amount || 0), 0)
 
-    // ✅ Filter Only Successful Payments
-    const successfulPayments = payments.data.filter((payment) => payment.status === 'succeeded')
+    const totalCoursesSold = payments.reduce((sum, payment) => {
+      return (
+        sum + (payment.cartItems && Array.isArray(payment.cartItems) ? payment.cartItems.length : 0)
+      )
+    }, 0)
 
-    // ✅ Calculate Total Revenue
-    const totalRevenue = successfulPayments.reduce((sum, payment) => sum + payment.amount, 0) / 100 // Convert from cents to dollars
-
-    // ✅ Calculate Total Courses Sold (Assuming each payment = 1 course)
-    const totalCoursesSold = successfulPayments.length
-
-    res.json({ totalUsers, totalCoursesSold, totalRevenue })
+    res.json({
+      totalUsers,
+      totalRevenue,
+      totalCoursesSold,
+    })
   } catch (error) {
-    console.error('Error fetching stats:', error)
-    res.status(500).json({ message: 'Error fetching stats', error })
+    console.error('Error fetching admin stats:', error)
+    res.status(500).json({ message: 'Error fetching stats' })
   }
 }
 
@@ -287,65 +285,64 @@ exports.requestAdminPasswordReset = async (req, res) => {
 // ✅ 2️⃣ Reset Password (Admin)
 exports.resetAdminPassword = async (req, res) => {
   try {
-    const { token } = req.params;
-    const { newPassword } = req.body;
+    const { token } = req.params
+    const { newPassword } = req.body
 
     if (!newPassword) {
-      return res.status(400).json({ message: "New password is required" });
+      return res.status(400).json({ message: 'New password is required' })
     }
 
     // ✅ Find Admin with Valid Token
-    const admin = await Admin.findOne({ resetPasswordExpires: { $gt: Date.now() } });
+    const admin = await Admin.findOne({ resetPasswordExpires: { $gt: Date.now() } })
 
     if (!admin) {
-      return res.status(400).json({ message: "Invalid or expired token" });
+      return res.status(400).json({ message: 'Invalid or expired token' })
     }
 
     // ✅ Verify Token with bcrypt.compare()
-    const isTokenValid = await bcrypt.compare(token, admin.resetPasswordToken);
+    const isTokenValid = await bcrypt.compare(token, admin.resetPasswordToken)
 
     if (!isTokenValid) {
-      return res.status(400).json({ message: "Invalid or expired token" });
+      return res.status(400).json({ message: 'Invalid or expired token' })
     }
 
     // ✅ FIX: Ensure password is hashed only once
-    if (!admin.password.startsWith("$2b$")) {
-      console.log("✅ Hashing new password before saving...");
-      const salt = await bcrypt.genSalt(10);
-      admin.password = await bcrypt.hash(newPassword, salt);
+    if (!admin.password.startsWith('$2b$')) {
+      console.log('✅ Hashing new password before saving...')
+      const salt = await bcrypt.genSalt(10)
+      admin.password = await bcrypt.hash(newPassword, salt)
     } else {
-      console.log("⚠️ Password was already hashed! Not rehashing.");
-      admin.password = newPassword;
+      console.log('⚠️ Password was already hashed! Not rehashing.')
+      admin.password = newPassword
     }
 
-    console.log("🔹 Hashed Password Being Saved:", admin.password);
+    console.log('🔹 Hashed Password Being Saved:', admin.password)
 
     // ✅ Clear reset token fields
-    admin.resetPasswordToken = undefined;
-    admin.resetPasswordExpires = undefined;
+    admin.resetPasswordToken = undefined
+    admin.resetPasswordExpires = undefined
 
-    await admin.save();
+    await admin.save()
 
-    res.status(200).json({ message: "Password reset successful!" });
+    res.status(200).json({ message: 'Password reset successful!' })
   } catch (error) {
-    console.error("Password Reset Error:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    console.error('Password Reset Error:', error)
+    res.status(500).json({ message: 'Server error', error: error.message })
   }
-};
-
+}
 
 exports.getAllBookedSessions = async (req, res) => {
   try {
     // Fetch only the required fields from each user
-    const users = await Register.find({}, "bookedSessions zoomBookings username billingEmail");
+    const users = await Register.find({}, 'bookedSessions zoomBookings username billingEmail')
 
-    let allSessions = [];
+    let allSessions = []
 
     users.forEach((user) => {
       // Process Calendly sessions
       user.bookedSessions.forEach((session) => {
         allSessions.push({
-          type: "calendly", // Identify as Calendly session
+          type: 'calendly', // Identify as Calendly session
           userId: user._id,
           userEmail: user.billingEmail,
           userName: user.username,
@@ -354,260 +351,246 @@ exports.getAllBookedSessions = async (req, res) => {
           startTime: session.startTime,
           endTime: session.endTime,
           status: session.status,
-          note: session.note || ""
-        });
-      });
+          note: session.note || '',
+        })
+      })
 
       // Process Zoom sessions (each date as a separate entry)
       user.zoomBookings.forEach((zoomBooking) => {
         zoomBooking.sessionDates.forEach((dateObj) => {
           allSessions.push({
-            type: "zoom", // Identify as Zoom session
+            type: 'zoom', // Identify as Zoom session
             userId: user._id,
             userEmail: user.billingEmail,
             userName: user.username,
             sessionId: zoomBooking._id, // Parent booking _id
             eventName: zoomBooking.eventName,
             startTime: dateObj.date, // Date from the sub-document
-            endTime: dateObj.date,   // Use the same date as endTime (or adjust if needed)
-            status: dateObj.status || "Booked", // Status per date
-            note: dateObj.note || "",           // Note stored per date
-            zoomMeetingLink: zoomBooking.zoomMeetingLink || ""
-          });
-        });
-      });
-    });
+            endTime: dateObj.date, // Use the same date as endTime (or adjust if needed)
+            status: dateObj.status || 'Booked', // Status per date
+            note: dateObj.note || '', // Note stored per date
+            zoomMeetingLink: zoomBooking.zoomMeetingLink || '',
+          })
+        })
+      })
+    })
 
-    res.json({ success: true, sessions: allSessions });
+    res.json({ success: true, sessions: allSessions })
   } catch (error) {
-    console.error("Error fetching booked sessions:", error);
-    res.status(500).json({ message: "Failed to fetch booked sessions" });
+    console.error('Error fetching booked sessions:', error)
+    res.status(500).json({ message: 'Failed to fetch booked sessions' })
   }
-};
-
+}
 
 // In adminController.js (or wherever you define cancelZoomSession)
 exports.cancelZoomSession = async (req, res) => {
   try {
-    const { userId, sessionId, sessionDate } = req.body;
+    const { userId, sessionId, sessionDate } = req.body
 
     // Validate input
     if (!userId || !sessionId || !sessionDate) {
-      return res.status(400).json({ error: "Missing required fields" });
+      return res.status(400).json({ error: 'Missing required fields' })
     }
 
     // Find the user
-    const user = await Register.findById(userId);
+    const user = await Register.findById(userId)
     if (!user) {
-      return res.status(404).json({ error: "User not found" });
+      return res.status(404).json({ error: 'User not found' })
     }
 
     // Find the correct Zoom booking by _id
-    const zoomIndex = user.zoomBookings.findIndex(
-      (zb) => zb._id.toString() === sessionId
-    );
+    const zoomIndex = user.zoomBookings.findIndex((zb) => zb._id.toString() === sessionId)
     if (zoomIndex === -1) {
-      return res.status(404).json({ error: "Zoom session not found" });
+      return res.status(404).json({ error: 'Zoom session not found' })
     }
 
     // Grab the booking
-    const zoomBooking = user.zoomBookings[zoomIndex];
+    const zoomBooking = user.zoomBookings[zoomIndex]
 
     // Find the sub-document date by matching the ISO string
     const dateIndex = zoomBooking.sessionDates.findIndex(
-      (d) =>
-        new Date(d.date).toISOString() === new Date(sessionDate).toISOString()
-    );
+      (d) => new Date(d.date).toISOString() === new Date(sessionDate).toISOString(),
+    )
     if (dateIndex === -1) {
-      return res.status(404).json({ error: "Session date not found" });
+      return res.status(404).json({ error: 'Session date not found' })
     }
 
     // Remove that specific date from the sessionDates array
-    zoomBooking.sessionDates.splice(dateIndex, 1);
+    zoomBooking.sessionDates.splice(dateIndex, 1)
 
     // If no dates remain, remove the entire booking
     if (zoomBooking.sessionDates.length === 0) {
-      user.zoomBookings.splice(zoomIndex, 1);
+      user.zoomBookings.splice(zoomIndex, 1)
     }
 
     // Save
-    await user.save({ validateBeforeSave: false });
+    await user.save({ validateBeforeSave: false })
 
-    res.json({ success: true, message: "Zoom session cancelled successfully!" });
+    res.json({ success: true, message: 'Zoom session cancelled successfully!' })
   } catch (error) {
-    console.error("Error cancelling Zoom session:", error);
-    res.status(500).json({ error: "Internal server error" });
+    console.error('Error cancelling Zoom session:', error)
+    res.status(500).json({ error: 'Internal server error' })
   }
-};
-
-
+}
 
 // 2) ADD OR UPDATE ZOOM NOTE
 exports.addOrUpdateZoomNote = async (req, res) => {
   try {
-    const { userId, sessionId, date, note } = req.body;
+    const { userId, sessionId, date, note } = req.body
 
     if (!userId || !sessionId || !date) {
       return res.status(400).json({
         error: 'Missing required fields (userId, sessionId, date, note)',
-      });
+      })
     }
 
     // Find user
-    const user = await Register.findById(userId);
+    const user = await Register.findById(userId)
     if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ error: 'User not found' })
     }
 
     // Find the Zoom booking by _id
-    const zoomBooking = user.zoomBookings.find(
-      (booking) => booking._id.toString() === sessionId
-    );
+    const zoomBooking = user.zoomBookings.find((booking) => booking._id.toString() === sessionId)
     if (!zoomBooking) {
-      return res.status(404).json({ error: 'Zoom booking not found' });
+      return res.status(404).json({ error: 'Zoom booking not found' })
     }
 
     // Find the date sub-document
     const dateObj = zoomBooking.sessionDates.find(
-      (d) => new Date(d.date).toISOString() === new Date(date).toISOString()
-    );
+      (d) => new Date(d.date).toISOString() === new Date(date).toISOString(),
+    )
     if (!dateObj) {
-      return res.status(404).json({ error: 'Date not found in sessionDates' });
+      return res.status(404).json({ error: 'Date not found in sessionDates' })
     }
 
     // Update the note
-    dateObj.note = note;
+    dateObj.note = note
 
     // Save
-    await user.save({ validateBeforeSave: false });
+    await user.save({ validateBeforeSave: false })
 
     res.json({
       success: true,
       message: 'Note updated successfully!',
       updatedSessionDate: dateObj,
-    });
+    })
   } catch (error) {
-    console.error('Error updating Zoom session note:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error('Error updating Zoom session note:', error)
+    res.status(500).json({ error: 'Internal Server Error' })
   }
-};
-
-
-
+}
 
 exports.cancelSession = async (req, res) => {
   try {
-    const { userId, sessionId } = req.body;
+    const { userId, sessionId } = req.body
 
     // ✅ Remove session from user's bookedSessions array
     const updatedUser = await Register.findByIdAndUpdate(
       userId,
       { $pull: { bookedSessions: { _id: sessionId } } },
-      { new: true }
-    );
+      { new: true },
+    )
 
     if (!updatedUser) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ message: 'User not found' })
     }
 
     // ✅ Send email notification to the user
-    const emailSubject = "Your Scheduled Session Has Been Cancelled";
-    const emailMessage = `Dear ${updatedUser.name},\n\nYour session has been cancelled by the admin. If you have any concerns, please contact support.\n\nBest regards,\nSupport Team`;
+    const emailSubject = 'Your Scheduled Session Has Been Cancelled'
+    const emailMessage = `Dear ${updatedUser.name},\n\nYour session has been cancelled by the admin. If you have any concerns, please contact support.\n\nBest regards,\nSupport Team`
 
-    await sendEmail(updatedUser.email, emailSubject, emailMessage);
+    await sendEmail(updatedUser.email, emailSubject, emailMessage)
 
-    res.json({ success: true, message: "Session cancelled and email sent" });
+    res.json({ success: true, message: 'Session cancelled and email sent' })
   } catch (error) {
-    console.error("Error cancelling session:", error);
-    res.status(500).json({ message: "Failed to cancel session" });
+    console.error('Error cancelling session:', error)
+    res.status(500).json({ message: 'Failed to cancel session' })
   }
-};
-
-
-
+}
 
 // ✅ DELETE NOTE FROM A BOOKED SESSION
 exports.deleteNoteFromSession = async (req, res) => {
   try {
-    const { userId, startTime } = req.body;
+    const { userId, startTime } = req.body
 
     // ✅ Validate Input Fields
     if (!userId || !startTime) {
-      return res.status(400).json({ error: "Missing required fields" });
+      return res.status(400).json({ error: 'Missing required fields' })
     }
 
     // ✅ Validate userId format
     if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(400).json({ error: "Invalid userId format" });
+      return res.status(400).json({ error: 'Invalid userId format' })
     }
 
     // ✅ Find User
-    const user = await Register.findById(userId);
+    const user = await Register.findById(userId)
     if (!user) {
-      return res.status(404).json({ error: "User not found" });
+      return res.status(404).json({ error: 'User not found' })
     }
 
     // ✅ Find the specific session in `bookedSessions`
     const session = user.bookedSessions.find(
-      (session) => session.startTime.toISOString() === new Date(startTime).toISOString()
-    );
+      (session) => session.startTime.toISOString() === new Date(startTime).toISOString(),
+    )
 
     if (!session) {
-      return res.status(404).json({ error: "Session not found" });
+      return res.status(404).json({ error: 'Session not found' })
     }
 
     // ✅ Remove the note
-    session.note = ""; // Clear the note
+    session.note = '' // Clear the note
 
     // ✅ Save the updated user document without validating `purchasedClasses`
-    await user.save({ validateBeforeSave: false });
+    await user.save({ validateBeforeSave: false })
 
-    res.json({ success: true, message: "Note deleted successfully!", updatedSession: session });
+    res.json({ success: true, message: 'Note deleted successfully!', updatedSession: session })
   } catch (error) {
-    console.error("Error deleting note:", error);
-    res.status(500).json({ error: "Internal server error" });
+    console.error('Error deleting note:', error)
+    res.status(500).json({ error: 'Internal server error' })
   }
-};
+}
 // ✅ Add or Update Note to a Booked Session
 exports.addOrUpdateNoteToSession = async (req, res) => {
   try {
-    const { userId, startTime, note } = req.body;
+    const { userId, startTime, note } = req.body
 
     // ✅ Validate Input Fields
     if (!userId || !startTime || note === undefined) {
-      return res.status(400).json({ error: 'Missing required fields' });
+      return res.status(400).json({ error: 'Missing required fields' })
     }
 
     // ✅ Validate userId format
     if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(400).json({ error: 'Invalid userId format' });
+      return res.status(400).json({ error: 'Invalid userId format' })
     }
 
     // ✅ Find the user by ID
-    const user = await Register.findById(userId);
+    const user = await Register.findById(userId)
 
     if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ error: 'User not found' })
     }
 
     // ✅ Find the session inside bookedSessions using startTime
     const session = user.bookedSessions.find(
-      (session) => session.startTime.toISOString() === new Date(startTime).toISOString()
-    );
+      (session) => session.startTime.toISOString() === new Date(startTime).toISOString(),
+    )
 
     if (!session) {
-      return res.status(404).json({ error: 'Session not found' });
+      return res.status(404).json({ error: 'Session not found' })
     }
 
     // ✅ Update the note field
-    session.note = note;
+    session.note = note
 
     // ✅ Save the updated user document without validating purchasedClasses
-    await user.save({ validateBeforeSave: false });
+    await user.save({ validateBeforeSave: false })
 
-    res.json({ success: true, message: 'Note updated successfully!', updatedSession: session });
+    res.json({ success: true, message: 'Note updated successfully!', updatedSession: session })
   } catch (error) {
-    console.error('Error adding/updating note:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Error adding/updating note:', error)
+    res.status(500).json({ error: 'Internal server error' })
   }
-};
+}

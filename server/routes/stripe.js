@@ -963,328 +963,332 @@ router.post('/create-checkout-session', async (req, res) => {
 router.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req, res) => {
   let event
   const sig = req.headers['stripe-signature']
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
+
   try {
-    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET)
+    event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret)
   } catch (err) {
     console.error('❌ Webhook Signature Verification Failed:', err.message)
     return res.status(400).send(`Webhook Error: ${err.message}`)
   }
+
   console.log('🔔 Received Stripe Webhook Event:', event.type)
+
   if (event.type === 'payment_intent.succeeded') {
     console.log('✅ Payment Intent Succeeded Event Triggered')
     const paymentIntent = event.data.object
-    // ✅ Extract User & Cart Data
     const userId = paymentIntent.metadata?.userId
     const cartSummary = paymentIntent.metadata?.cartSummary?.split(', ') || []
     const userEmail = paymentIntent.metadata?.userEmail || 'No email provided'
+
     console.log('🔹 User ID:', userId)
-    console.log('🛒 Purchased Items:', cartSummary)
-    if (!userId || cartSummary.length === 0) {
-      console.warn('⚠️ Missing user ID or cart summary. Skipping update.')
-      return res.status(400).json({ error: 'Invalid payment data' })
+    console.log('🛒 Purchased Items (from metadata):', cartSummary)
+
+    // It's generally better to proceed with saving payment even if userId or cartSummary is missing,
+    // but user-specific actions would be skipped.
+    if (!userId) {
+      console.warn(
+        '⚠️ Missing user ID in paymentIntent metadata. User-specific actions will be skipped.',
+      )
+      // If cartSummary is critical for *all* payment_intent.succeeded events, keep this check:
+      // if (cartSummary.length === 0) {
+      //   console.warn('⚠️ Cart summary is empty. Potentially skipping some product-related actions.');
+      // }
     }
 
     try {
-      // ✅ Fetch user first to check for existing purchases
-      const user = await Register.findById(userId)
-      if (!user) {
-        console.error('❌ Error: User not found in database!')
-        return res.status(404).json({ error: 'User not found' })
-      }
-      // AFTER (FIXED):
-      if (!user.cartItems || !Array.isArray(user.cartItems)) {
-        console.warn('⚠️ user.cartItems not found. Initializing as empty array.')
-        user.cartItems = [] // Initialize empty array
-      }
-      // ✅ Fixed Code (Initialize cartItems as empty array)
-      if (!user.cartItems || !Array.isArray(user.cartItems)) {
-        user.cartItems = [] // Initialize as empty array
-      }
       // ✅ Save Payment Record in `StripePayment` Model
       const newStripePayment = new StripePayment({
-        orderId: `stripe_${Date.now()}`,
+        orderId: `stripe_${Date.now()}_${paymentIntent.id.slice(-5)}`, // More unique
         paymentIntentId: paymentIntent.id,
-        userId: user._id,
+        userId: userId || null, // Store null if no userId
         billingEmail: userEmail,
         amount: paymentIntent.amount / 100,
         currency: paymentIntent.currency.toUpperCase(),
         status: 'Completed',
         paymentMethod: 'Stripe',
-        cartItems: cartSummary.map((item) => ({ name: item })),
+        // Ensure cartItems in DB is an array of objects if that's your schema
+        cartItems: cartSummary.map((item) => (typeof item === 'string' ? { name: item } : item)),
+        createdAt: new Date(paymentIntent.created * 1000), // Store Stripe's creation time
       })
-
       await newStripePayment.save()
       console.log('✅ Stripe Payment Saved in Database!')
 
-      // ✅ Clear Cart in Database (Assuming user has a `cart` field in `Register` Model)
-      const updatedUser = await Register.findByIdAndUpdate(
-        userId,
-        { $set: { cart: [] } },
-        { new: true }, // ✅ Returns updated user
-      )
-
-      console.log('Updated User After Clearing Cart:', updatedUser)
-      console.log('🔍 Cart After Clearing:', updatedUser.cart)
-      // ✅ Step 7: Send Confirmation Email
-      const recipientEmails = [user.billingEmail]
-      if (user.schedulingEmails) {
-        if (Array.isArray(user.schedulingEmails)) {
-          recipientEmails.push(...user.schedulingEmails)
+      // --- User-specific actions (only if userId is present) ---
+      if (userId) {
+        const user = await Register.findById(userId)
+        if (!user) {
+          console.error(
+            `❌ Error: User with ID ${userId} not found in database for post-payment processing!`,
+          )
+          // Continue with global stat update but log this error.
         } else {
-          recipientEmails.push(user.schedulingEmails)
-        }
-      }
+          console.log(`Processing post-payment actions for user: ${user.username} (${userId})`)
 
-      // ✅ **Send Welcome Email**
-      console.log(`📧 Sending Welcome Email to: ${userEmail}`)
-      let welcomeSubject = `🎉 Welcome to RockstarMath, ${user.username}!`
-      let welcomeHtml = `
-       <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
-         
-         <div style="text-align: center; padding-bottom: 20px;">
-           <img src="https://www.rockstarmath.com/images/logo.png" alt="RockstarMath" style="width: 150px; margin-bottom: 10px;">
-         <h2 style="color: #2C3E50;">🎉 Welcome, ${user.username}!</h2>
-         <p style="font-size: 16px;">We're thrilled to have you join <b>RockstarMath</b>! 🚀</p>
-       </div>
- 
-       <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-         <h3 style="color: #007bff;">📢 Your Account is Ready!</h3>
-         <p>Congratulations! Your account has been successfully created. You now have access to personalized math tutoring, expert guidance, and interactive learning resources.</p>
-         <p><b>Username:</b> ${user.username}</p>
-         <p><b>Email:</b> ${user.billingEmail}</p>
-       </div>
- 
-       <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-         <h3 style="color: #007bff;">📌 What's Next?</h3>
-         <p>Start your learning journey today by logging into your dashboard, exploring available sessions, and scheduling your first class!</p>
-         <p><b>Access your dashboard here:</b> <a href="https://www.rockstarmath.com/login" target="_blank" style="color: #007bff;">Go to Dashboard</a></p>
-       </div>
- 
-       <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-         <h3 style="color: #007bff;">💡 Need Help?</h3>
-         <p>Our team is always here to assist you! If you have any questions, reach out to us at <b>rockstarmathtutoring@gmail.com</b>.</p>
-       </div>
- 
-       <p style="text-align: center; font-size: 16px;">Let's make math learning fun and exciting! We can't wait to see you in class. 🚀</p>
- 
-       <p style="text-align: center; font-size: 14px; color: #555; margin-top: 20px;">
-         Best regards,<br>
-         <b>Amy Gemme</b><br>
-         RockstarMath Tutoring<br>
-         📞 510-410-4963
-       </p>
-     </div>
-     `
-      await sendEmail(recipientEmails, welcomeSubject, '', welcomeHtml)
-      console.log('📧 Sending Confirmation Email to:', recipientEmails.join(', '))
-      console.log('✅ Welcome email sent successfully!')
-      // ✅ Track existing purchased classes to prevent duplicates
-      const existingClasses = new Set(
-        user.purchasedClasses.map((cls) => cls.name.toLowerCase().trim()),
-      )
-      // ✅ Filter new purchases to avoid duplicate entries
-      const proxyBaseUrl = 'https://backend-production-cbe2.up.railway.app/api/proxy-calendly'
-
-      const purchasedItems = cartSummary
-        .filter((item) => !existingClasses.has(item.toLowerCase().trim()))
-        .map((item) => {
-          const originalCalendlyLink = calendlyMapping[item] || null
-
-          // ✅ Generate Proxy URL
-          const proxyBookingLink = originalCalendlyLink
-            ? `${proxyBaseUrl}?userId=${user._id}&session=${encodeURIComponent(item)}`
-            : null
-
-          return {
-            name: item,
-            sessionCount: sessionMapping[item] || 0,
-            remainingSessions: sessionMapping[item] || 0,
-            bookingLink: originalCalendlyLink, // ✅ Keep Original Calendly Link (Hidden in UI)
-            proxyBookingLink: proxyBookingLink, // ✅ Store Proxy URL for UI
-            status: 'Active',
+          // Ensure cartItems is an array on the user object if you intend to modify it
+          if (!user.cartItems || !Array.isArray(user.cartItems)) {
+            console.warn(
+              `⚠️ user.cartItems for user ${userId} not found or not an array. Initializing as empty array.`,
+            )
+            user.cartItems = []
           }
-        })
+          // Note: The logic below `user.cartItems = []` seems to be for clearing a temporary cart on the user model,
+          // not directly related to the `cartSummary` from Stripe metadata which represents purchased items.
 
-      if (purchasedItems.length > 0) {
-        await Register.findByIdAndUpdate(
-          userId,
-          {
-            $push: { purchasedClasses: { $each: purchasedItems } },
-          },
-          { new: true },
-        )
-      }
+          // ✅ Clear Cart in Database (Assuming 'cart' field on Register model is for pending items)
+          // If `cart` is meant to be the list of items *just purchased*, this might be redundant
+          // if `purchasedClasses` or similar field is used for historical purchases.
+          // This assumes 'cart' is a temporary holding field.
+          const updatedUser = await Register.findByIdAndUpdate(
+            userId,
+            { $set: { cart: [] } }, // Clears a field named 'cart' on the user model
+            { new: true },
+          )
+          if (updatedUser) {
+            console.log('Updated User After Clearing Cart (if applicable):', updatedUser.username)
+            console.log('🔍 User Cart Field After Clearing (if applicable):', updatedUser.cart)
+          }
 
-      // ✅ Continue with Zoom links, Calendly, Coupons, and Emails
-      const activeCoupons = await getActiveCoupons()
-      console.log('🎟 Active Coupons from Stripe:', activeCoupons)
-      let userCoupons = activeCoupons.filter((coupon) => {
-        return cartSummary.some((item) => {
-          return item.toLowerCase().includes(coupon.code.toLowerCase())
-        })
-      })
-      console.log('🛒 Purchased Items from Metadata:', cartSummary)
-      let zoomLinks = []
-      if (['Learn', 'Achieve', 'Excel'].some((course) => cartSummary.includes(course))) {
-        zoomLinks = zoomCourseMapping
-      }
+          // ✅ Email Sending and other user-specific post-purchase logic
+          const recipientEmails = [user.billingEmail]
+          if (user.schedulingEmails) {
+            if (Array.isArray(user.schedulingEmails)) {
+              recipientEmails.push(...user.schedulingEmails)
+            } else {
+              recipientEmails.push(user.schedulingEmails)
+            }
+          }
 
-      await sendEmail(
-        recipientEmails,
-        `🎉 Thank You for Your Purchase – Welcome to RockstarMath!`,
-        ``,
-        `
+          // ✅ **Send Welcome Email**
+          console.log(`📧 Sending Welcome Email to: ${userEmail}`)
+          let welcomeSubject = `🎉 Welcome to RockstarMath, ${user.username}!`
+          let welcomeHtml = `
            <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);">
-             
              <div style="text-align: center; padding-bottom: 20px;">
                <img src="https://www.rockstarmath.com/images/logo.png" alt="RockstarMath" style="width: 150px; margin-bottom: 10px;">
-               <h2 style="color: #2C3E50;">🎉 Thank You for Your Purchase – Welcome to RockstarMath!</h2>
-             </div>
-         
-             <p>Hi <b>${user.username}</b>,</p>
-             
-             <p>Thank you for your purchase! 🎉 We’re thrilled to have you as part of the RockstarMath community and are excited to help you achieve your math goals.</p>
-         
-             <h3 style="color: #007bff;">🚀 Get Started Now!</h3>
-             <p>To begin, log in to your dashboard:</p>
-             <p style="text-align: center;">
-               <a href="https://www.rockstarmath.com/login" target="_blank" style="background: #007bff; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px; font-weight: bold;">Go to Dashboard</a>
-             </p>
-             
-             <p>Use the username and password you created during registration to log in.</p>
-         
-             
-             <h3 style="color: #007bff;">📞 Need Assistance?</h3>
-             <p>If you have any questions or need help, feel free to reach out to us:</p>
-             <ul>
-               <li>📧 Reply to this email</li>
-               <li>📞 Call us at <b>510-410-4963</b></li>
-             </ul>
-         
-             <p>Thank you again for choosing RockstarMath! We can’t wait to see you excel! 🚀</p>
-         
-             <p style="text-align: center; font-size: 14px; color: #555; margin-top: 20px;">
-               Best regards,<br>
-               <b>Amy Gemme</b><br>
-               Founder, RockstarMath<br>
-               📞 510-410-4963 | 🌍 <a href="https://www.rockstarmath.com" target="_blank">www.rockstarmath.com</a>
-             </p>
-         
+             <h2 style="color: #2C3E50;">🎉 Welcome, ${user.username}!</h2>
+             <p style="font-size: 16px;">We're thrilled to have you join <b>RockstarMath</b>! 🚀</p>
            </div>
-           `,
-      )
-      // ✅ Normalize the product names for a better match
-      const normalizeString = (str) =>
-        str
-          .toLowerCase()
-          .replace(/[^a-zA-Z0-9 ]/g, '')
-          .trim()
+           <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+             <h3 style="color: #007bff;">📢 Your Account is Ready!</h3>
+             <p>Congratulations! Your account has been successfully created. You now have access to personalized math tutoring, expert guidance, and interactive learning resources.</p>
+             <p><b>Username:</b> ${user.username}</p>
+             <p><b>Email:</b> ${user.billingEmail}</p>
+           </div>
+           <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+             <h3 style="color: #007bff;">📌 What's Next?</h3>
+             <p>Start your learning journey today by logging into your dashboard, exploring available sessions, and scheduling your first class!</p>
+             <p><b>Access your dashboard here:</b> <a href="https://www.rockstarmath.com/login" target="_blank" style="color: #007bff;">Go to Dashboard</a></p>
+           </div>
+           <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+             <h3 style="color: #007bff;">💡 Need Help?</h3>
+             <p>Our team is always here to assist you! If you have any questions, reach out to us at <b>rockstarmathtutoring@gmail.com</b>.</p>
+           </div>
+           <p style="text-align: center; font-size: 16px;">Let's make math learning fun and exciting! We can't wait to see you in class. 🚀</p>
+           <p style="text-align: center; font-size: 14px; color: #555; margin-top: 20px;">
+             Best regards,<br>
+             <b>Amy Gemme</b><br>
+             RockstarMath Tutoring<br>
+             📞 510-410-4963
+           </p>
+         </div>`
+          await sendEmail(recipientEmails, welcomeSubject, '', welcomeHtml)
+          console.log('✅ Welcome email sent successfully to:', recipientEmails.join(', '))
 
-      // ✅ Check if "Common Core for Parents" was purchased
-      // ✅ Fixed Code (Use cartSummary from Stripe metadata)
-      const hasCommonCore = cartSummary.some(
-        (item) => item.trim().toLowerCase() === COMMONCORE_ZOOM_LINK.name.toLowerCase(),
-      )
-
-      if (hasCommonCore) {
-        zoomLinks.push(COMMONCORE_ZOOM_LINK)
-      }
-
-      console.log('hasCommonCore:', hasCommonCore)
-      console.log('COMMONCORE_ZOOM_LINK:', COMMONCORE_ZOOM_LINK)
-
-      // ✅ Proceed with email generation (after `hasCommonCore` has been set)
-      console.log('user.cartItems:', user.cartItems) // Check if cartItems is an array and contains data.
-
-      let calendlyLinks = []
-      cartSummary.forEach((item) => {
-        const formattedItemName = item.trim().toLowerCase()
-        Object.keys(calendlyMapping).forEach((calendlyKey) => {
-          if (formattedItemName === calendlyKey.toLowerCase().trim()) {
-            calendlyLinks.push({
-              name: item,
-              link: calendlyMapping[calendlyKey],
-            })
-          }
-        })
-      })
-      let appliedCoupons = []
-      cartSummary.forEach((item) => {
-        if (item.toLowerCase() === 'achieve') {
-          // ✅ Ensure 100% off and 30% off coupons are added
-          appliedCoupons.push(
-            { code: 'fs4n9tti', percent_off: 100, expires: 'Forever' }, // 100% Off Coupon
-            { code: 'qRBcEmgS', percent_off: 30, expires: 'Forever' }, // 30% Off Coupon
+          // ✅ Manage Purchased Classes
+          const existingClasses = new Set(
+            (user.purchasedClasses || []).map((cls) => cls.name.toLowerCase().trim()),
           )
-        } else {
-          // ✅ Automatically assign coupons from Stripe if available
-          let matchedCoupon = activeCoupons.find((coupon) => {
-            if (item === 'Learn' && coupon.percent_off === 10) return true
-            if (item === 'Achieve' && coupon.percent_off === 30) return true
-            if (item === 'Excel' && coupon.percent_off === 20) return true
-            return false
-          })
+          const proxyBaseUrl = `http://${process.env.HOST || 'localhost'}:${
+            process.env.PORT || 5000
+          }/api/proxy-calendly` // Use environment variables
 
-          if (matchedCoupon && matchedCoupon.code) {
-            appliedCoupons.push({
-              code: matchedCoupon.code,
-              percent_off: matchedCoupon.percent_off,
-              expires: matchedCoupon.expires,
+          const purchasedItemsForUser = cartSummary
+            .filter((item) => !existingClasses.has(item.toLowerCase().trim()))
+            .map((item) => {
+              const originalCalendlyLink = calendlyMapping[item] || null
+              const proxyBookingLink = originalCalendlyLink
+                ? `${proxyBaseUrl}?userId=${user._id}&session=${encodeURIComponent(item)}`
+                : null
+              return {
+                name: item,
+                sessionCount: sessionMapping[item] || 0,
+                remainingSessions: sessionMapping[item] || 0,
+                bookingLink: originalCalendlyLink,
+                proxyBookingLink: proxyBookingLink,
+                status: 'Active',
+              }
             })
+
+          if (purchasedItemsForUser.length > 0) {
+            await Register.findByIdAndUpdate(
+              userId,
+              { $push: { purchasedClasses: { $each: purchasedItemsForUser } } },
+              { new: true },
+            )
+            console.log(
+              `📚 Added ${purchasedItemsForUser.length} new purchased classes for user ${userId}.`,
+            )
           }
+
+          // ✅ Manage Coupons, Zoom Links, Calendly Links for the user
+          const activeCoupons = await getActiveCoupons()
+          let userSpecificCoupons = [] // Renamed to avoid conflict with a potential global userCoupons
+          // ... (Your logic to determine userSpecificCoupons based on cartSummary and activeCoupons) ...
+          // Example snippet of your coupon logic:
+          cartSummary.forEach((item) => {
+            if (item.toLowerCase() === 'achieve') {
+              userSpecificCoupons.push(
+                { code: 'fs4n9tti', percent_off: 100, expires: 'Forever' },
+                { code: 'qRBcEmgS', percent_off: 30, expires: 'Forever' },
+              )
+            } else {
+              let matchedCoupon = activeCoupons.find((coupon) => {
+                if (item === 'Learn' && coupon.percent_off === 10) return true
+                if (item === 'Achieve' && coupon.percent_off === 30) return true // This might conflict with above achieve logic
+                if (item === 'Excel' && coupon.percent_off === 20) return true
+                return false
+              })
+              if (matchedCoupon && matchedCoupon.code) {
+                userSpecificCoupons.push({
+                  code: matchedCoupon.code,
+                  percent_off: matchedCoupon.percent_off,
+                  expires: matchedCoupon.expires, // Ensure expires is handled correctly if from Stripe
+                })
+              }
+            }
+          })
+          // Deduplicate userSpecificCoupons if necessary
+          userSpecificCoupons = userSpecificCoupons.filter(
+            (coupon, index, self) => index === self.findIndex((c) => c.code === coupon.code),
+          )
+
+          if (userSpecificCoupons.length > 0) {
+            const couponsToAdd = []
+            for (let coupon of userSpecificCoupons) {
+              const couponExists = (user.coupons || []).some((c) => c.code === coupon.code)
+              if (!couponExists) {
+                couponsToAdd.push(coupon)
+              } else {
+                console.log(`Coupon ${coupon.code} already exists for user ${userId}. Skipping.`)
+              }
+            }
+            if (couponsToAdd.length > 0) {
+              await Register.findByIdAndUpdate(userId, {
+                $addToSet: { coupons: { $each: couponsToAdd } }, // Use $addToSet to avoid duplicates
+              })
+              console.log(`🎟 Added ${couponsToAdd.length} new coupons for user ${userId}.`)
+            }
+          }
+
+          let userZoomLinks = []
+          if (['Learn', 'Achieve', 'Excel'].some((course) => cartSummary.includes(course))) {
+            userZoomLinks = zoomCourseMapping // Make sure zoomCourseMapping is defined
+          }
+          const hasCommonCore = cartSummary.some(
+            (item) => item.trim().toLowerCase() === COMMONCORE_ZOOM_LINK.name.toLowerCase(),
+          )
+          if (hasCommonCore) {
+            userZoomLinks.push(COMMONCORE_ZOOM_LINK) // Make sure COMMONCORE_ZOOM_LINK is defined
+          }
+
+          let userCalendlyLinks = []
+          cartSummary.forEach((item) => {
+            const formattedItemName = item.trim().toLowerCase()
+            Object.keys(calendlyMapping).forEach((calendlyKey) => {
+              // Make sure calendlyMapping is defined
+              if (formattedItemName === calendlyKey.toLowerCase().trim()) {
+                userCalendlyLinks.push({
+                  name: item,
+                  link: calendlyMapping[calendlyKey],
+                })
+              }
+            })
+          })
+          if (userCalendlyLinks.length > 0) {
+            // Add to user's calendlyBookings if not already present (use $addToSet for unique entries)
+            const calendlyBookingsToAdd = userCalendlyLinks.filter(
+              (cl) =>
+                !(user.calendlyBookings || []).some(
+                  (cb) => cb.name === cl.name && cb.link === cl.link,
+                ),
+            )
+            if (calendlyBookingsToAdd.length > 0) {
+              await Register.findByIdAndUpdate(userId, {
+                $addToSet: { calendlyBookings: { $each: calendlyBookingsToAdd } },
+              })
+              console.log(
+                `📅 Added ${calendlyBookingsToAdd.length} new Calendly booking links for user ${userId}.`,
+              )
+            }
+          }
+
+          // ✅ Send Purchase Confirmation Email (with all details)
+          const purchaseEmailHtml = generateEmailHtml(
+            user,
+            userZoomLinks,
+            userSpecificCoupons, // Pass the determined coupons
+            userCalendlyLinks,
+            hasCommonCore,
+          )
+          await sendEmail(
+            recipientEmails,
+            '📚 Your RockstarMath Purchase Details',
+            '',
+            purchaseEmailHtml,
+          )
+          console.log(
+            '✅ Purchase confirmation email sent successfully to:',
+            recipientEmails.join(', '),
+          )
         }
+      }
+      // --- End of User-specific actions ---
+
+      // --- SOCKET.IO EMIT FOR REAL-TIME DASHBOARD UPDATE (GLOBAL STATS) ---
+      const io = req.io
+      if (io) {
+        const allCompletedPayments = await StripePayment.find({ status: 'Completed' })
+        const newTotalRevenue = allCompletedPayments.reduce(
+          (sum, payment) => sum + (payment.amount || 0),
+          0,
+        )
+        const newTotalCoursesSold = allCompletedPayments.reduce((sum, payment) => {
+          return (
+            sum +
+            (payment.cartItems && Array.isArray(payment.cartItems) ? payment.cartItems.length : 0)
+          )
+        }, 0)
+        const currentTotalUsers = await Register.countDocuments()
+
+        const updatedStats = {
+          totalUsers: currentTotalUsers,
+          totalRevenue: newTotalRevenue,
+          totalCoursesSold: newTotalCoursesSold,
+        }
+        io.emit('statsUpdated', updatedStats)
+        console.log('📊 Emitted statsUpdated event via WebSocket:', updatedStats)
+      } else {
+        console.warn('req.io is not defined. Socket.IO event not emitted from webhook.')
+      }
+      // --- END SOCKET.IO EMIT ---
+
+      return res.status(200).json({
+        received: true,
+        message: 'Webhook processed and user actions completed (if applicable).',
       })
-      if (appliedCoupons.length > 0) {
-        appliedCoupons = appliedCoupons.filter((coupon) => coupon.code && coupon.code.trim() !== '')
-        if (appliedCoupons.length > 0) {
-          await Register.findByIdAndUpdate(userId, {
-            $push: { coupons: { $each: appliedCoupons } },
-          })
-        }
-      }
-      if (calendlyLinks.length > 0) {
-        await Register.findByIdAndUpdate(userId, {
-          $push: { calendlyBookings: { $each: calendlyLinks } },
-        })
-      }
-      console.log('🛒 Purchased Items from Metadata:', cartSummary)
-      console.log('📅 Available Calendly Links:', Object.keys(calendlyMapping))
-      console.log('📧 Sending Email with Zoom Links & Calendly Links:', zoomLinks, calendlyLinks)
-      console.log('🎟 Sending Email with Coupons:', appliedCoupons)
-
-      // Assume you have already populated appliedCoupons array with relevant coupons
-
-      if (appliedCoupons.length > 0) {
-        for (let coupon of appliedCoupons) {
-          // Check if this coupon already exists in the user's coupons array
-          const existingCoupon = await Register.findOne({ 'coupons.code': coupon.code })
-          if (existingCoupon) {
-            console.log(`Coupon ${coupon.code} already exists. Skipping insert.`)
-          } else {
-            // Proceed with inserting coupon into the user's record
-            await Register.findByIdAndUpdate(user._id, {
-              $push: { coupons: coupon },
-            })
-            console.log(`Coupon ${coupon.code} added successfully.`)
-          }
-        }
-      }
-      const emailHtml = generateEmailHtml(
-        user,
-        zoomLinks,
-        appliedCoupons,
-        calendlyLinks,
-        hasCommonCore,
-      )
-      await sendEmail(recipientEmails, '📚 Your RockstarMath Purchase Details', '', emailHtml)
-      console.log('✅ Purchase confirmation email sent successfully!')
-      return res.status(200).json({ message: 'Purchase updated & all emails sent!' })
     } catch (error) {
-      console.error('❌ Error processing purchase:', error)
-      return res.status(500).json({ error: 'Error updating purchased classes' })
+      console.error('❌ Error processing payment_intent.succeeded webhook:', error)
+      // Log the error but still send 200 to Stripe to prevent retries for this event
+      // if the payment itself was saved. If payment save fails, a 500 might be better.
+      // For robust error handling, you might queue failed post-processing tasks.
+      return res.status(500).json({ error: 'Internal server error during webhook post-processing' })
     }
+  } else {
+    console.log(`ℹ️ Received & Acknowledged Unhandled Stripe Event: ${event.type}`)
   }
-  res.sendStatus(200)
+
+  res.sendStatus(200) // Acknowledge receipt of other/unhandled event types
 })
 
 // ✅ Function to Generate Email HTML

@@ -1,84 +1,92 @@
 require('dotenv').config()
 console.log('Stripe Secret Key:', process.env.STRIPE_SECRET_KEY ? 'Loaded ✅' : 'Not Loaded ❌')
+
 const express = require('express')
+const http = require('http') // Required for Socket.IO
+const { Server } = require('socket.io') // Required for Socket.IO
 const cors = require('cors')
 const mongoose = require('mongoose')
 const bodyParser = require('body-parser')
 const connectDB = require('./config/db')
 const authRoutes = require('./routes/authRoutes')
 const registerRoutes = require('./routes/registerRoutes')
-// const otpRoutes = require("./routes/otpRoutes");
 const webhookRoutes = require('./routes/webhookRoutes')
 const subscribeRoute = require('./routes/subscribeRoute')
 const contactRoutes = require('./routes/contactRoutes')
-const stripeRoutes = require('./routes/stripe') // Import the Stripe route
+const stripeRoutes = require('./routes/stripe') // Your Stripe route file
 const twilio = require('twilio')
 const zoomRoutes = require('./routes/zoomRoutes.js')
 const consultationRoutes = require('./routes/consultationRoutes')
 const waitlist = require('./routes/waitlist')
 const userRoutes = require('./routes/userRoutes')
-const paymentRoutes = require('./routes/paymentRoutes') // ✅ Import Payment Routes
-const ordersRoute = require('./routes/order.js') // ✅ Import Orders Route
+const paymentRoutes = require('./routes/paymentRoutes')
+const ordersRoute = require('./routes/order.js')
 const paypalRoutes = require('./routes/paypalRoutes.js')
-const adminRoutes = require('./routes/adminRoutes')
+const adminRoutes = require('./routes/adminRoutes') // Your admin routes
 const blogRoutes = require('./routes/blogRoutes')
 const bcrypt = require('bcryptjs')
-const proxyRoutes = require('./routes/proxyRoutes') // ✅ Import Proxy Routes
+const proxyRoutes = require('./routes/proxyRoutes')
 const webhookHandler = require('./routes/webhookHandlerRoute.js')
-// ✅ Set Fallback for Missing Crypto Module
+
 if (!global.crypto) {
   global.crypto = require('crypto')
 }
-bcrypt.setRandomFallback((len) => global.crypto.randomBytes(len)) // ✅ Fixes Error
+bcrypt.setRandomFallback((len) => global.crypto.randomBytes(len))
 
 connectDB()
 const app = express()
 
-// ✅ Middleware Order Fixes
-// ======================== Stripe Webhook Middleware ========================
-app.use('/api/stripe/webhook', bodyParser.raw({ type: 'application/json' }), (req, res, next) => {
-  console.log('🔔 Stripe Webhook Received')
+// Create HTTP server and integrate Socket.IO
+const httpServer = http.createServer(app)
+const io = new Server(httpServer, {
+  cors: {
+    origin: [
+      'http://localhost:3000', // Common React dev port
+      'http://localhost:8080', // If your React app is served here
+      'https://www.rockstarmath.com',
+      'https://rockstarmath.com',
+    ], // Adjust to your frontend URL(s)
+    methods: ['GET', 'POST'],
+  },
+})
+
+// Middleware to make io accessible in routes
+app.use((req, res, next) => {
+  req.io = io
   next()
 })
 
-// app.use((req, res, next) => {
-//   const allowedOrigin = ["https://zoom.us", undefined]; // ✅ Zoom Webhooks can have undefined origin
-//   if (allowedOrigin.includes(req.headers.origin)) {
-//       res.setHeader("Access-Control-Allow-Origin", req.headers.origin || "*");
-//       res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-//       res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-//       res.setHeader("Access-Control-Allow-Credentials", "true");
-//   }
-//   next();
-// });
+// Stripe Webhook Middleware (raw body needed)
+// This should come BEFORE general bodyParser.json() if webhook path is handled by a router loaded later
+app.use('/api/stripe/webhook', bodyParser.raw({ type: 'application/json' }), (req, res, next) => {
+  console.log('🔔 Stripe Webhook Middleware Triggered for /api/stripe/webhook')
+  next()
+})
 
-// ========================= General Middleware ==============================
-app.use(bodyParser.json())
+// General Middleware
+app.use(bodyParser.json()) // For all other routes
 app.use(bodyParser.urlencoded({ extended: true }))
 
-// ✅ CORS Configuration
-
+// CORS Configuration
 app.use(
   cors({
     origin: [
+      'http://localhost:3000', // Added for React dev server
       'http://localhost:8080',
       'https://www.rockstarmath.com',
       'https://rockstarmath.com',
       'https://calendly.com',
       'https://api.calendly.com',
     ],
-    methods: ['GET', 'POST', 'PUT', 'DELETE','OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true, // Important for Socket.IO if using cookies/auth
   }),
 )
 
-// ✅ Trust Proxy for HTTPS
 app.set('trust proxy', true)
-
-// ✅ Static Files
 app.use('/uploads', express.static('uploads'))
 
-// ✅ Use raw body ONLY for Zoom validation events
 app.use('/api/zoom/webhook', (req, res, next) => {
   if (req.headers['content-type'] === 'application/json') {
     bodyParser.raw({ type: 'application/json' })(req, res, next)
@@ -87,138 +95,76 @@ app.use('/api/zoom/webhook', (req, res, next) => {
   }
 })
 
-// ========================= Error Handling Middleware =======================
-app.use((err, req, res, next) => {
-  console.error('❌ Global Error Handler:', err)
-  res.status(err.status || 500).json({
-    error: {
-      message: err.message || 'Internal Server Error',
-      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
-    },
-  })
-})
-
-// ✅ Register Webhook Routes Early
+// Register Webhook Routes Early
 app.use('/api/webhook', express.json()) // Middleware for Calendly JSON parsing
 
-// // ✅ Remove Manual Header Setting (Fixes conflict)
-// app.use((req, res, next) => {
-//   res.header("Access-Control-Allow-Origin", allowedOrigins.includes(req.headers.origin) ? req.headers.origin : "*");
-//   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-//   res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-//   res.header("Access-Control-Allow-Credentials", "true"); // ✅ Ensure credentials are allowed
-//   next();
-// });
-
-// // ✅ Handle Preflight Requests Properly
-// app.options("*", cors());
-
 const client = new twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
+let otpStore = {}
 
-let otpStore = {} // Temporary OTP storage (use Redis for production)
-
-// ✅ Send OTP API
 app.post('/api/send-otp', async (req, res) => {
   const { phone } = req.body
-
-  if (!phone) {
-    return res.status(400).json({ error: 'Phone number is required!' })
-  }
-
-  const otp = Math.floor(100000 + Math.random() * 900000) // Generate 6-digit OTP
-
+  if (!phone) return res.status(400).json({ error: 'Phone number is required!' })
+  const otp = Math.floor(100000 + Math.random() * 900000)
   try {
     const message = await client.messages.create({
       body: `Your OTP code is: ${otp}`,
       from: process.env.TWILIO_PHONE_NUMBER,
       to: phone,
     })
-
     console.log('OTP Sent:', message.sid)
-
-    otpStore[phone] = otp // ✅ Store OTP (Use Redis for production!)
-
-    res.json({ success: true, otp }) // ⚠️ Remove `otp` from response in production
+    otpStore[phone] = otp
+    res.json({ success: true, message: 'OTP Sent. Check console for OTP in dev.' /*, otp*/ }) // Remove OTP from prod response
   } catch (error) {
     console.error('Twilio Error:', error)
     res.status(500).json({ error: 'Failed to send OTP. Please check Twilio settings!' })
   }
 })
 
-// ✅ Verify OTP API
 app.post('/api/verify-otp', (req, res) => {
   const { phone, otp } = req.body
-
-  if (!phone || !otp) {
-    return res.status(400).json({ error: 'Phone and OTP are required!' })
-  }
-
+  if (!phone || !otp) return res.status(400).json({ error: 'Phone and OTP are required!' })
   if (otpStore[phone] && otpStore[phone] == otp) {
-    delete otpStore[phone] // ✅ Remove OTP after successful verification
+    delete otpStore[phone]
     return res.json({ success: true, message: 'OTP Verified Successfully!' })
   } else {
     return res.status(400).json({ error: 'Invalid OTP or OTP expired.' })
   }
 })
+
 async function fixMongoIndexes() {
   try {
     const db = mongoose.connection.db
-
     console.log('🔧 Running MongoDB Index Fix...')
-
+    // ... (Your existing fixMongoIndexes function code) ...
     await db
       .collection('registers')
       .dropIndex('coupons.code_1')
-      .catch((err) => console.warn('⚠️ No existing index for coupons.code'))
-    console.log('✅ Dropped old coupons.code_1 index')
-
-    // Recreate coupons.code index with sparse
-    // Ensure the new indexes are created
+      .catch((err) => console.warn('⚠️ No existing index for coupons.code_1'))
     await db
       .collection('registers')
       .createIndex({ 'coupons.code': 1 }, { unique: true, sparse: true })
-
-    // 🛑 Drop existing `calendlyBookings.eventId_1` index
     await db
       .collection('registers')
       .dropIndex('calendlyBookings.eventId_1')
-      .catch((err) => console.warn('⚠️ No existing index for calendlyBookings.eventId'))
-    console.log('✅ Dropped old calendlyBookings.eventId_1 index')
-
-    // ✅ Recreate `calendlyBookings.eventId` index with sparse
+      .catch((err) => console.warn('⚠️ No existing index for calendlyBookings.eventId_1'))
     await db
       .collection('registers')
       .createIndex({ 'calendlyBookings.eventId': 1 }, { unique: true, sparse: true })
-    console.log('✅ Created new sparse index on calendlyBookings.eventId')
-
-    // 🛑 Drop existing `bookedSessions.calendlyEventUri_1` index
     await db
       .collection('registers')
       .dropIndex('bookedSessions.calendlyEventUri_1')
-      .catch((err) => console.warn('⚠️ No existing index for bookedSessions.calendlyEventUri'))
-    console.log('✅ Dropped old bookedSessions.calendlyEventUri_1 index')
-
-    // ✅ Recreate `bookedSessions.calendlyEventUri` index with sparse
+      .catch((err) => console.warn('⚠️ No existing index for bookedSessions.calendlyEventUri_1'))
     await db
       .collection('registers')
       .createIndex({ 'bookedSessions.calendlyEventUri': 1 }, { unique: true, sparse: true })
-    console.log('✅ Created new sparse index on bookedSessions.calendlyEventUri')
-
-    // 🛑 Drop existing `zoomBookings.zoomMeetingId_1` index to fix duplicate error
     await db
       .collection('registers')
       .dropIndex('zoomBookings.zoomMeetingId_1')
-      .catch((err) => console.warn('⚠️ No existing index for zoomBookings.zoomMeetingId'))
-    console.log('✅ Dropped old zoomBookings.zoomMeetingId_1 index')
-
-    // ✅ Recreate `zoomBookings.zoomMeetingId` index with sparse (to prevent null duplicates)
+      .catch((err) => console.warn('⚠️ No existing index for zoomBookings.zoomMeetingId_1'))
     await db
       .collection('registers')
       .createIndex({ 'zoomBookings.zoomMeetingId': 1 }, { unique: true, sparse: true })
-    console.log('✅ Created new sparse index on zoomBookings.zoomMeetingId')
 
-    // 🛑 Fix duplicate `paymentIntentId` in `stripepayments` collection
-    console.log('🔧 Checking for duplicate paymentIntentId in stripepayments...')
     const duplicateCheck = await db
       .collection('stripepayments')
       .aggregate([
@@ -226,57 +172,78 @@ async function fixMongoIndexes() {
         { $match: { count: { $gt: 1 } } },
       ])
       .toArray()
-
     if (duplicateCheck.length > 0) {
       console.log('⚠️ Found duplicate paymentIntentId. Resolving duplicates...')
       for (let duplicate of duplicateCheck) {
-        // You can log and handle duplicates here, for example:
         console.log(`Duplicate found for paymentIntentId: ${duplicate._id}`)
-        // You may choose to delete or merge duplicates here.
-        await db.collection('stripepayments').deleteMany({ paymentIntentId: duplicate._id })
-        console.log(`✅ Duplicates for paymentIntentId ${duplicate._id} resolved.`)
+        const paymentsToDelete = await db
+          .collection('stripepayments')
+          .find({ paymentIntentId: duplicate._id })
+          .sort({ createdAt: 1 })
+          .skip(1)
+          .toArray() // Keep the oldest one
+        const idsToDelete = paymentsToDelete.map((p) => p._id)
+        if (idsToDelete.length > 0) {
+          await db.collection('stripepayments').deleteMany({ _id: { $in: idsToDelete } })
+          console.log(
+            `✅ Resolved duplicates for paymentIntentId ${duplicate._id} by deleting ${idsToDelete.length} newer entries.`,
+          )
+        }
       }
     } else {
-      console.log('🎉 No duplicates found for paymentIntentId.')
+      console.log('🎉 No duplicates found for paymentIntentId in stripepayments.')
     }
-
-    // ✅ Ensure unique index for paymentIntentId in `stripepayments`
-    console.log('🔧 Ensuring unique index on paymentIntentId...')
     await db
       .collection('stripepayments')
       .dropIndex('paymentIntentId_1')
-      .catch((err) => console.warn('⚠️ No existing index for paymentIntentId'))
+      .catch((err) => console.warn('⚠️ No existing index for paymentIntentId_1 in stripepayments'))
     await db.collection('stripepayments').createIndex({ paymentIntentId: 1 }, { unique: true })
-    console.log('✅ Created unique index on paymentIntentId in stripepayments.')
-
     console.log('🎉 MongoDB Index Fix Completed!')
   } catch (error) {
     console.error('❌ Error updating MongoDB indexes:', error.message)
   }
 }
-
-// Run index fix when the app starts
 mongoose.connection.once('open', fixMongoIndexes)
-11
 
 // Routes
 app.use('/api/auth', authRoutes)
 app.use('/api', subscribeRoute)
 app.use('/api/contact', contactRoutes)
-app.use('/api/stripe', stripeRoutes) // Set up route
+app.use('/api/stripe', stripeRoutes) // Stripe routes
 app.use('/api', registerRoutes)
 app.use('/api', userRoutes)
 app.use('/api/zoom', zoomRoutes)
-// ✅ **Use Webhook Route Properly**
-// app.use("/api/otp", otpRoutes);
-app.use('/api', proxyRoutes) // ✅ Use Proxy Routes
+app.use('/api', proxyRoutes)
 app.use('/api/webhook/calendly', webhookRoutes)
-app.use('/api/webhook', webhookHandler) // ✅ Handles both Calendly & Zoom
-app.use('/api/admin', adminRoutes)
+app.use('/api/webhook', webhookHandler)
+app.use('/api/admin', adminRoutes) // Admin routes
 app.use('/api/blogs', blogRoutes)
 app.use('/api/paypal', paypalRoutes)
 app.use('/api/consultation', consultationRoutes)
 app.use('/api', waitlist)
-app.use('/api/orders', ordersRoute) // ✅ Set orders route
+app.use('/api/orders', ordersRoute)
+
+// Socket.IO connection listener
+io.on('connection', (socket) => {
+  console.log('🔌 A user connected via WebSocket:', socket.id)
+  socket.on('disconnect', () => {
+    console.log('🔌 User disconnected:', socket.id)
+  })
+  // You can add more specific event listeners here if needed
+})
+
+// Global Error Handling Middleware - MUST BE LAST
+app.use((err, req, res, next) => {
+  console.error('❌ Global Error Handler:', err.stack || err) // Log stack for better debugging
+  res.status(err.status || 500).json({
+    error: {
+      message: err.message || 'Internal Server Error',
+      // stack: process.env.NODE_ENV === 'development' ? err.stack : undefined, // Optionally show stack in dev
+    },
+  })
+})
+
 const PORT = process.env.PORT || 5000
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`))
+httpServer.listen(PORT, () =>
+  console.log(`🚀 Server running on port ${PORT} with WebSockets enabled`),
+) // Use httpServer to listen
