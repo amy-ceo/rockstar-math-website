@@ -60,14 +60,14 @@ export function Navbar() {
             onClick={handleLinkClick}
             className="block  py-2 text-gray-700 transition-all"
           >
-            Home
+            Book Now
           </NavLink>
           <NavLink
             to="/about"
             onClick={handleLinkClick}
             className="block  py-2 text-gray-700 transition-all"
           >
-            About
+            Abouts
           </NavLink>
           <NavLink
             to="/courses"
@@ -198,7 +198,7 @@ export function Navbar() {
     
     {/* Navigation Links */}
     <NavLink to="/" onClick={handleLinkClick} className="text-gray-700 hover:text-sky-600 font-medium">
-      Home
+      Book Now
     </NavLink>
     <NavLink to="/about" onClick={handleLinkClick} className="text-gray-700 hover:text-sky-600 font-medium">
       About

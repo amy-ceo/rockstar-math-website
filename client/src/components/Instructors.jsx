@@ -31,7 +31,7 @@ function Instructors() {
             Meet Your Instructor
           </h1>
           <p className="text-gray-600 mt-2">
-            Learn from the best in their fields and gain valuable knowledge.
+            Learn from the best in their fields and gain valuable knowledge. 
           </p>
         </div>
 

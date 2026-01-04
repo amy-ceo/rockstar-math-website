@@ -6,6 +6,7 @@ const Hero = lazy(() => import("../components/Hero"));
 const PopTopic = lazy(() => import("../components/PopTopic"));
 const RelatedCourses = lazy(() => import("../components/RelatedCourses"));
 const Instructors = lazy(() => import("../components/Instructors"));
+const BookingLinks = lazy(() => import("../components/BookingLinks"));
 const Milestones = lazy(() => import("../components/Milestones"));
 const Calendar = lazy(() => import("../components/Calendar"));
 const StudentFeedback = lazy(() => import("../components/StudentFeedback"));
@@ -28,29 +29,33 @@ function HomePage() {
         <PopTopic />
       </Suspense> */}
 
-      <Suspense fallback={<div className="text-center py-10 text-gray-500">Loading Related Courses...</div>}>
+      {/* <Suspense fallback={<div className="text-center py-10 text-gray-500">Loading Related Courses...</div>}>
         <RelatedCourses />
-      </Suspense>
+      </Suspense> */}
 
       <Suspense fallback={<div className="text-center py-10 text-gray-500">Loading Instructors...</div>}>
         <Instructors />
       </Suspense>
 
-      <Suspense fallback={<div className="text-center py-10 text-gray-500">Loading Milestones...</div>}>
-        <Milestones />
+      <Suspense fallback={<div className="text-center py-10 text-gray-500">Loading Booking Options...</div>}>
+        <BookingLinks />
       </Suspense>
 
-      <Suspense fallback={<div className="text-center py-10 text-gray-500">Loading Calendar...</div>}>
+      {/* <Suspense fallback={<div className="text-center py-10 text-gray-500">Loading Milestones...</div>}>
+        <Milestones />
+      </Suspense> */}
+
+      {/* <Suspense fallback={<div className="text-center py-10 text-gray-500">Loading Calendar...</div>}>
         <Calendar />
-      </Suspense>
+      </Suspense> */}
 
       <Suspense fallback={<div className="text-center py-10 text-gray-500">Loading Student Feedback...</div>}>
         <StudentFeedback />
       </Suspense>
 
-      <Suspense fallback={<div className="text-center py-10 text-gray-500">Loading Community Section...</div>}>
+      {/* <Suspense fallback={<div className="text-center py-10 text-gray-500">Loading Community Section...</div>}>
         <JoinOurCommunity />
-      </Suspense>
+      </Suspense> */}
     </>
   );
 }

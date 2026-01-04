@@ -69,9 +69,9 @@ root.render(
                   path="/"
                   element={
                     <>
-                      <Navbar />
+                      {/* <Navbar /> */}
                       <HomePage />
-                      <Footer />
+                      {/* <Footer /> */}
                     </>
                   }
                 />
