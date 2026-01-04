@@ -75,12 +75,12 @@ function Hero() {
             >
               Free Consultation
             </Link>
-            <Link
+            {/* <Link
               to="/services"
               className="px-8 py-3 bg-yellow-300 text-indigo-600 font-semibold rounded-full transition duration-300 ease-in-out hover:bg-transparent hover:text-yellow-300 hover:border-yellow-300 border border-transparent"
             >
               Book Now
-            </Link>
+            </Link> */}
           </div>
         </div>
 
